@@ -1,1 +1,221 @@
-{% extends 'base.html' %}{% from 'macros.html' import field %}{% block title %}Create Account | FABS Trading{% endblock %}{% block content %}<main class="auth-page"><form method="post" class="auth-card wide-auth">{{ form.hidden_tag() }}<span class="kicker">Customer registration</span><h1>Create your account.</h1><div class="form-grid">{{ field(form.full_name) }}{{ field(form.email) }}{{ field(form.company) }}{{ field(form.phone) }}{{ field(form.country) }}{{ field(form.password) }}{{ field(form.confirm_password) }}</div>{{ form.submit(class_='button primary full') }}<small>Already registered? <a href="{{ url_for('login') }}">Sign in</a></small></form></main>{% endblock %}
+{% extends 'base.html' %}
+
+{% block title %}Create Your Account | FABS Trading Global{% endblock %}
+
+{% block head %}
+<style>
+  .fabs-register-page{min-height:calc(100vh - 119px);padding:clamp(34px,5vw,76px) 24px;background:radial-gradient(circle at 12% 12%,rgba(237,49,56,.11),transparent 28%),radial-gradient(circle at 91% 88%,rgba(32,89,165,.11),transparent 30%),#f3f5f7;display:grid;place-items:center;position:relative;overflow:hidden}
+  .fabs-register-page:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;background-image:linear-gradient(rgba(17,22,28,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(17,22,28,.05) 1px,transparent 1px);background-size:48px 48px;mask-image:linear-gradient(to bottom,black,transparent 88%)}
+  .fabs-register-shell{position:relative;z-index:1;width:min(1320px,100%);display:grid;grid-template-columns:minmax(590px,1.22fr) minmax(380px,.78fr);background:#fff;border:1px solid #dfe4e8;border-radius:26px;overflow:hidden;box-shadow:0 34px 90px rgba(16,28,42,.16)}
+  .fabs-register-form-panel{padding:clamp(42px,5vw,72px);background:linear-gradient(180deg,#fff,#fbfcfd)}
+  .fabs-register-head{display:flex;justify-content:space-between;gap:30px;align-items:flex-start;margin-bottom:36px}
+  .fabs-register-eyebrow{display:inline-flex;align-items:center;gap:8px;color:#bd1c26;font-size:9px;font-weight:900;letter-spacing:.17em;text-transform:uppercase}
+  .fabs-register-eyebrow svg{width:16px;height:16px}.fabs-register-head h1{font-size:clamp(38px,4.2vw,56px);line-height:1;letter-spacing:-.052em;margin:17px 0 12px;color:#12171d}.fabs-register-head p{max-width:550px;color:#6f7882;font-size:12px;line-height:1.75;margin:0}
+  .fabs-register-progress{display:flex;gap:7px;padding-top:3px;flex-shrink:0}.fabs-register-progress span{width:9px;height:9px;border-radius:50%;background:#d9dee2}.fabs-register-progress span:first-child{width:27px;border-radius:10px;background:#ed3138}
+  .fabs-register-section{border:0;padding:0;margin:0 0 29px}.fabs-register-section+ .fabs-register-section{padding-top:27px;border-top:1px solid #e4e8eb}
+  .fabs-register-legend{width:100%;display:flex;align-items:center;gap:12px;padding:0;margin:0 0 18px;color:#20272f;font-size:11px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+  .fabs-register-legend b{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:#171c22;color:#fff;font-size:8px}.fabs-register-legend small{margin-left:auto;color:#929aa2;font-size:7px;font-weight:700;letter-spacing:.1em}
+  .fabs-register-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.fabs-register-field.span-2{grid-column:1/-1}
+  .fabs-register-field>label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;color:#303942;font-size:9px;font-weight:850;letter-spacing:.055em;text-transform:uppercase}.fabs-register-field>label small{color:#9aa2a9;font-size:7px;font-weight:700}
+  .fabs-register-input-wrap{position:relative}.fabs-register-input-wrap>svg{position:absolute;left:15px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:#8a949d;pointer-events:none}
+  .fabs-register-input{width:100%;height:55px;border:1px solid #d7dde2;border-radius:9px;background:#fff;color:#141a20;padding:0 47px 0 46px;outline:0;font-size:12px;transition:border-color .2s,box-shadow .2s,background .2s}.fabs-register-input::placeholder{color:#a0a7ae}.fabs-register-input:hover{border-color:#b8c0c8}.fabs-register-input:focus{border-color:#ed3138;background:#fff;box-shadow:0 0 0 4px rgba(237,49,56,.1)}
+  .fabs-register-field-error{display:flex;align-items:center;gap:7px;color:#bd1d26;font-size:9px;font-weight:750;margin-top:8px}.fabs-register-field-error:before{content:"!";width:16px;height:16px;border-radius:50%;display:grid;place-items:center;background:#fdebed}
+  .fabs-register-field-note{display:block;color:#8c959e;font-size:8px;line-height:1.5;margin-top:7px}
+  .fabs-register-password-toggle{position:absolute;right:9px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;border-radius:7px;background:transparent;color:#65707a;display:grid;place-items:center;cursor:pointer}.fabs-register-password-toggle:hover{background:#f0f2f4;color:#171d23}.fabs-register-password-toggle svg{width:19px;height:19px}
+  .fabs-password-strength{display:flex;align-items:center;gap:6px;margin-top:9px}.fabs-password-strength i{height:3px;flex:1;border-radius:4px;background:#e1e5e8;transition:background .2s}.fabs-password-strength[data-score="1"] i:nth-child(1){background:#df3f47}.fabs-password-strength[data-score="2"] i:nth-child(-n+2){background:#e7a326}.fabs-password-strength[data-score="3"] i:nth-child(-n+3){background:#3786d6}.fabs-password-strength[data-score="4"] i{background:#24a365}.fabs-password-strength span{min-width:56px;text-align:right;color:#8a939c;font-size:7px;font-weight:800;text-transform:uppercase}
+  .fabs-register-consent{color:#7d8790;font-size:9px;line-height:1.7;margin:0 0 19px}.fabs-register-consent a{color:#b51e27;font-weight:800;border-bottom:1px solid rgba(181,30,39,.25)}
+  .fabs-register-submit{width:100%;height:57px;border:0;border-radius:9px;background:linear-gradient(135deg,#ed3138,#c71924);color:#fff;display:flex;align-items:center;justify-content:center;gap:11px;font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;box-shadow:0 16px 32px rgba(199,25,36,.23);cursor:pointer;transition:transform .2s,box-shadow .2s}.fabs-register-submit:hover{transform:translateY(-2px);box-shadow:0 20px 38px rgba(199,25,36,.3)}.fabs-register-submit:focus-visible{outline:3px solid rgba(237,49,56,.24);outline-offset:3px}.fabs-register-submit svg{width:17px}
+  .fabs-register-signin{display:flex;align-items:center;justify-content:center;gap:7px;color:#7b858e;font-size:10px;margin-top:23px}.fabs-register-signin a{color:#bd1c26;font-weight:850}
+  .fabs-register-visual{position:relative;min-height:850px;color:#fff;background:#0b0e12;overflow:hidden}.fabs-register-visual>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;transform:scale(1.015);transition:transform 8s ease}.fabs-register-visual:hover>img{transform:scale(1.07)}.fabs-register-visual:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,10,14,.22),rgba(7,10,14,.32) 35%,rgba(7,10,14,.96) 100%),linear-gradient(90deg,rgba(7,10,14,.2),transparent)}
+  .fabs-register-visual-content{position:relative;z-index:2;height:100%;padding:clamp(32px,4vw,52px);display:flex;flex-direction:column;justify-content:space-between}.fabs-register-visual-logo{display:flex;align-items:center;justify-content:space-between;gap:15px}.fabs-register-visual-logo img{width:min(245px,62%);height:62px;object-fit:contain;object-position:left;filter:brightness(0) invert(1)}.fabs-register-secure{display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid rgba(255,255,255,.25);background:rgba(7,11,15,.42);backdrop-filter:blur(10px);font-size:7px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.fabs-register-secure i{width:6px;height:6px;border-radius:50%;background:#5ee393;box-shadow:0 0 0 4px rgba(94,227,147,.14)}
+  .fabs-register-story>span{display:block;color:#ffb8bb;font-size:9px;font-weight:850;letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px}.fabs-register-story h2{font-size:clamp(37px,3.8vw,57px);line-height:1;letter-spacing:-.052em;margin:0 0 20px;color:#fff}.fabs-register-story>p{color:#c5cbd1;font-size:12px;line-height:1.75;margin:0}
+  .fabs-register-benefits{display:grid;gap:9px;margin-top:29px}.fabs-register-benefit{display:grid;grid-template-columns:38px 1fr;gap:12px;align-items:center;padding:13px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.075);backdrop-filter:blur(10px)}.fabs-register-benefit>span{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;background:rgba(237,49,56,.9)}.fabs-register-benefit svg{width:19px}.fabs-register-benefit strong{display:block;font-size:10px;margin-bottom:4px}.fabs-register-benefit small{display:block;color:#aeb5bd;font-size:8px;line-height:1.4}
+  @media(max-width:1040px){.fabs-register-shell{grid-template-columns:1fr;max-width:760px}.fabs-register-visual{min-height:460px;order:-1}.fabs-register-visual-content{padding:34px}.fabs-register-benefits{grid-template-columns:repeat(3,1fr)}.fabs-register-benefit{grid-template-columns:1fr;align-content:start}.fabs-register-benefit>span{width:34px;height:34px}.fabs-register-story h2{font-size:46px}}
+  @media(max-width:620px){.fabs-register-page{padding:18px 12px}.fabs-register-shell{border-radius:17px}.fabs-register-form-panel{padding:34px 23px 38px}.fabs-register-head{margin-bottom:30px}.fabs-register-head h1{font-size:39px}.fabs-register-progress{display:none}.fabs-register-grid{grid-template-columns:1fr}.fabs-register-field.span-2{grid-column:auto}.fabs-register-legend small{display:none}.fabs-register-visual{min-height:355px}.fabs-register-visual-content{padding:24px}.fabs-register-visual-logo img{width:170px;height:47px}.fabs-register-secure{font-size:6px}.fabs-register-story h2{font-size:37px}.fabs-register-story>p{font-size:10px}.fabs-register-benefits{grid-template-columns:1fr 1fr}.fabs-register-benefit:last-child{display:none}.fabs-register-benefit{grid-template-columns:33px 1fr}.fabs-register-input,.fabs-register-submit{height:54px}}
+  @media(prefers-reduced-motion:reduce){.fabs-register-visual>img,.fabs-register-input,.fabs-register-submit,.fabs-password-strength i{transition:none}.fabs-register-visual:hover>img{transform:none}}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="fabs-register-page" aria-labelledby="register-title">
+  <div class="fabs-register-shell">
+    <section class="fabs-register-form-panel">
+      <div class="fabs-register-head">
+        <div>
+          <span class="fabs-register-eyebrow">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM5 21c.4-4.2 2.8-6.3 7-6.3s6.6 2.1 7 6.3" stroke="currentColor" stroke-width="1.7"/><path d="M19 7v4M17 9h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Secure customer registration
+          </span>
+          <h1 id="register-title">Create your account.</h1>
+          <p>Build a verified workspace for orders, product inquiries and direct support from FABS Trading Global.</p>
+        </div>
+        <div class="fabs-register-progress" aria-label="Three registration sections"><span></span><span></span><span></span></div>
+      </div>
+
+      <form method="post" autocomplete="on">
+        {{ form.hidden_tag() }}
+
+        <fieldset class="fabs-register-section">
+          <legend class="fabs-register-legend"><b>01</b> Account identity <small>Required details</small></legend>
+          <div class="fabs-register-grid">
+            <div class="fabs-register-field">
+              <label for="{{ form.full_name.id }}">{{ form.full_name.label.text }}</label>
+              <div class="fabs-register-input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 20c.5-4.7 2.8-7 6.5-7s6 2.3 6.5 7" stroke="currentColor" stroke-width="1.6"/></svg>
+                {{ form.full_name(class_='fabs-register-input', placeholder='Your full legal name', autocomplete='name') }}
+              </div>
+              {% if form.full_name.errors %}<span class="fabs-register-field-error" role="alert">{{ form.full_name.errors[0] }}</span>{% endif %}
+            </div>
+            <div class="fabs-register-field">
+              <label for="{{ form.email.id }}">{{ form.email.label.text }}</label>
+              <div class="fabs-register-input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.5h16v11H4v-11Z" stroke="currentColor" stroke-width="1.6"/><path d="m5 8 7 5 7-5" stroke="currentColor" stroke-width="1.6"/></svg>
+                {{ form.email(class_='fabs-register-input', placeholder='name@company.com', autocomplete='email', inputmode='email') }}
+              </div>
+              {% if form.email.errors %}<span class="fabs-register-field-error" role="alert">{{ form.email.errors[0] }}</span>{% endif %}
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="fabs-register-section">
+          <legend class="fabs-register-legend"><b>02</b> Business profile <small>Optional where indicated</small></legend>
+          <div class="fabs-register-grid">
+            <div class="fabs-register-field">
+              <label for="{{ form.company.id }}">{{ form.company.label.text }} <small>Optional</small></label>
+              <div class="fabs-register-input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20V7l8-3v16M12 9h8v11M7 9h2M7 13h2M7 17h2M15 12h2M15 16h2" stroke="currentColor" stroke-width="1.6"/></svg>
+                {{ form.company(class_='fabs-register-input', placeholder='Company or organisation', autocomplete='organization') }}
+              </div>
+              {% if form.company.errors %}<span class="fabs-register-field-error" role="alert">{{ form.company.errors[0] }}</span>{% endif %}
+            </div>
+            <div class="fabs-register-field">
+              <label for="{{ form.phone.id }}">{{ form.phone.label.text }} <small>Optional</small></label>
+              <div class="fabs-register-input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h3l1.3 4-2 1.5a14.2 14.2 0 0 0 6.2 6.2l1.5-2 4 1.3v3c0 2.2-1.8 4-4 4A14 14 0 0 1 3 7c0-2.2 1.8-4 4-4Z" stroke="currentColor" stroke-width="1.6"/></svg>
+                {{ form.phone(class_='fabs-register-input', placeholder='+254 700 000 000', autocomplete='tel', inputmode='tel') }}
+              </div>
+              {% if form.phone.errors %}<span class="fabs-register-field-error" role="alert">{{ form.phone.errors[0] }}</span>{% endif %}
+            </div>
+            <div class="fabs-register-field span-2">
+              <label for="{{ form.country.id }}">{{ form.country.label.text }} <small>Optional</small></label>
+              <div class="fabs-register-input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 12h17M12 3c2.4 2.5 3.6 5.5 3.6 9S14.4 18.5 12 21M12 3c-2.4 2.5-3.6 5.5-3.6 9S9.6 18.5 12 21" stroke="currentColor" stroke-width="1.6"/></svg>
+                {{ form.country(class_='fabs-register-input', placeholder='Country of residence or operation', autocomplete='country-name') }}
+              </div>
+              {% if form.country.errors %}<span class="fabs-register-field-error" role="alert">{{ form.country.errors[0] }}</span>{% endif %}
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="fabs-register-section">
+          <legend class="fabs-register-legend"><b>03</b> Account security <small>Minimum 10 characters</small></legend>
+          <div class="fabs-register-grid">
+            <div class="fabs-register-field">
+              <label for="{{ form.password.id }}">{{ form.password.label.text }}</label>
+              <div class="fabs-register-input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7.5 10V7.4a4.5 4.5 0 0 1 9 0V10M6 10h12v10H6V10Z" stroke="currentColor" stroke-width="1.6"/></svg>
+                {{ form.password(class_='fabs-register-input', placeholder='Create a strong password', autocomplete='new-password', minlength='10', data_register_password='') }}
+                <button class="fabs-register-password-toggle" type="button" data-password-toggle="password" aria-label="Show password" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.8 12s3.1-5 9.2-5 9.2 5 9.2 5-3.1 5-9.2 5-9.2-5-9.2-5Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2.3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+              <div class="fabs-password-strength" data-password-strength data-score="0" aria-live="polite"><i></i><i></i><i></i><i></i><span>Not entered</span></div>
+              {% if form.password.errors %}<span class="fabs-register-field-error" role="alert">{{ form.password.errors[0] }}</span>{% endif %}
+            </div>
+            <div class="fabs-register-field">
+              <label for="{{ form.confirm_password.id }}">{{ form.confirm_password.label.text }}</label>
+              <div class="fabs-register-input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7.5 10V7.4a4.5 4.5 0 0 1 9 0V10M6 10h12v10H6V10Z" stroke="currentColor" stroke-width="1.6"/><path d="m9.4 15 1.7 1.7 3.7-4" stroke="currentColor" stroke-width="1.6"/></svg>
+                {{ form.confirm_password(class_='fabs-register-input', placeholder='Repeat your password', autocomplete='new-password', minlength='10', data_confirm_password='') }}
+                <button class="fabs-register-password-toggle" type="button" data-password-toggle="confirm_password" aria-label="Show confirmation password" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2.8 12s3.1-5 9.2-5 9.2 5 9.2 5-3.1 5-9.2 5-9.2-5-9.2-5Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2.3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+              <span class="fabs-register-field-note" data-password-match aria-live="polite">Enter the same password again.</span>
+              {% if form.confirm_password.errors %}<span class="fabs-register-field-error" role="alert">{{ form.confirm_password.errors[0] }}</span>{% endif %}
+            </div>
+          </div>
+        </fieldset>
+
+        <p class="fabs-register-consent">By creating an account, you acknowledge the FABS <a href="{{ url_for('terms') }}">Terms of Use</a> and <a href="{{ url_for('privacy') }}">Privacy Policy</a>.</p>
+        <button class="fabs-register-submit" type="submit">
+          Create secure account
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M14 7l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+
+      <div class="fabs-register-signin">Already registered? <a href="{{ url_for('login') }}">Sign in to your account →</a></div>
+    </section>
+
+    <aside class="fabs-register-visual" aria-label="FABS global gaming marketplace">
+      <img src="{{ url_for('static', filename='images/home-media/commercial-racing-simulator.jpg') }}" alt="Professional commercial racing simulator gaming system">
+      <div class="fabs-register-visual-content">
+        <div class="fabs-register-visual-logo">
+          <a href="{{ url_for('index') }}" aria-label="FABS Trading home"><img src="{{ url_for('static', filename='images/fabs-brand-v2.png') }}" alt="FABS Trading Global E-Commerce"></a>
+          <span class="fabs-register-secure"><i></i> Protected access</span>
+        </div>
+        <div class="fabs-register-story">
+          <span>Built for global buyers</span>
+          <h2>One account. Every commercial opportunity.</h2>
+          <p>Move from product discovery to verified inquiry management with a professional FABS customer workspace.</p>
+          <div class="fabs-register-benefits">
+            <div class="fabs-register-benefit"><span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 6h14v12H5V6Z" stroke="currentColor" stroke-width="1.6"/><path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.6"/></svg></span><div><strong>Organised inquiries</strong><small>Keep commercial requests and reference numbers together.</small></div></div>
+            <div class="fabs-register-benefit"><span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 7 3v5c0 4.5-2.8 7.8-7 10-4.2-2.2-7-5.5-7-10V6l7-3Z" stroke="currentColor" stroke-width="1.6"/><path d="m9.3 12 1.7 1.7 3.8-4" stroke="currentColor" stroke-width="1.6"/></svg></span><div><strong>Secure access</strong><small>Protected authentication and account-level visibility.</small></div></div>
+            <div class="fabs-register-benefit"><span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 12h17M12 3c2.4 2.5 3.6 5.5 3.6 9S14.4 18.5 12 21M12 3c-2.4 2.5-3.6 5.5-3.6 9S9.6 18.5 12 21" stroke="currentColor" stroke-width="1.6"/></svg></span><div><strong>Global support</strong><small>Connect with FABS teams across buyer markets.</small></div></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (() => {
+    const password = document.querySelector('[data-register-password]');
+    const confirmation = document.querySelector('[data-confirm-password]');
+    const strength = document.querySelector('[data-password-strength]');
+    const match = document.querySelector('[data-password-match]');
+
+    document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+      const input = document.getElementById(button.dataset.passwordToggle);
+      if (!input) return;
+      button.addEventListener('click', () => {
+        const visible = input.type === 'text';
+        input.type = visible ? 'password' : 'text';
+        button.setAttribute('aria-pressed', String(!visible));
+        button.setAttribute('aria-label', visible ? 'Show password' : 'Hide password');
+        input.focus();
+      });
+    });
+
+    const updateStrength = () => {
+      if (!password || !strength) return;
+      const value = password.value;
+      let score = 0;
+      if (value.length >= 10) score++;
+      if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score++;
+      if (/\d/.test(value)) score++;
+      if (/[^A-Za-z0-9]/.test(value)) score++;
+      const labels = ['Not entered', 'Weak', 'Developing', 'Good', 'Strong'];
+      strength.dataset.score = value ? String(Math.max(1, score)) : '0';
+      strength.querySelector('span').textContent = value ? labels[Math.max(1, score)] : labels[0];
+    };
+
+    const updateMatch = () => {
+      if (!password || !confirmation || !match) return;
+      const hasValue = confirmation.value.length > 0;
+      const same = password.value === confirmation.value;
+      confirmation.setCustomValidity(hasValue && !same ? 'Passwords do not match.' : '');
+      match.textContent = !hasValue ? 'Enter the same password again.' : same ? 'Passwords match.' : 'Passwords do not match.';
+      match.style.color = !hasValue ? '#8c959e' : same ? '#248257' : '#bd1d26';
+    };
+
+    password?.addEventListener('input', () => { updateStrength(); updateMatch(); });
+    confirmation?.addEventListener('input', updateMatch);
+    updateStrength();
+    updateMatch();
+  })();
+</script>
+{% endblock %}
