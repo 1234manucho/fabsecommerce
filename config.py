@@ -1,5 +1,4 @@
 import os
-from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -11,7 +10,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
     MAX_CONTENT_LENGTH = 8 * 1024 * 1024
-    WTF_CSRF_TIME_LIMIT = timedelta(hours=2)
+    WTF_CSRF_TIME_LIMIT = 1728000  # 20 days in seconds
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
