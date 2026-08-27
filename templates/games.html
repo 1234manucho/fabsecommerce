@@ -1,57 +1,284 @@
 {% extends 'base.html' %}
 
-{% block title %}Wholesale Gaming Products *&* MOQ | FABS Trading{% endblock %}
+{% block title %}Wholesale Gaming Products & MOQ | FABS Trading{% endblock %}
 
-{% block head %}<style>
+{% block head %}
+<style>
+  :root{
+    --market-ink:#171a1e;
+    --market-muted:#66707a;
+    --market-line:#dfe3e7;
+    --market-paper:#fff;
+    --market-bg:#f4f6f8;
+    --market-accent:#ed3138;
+    --market-green:#258c50;
+  }
 
-  .market-page{background:#f5f6f7;color:#171a1e}.market-shell{width:min(1480px,calc(100% - 50px));margin:auto}.market-hero{background:#16191d;color:#fff;padding:64px 0 55px}.market-hero-grid{display:flex;justify-content:space-between;align-items:end;gap:40px}.market-hero span{font-size:8px;color:#ff676d;letter-spacing:.16em;font-weight:900}.market-hero h1{font-size:clamp(42px,5vw,68px);letter-spacing:-.05em;margin:10px 0}.market-hero p{color:#aeb4bb;max-width:680px;font-size:12px;line-height:1.75}.market-hero-stats{display:flex;gap:35px}.market-hero-stats strong{display:block;font-size:24px}.market-hero-stats small{font-size:7px;color:#9ba2aa;text-transform:uppercase;letter-spacing:.1em}.market-bar{background:#fff;border-bottom:1px solid #e0e3e6;position:sticky;top:88px;z-index:40}.market-search{height:76px;display:grid;grid-template-columns:1fr 190px 190px 130px;gap:10px;align-items:center}.market-search input,.market-search select{height:46px;border:1px solid #d7dadd;background:#fff;padding:0 14px;color:#171a1e;font-size:11px}.market-search button{height:46px;border:0;background:#ed3138;color:#fff;font-size:9px;font-weight:900;text-transform:uppercase}.market-layout{display:grid;grid-template-columns:250px 1fr;gap:30px;padding:35px 0 90px}.market-filters{background:#fff;border:1px solid #e0e3e6;padding:22px;align-self:start;position:sticky;top:185px}.market-filters h2{font-size:22px;margin:0 0 22px}.filter-group{padding:20px 0;border-top:1px solid #e5e7e9}.filter-group h3{font-size:11px;margin:0 0 12px}.filter-group a{display:flex;justify-content:space-between;padding:7px 0;color:#626a73;font-size:10px}.filter-group a:hover{color:#e12e35}.filter-check{display:flex;align-items:center;gap:8px;font-size:10px;color:#626a73;margin:10px 0}.filter-check i{width:14px;height:14px;border:1px solid #bec3c7}.market-results-head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:22px}.market-results-head h2{font-size:28px;margin:0}.market-results-head p{font-size:10px;color:#6e757d;margin:6px 0 0}.market-results-head span{font-size:8px;color:#8a9198}.market-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}.product-card{background:#fff;border:1px solid #e0e3e6;min-width:0;transition:.25s}.product-card:hover{transform:translateY(-4px);box-shadow:0 18px 45px rgba(21,26,31,.1)}.product-media{display:block;height:245px;position:relative;background:#eef0f1;overflow:hidden}.product-media img{width:100%;height:100%;object-fit:cover}.real-photo{position:absolute;left:10px;top:10px;background:#fff;padding:6px 7px;font-size:6px;font-weight:900}.real-photo:before{content:"";display:inline-block;width:5px;height:5px;background:#2bb866;border-radius:50%;margin-right:5px}.video-mark{position:absolute;left:10px;bottom:10px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.63);color:#fff;font-size:9px}.wishlist{position:absolute;right:10px;top:10px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#6b7178;font-size:19px}.product-body{padding:14px}.secured{display:inline-flex;background:#eaf7e8;color:#34841e;font-size:7px;font-weight:900;padding:5px 6px}.product-body h3{font-size:14px;line-height:1.45;margin:9px 0;height:41px;overflow:hidden}.product-price{display:block;font-size:19px;margin:8px 0}.product-moq{display:block;color:#454b52;font-size:9px}.product-supplier{display:block;color:#7a8188;font-size:8px;text-decoration:underline;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:9px 0}.supplier-tags{display:flex;gap:6px;color:#1a60a9;font-size:7px;margin-bottom:13px}.product-actions{display:grid;grid-template-columns:1fr 42px;gap:7px}.product-actions a{height:39px;display:flex;align-items:center;justify-content:center;border:1px solid #ed3138;font-size:8px;font-weight:900;text-transform:uppercase}.product-actions a:first-child{background:#ed3138;color:#fff}.pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:38px;flex-wrap:wrap}.pagination a,.pagination span{min-width:39px;height:39px;padding:0 11px;display:grid;place-items:center;background:#fff;border:1px solid #d7dadd;font-size:10px}.pagination .current{background:#ed3138;border-color:#ed3138;color:#fff}.pagination .next{background:#ed3138;color:#fff;border-color:#ed3138;padding-inline:17px}.catalogue-note{margin-top:42px;background:#fff;border:1px solid #e0e3e6;padding:30px}.catalogue-note h2{font-size:22px}.catalogue-note p{font-size:10px;color:#69717a;line-height:1.8}.catalogue-note-tags{display:flex;flex-wrap:wrap;gap:7px}.catalogue-note-tags a{padding:9px 12px;border:1px solid #d7dadd;font-size:9px}
+  .market-page{background:var(--market-bg);color:var(--market-ink);min-height:100vh}
+  .market-shell{width:min(1440px,calc(100% - 48px));margin-inline:auto}
 
-  @media(max-width:1180px){.market-grid{grid-template-columns:repeat(3,1fr)}.market-search{grid-template-columns:1fr 160px 130px}.market-search select:nth-of-type(2){display:none}}
+  .market-hero{background:linear-gradient(125deg,#121519 0%,#1c2229 62%,#202933 100%);color:#fff;padding:64px 0 56px}
+  .market-hero-grid{display:flex;justify-content:space-between;align-items:flex-end;gap:48px}
+  .market-kicker{display:inline-flex;align-items:center;gap:8px;color:#ff7378;font-size:10px;letter-spacing:.16em;font-weight:900;text-transform:uppercase}
+  .market-kicker::before{content:"";width:28px;height:2px;background:currentColor}
+  .market-hero h1{font-size:clamp(40px,5vw,70px);letter-spacing:-.05em;line-height:1;margin:14px 0 18px;max-width:850px}
+  .market-hero p{color:#b9c0c8;max-width:720px;font-size:13px;line-height:1.75;margin:0}
+  .market-hero-stats{display:grid;grid-template-columns:repeat(3,minmax(90px,1fr));gap:28px;min-width:330px}
+  .market-hero-stats strong{display:block;font-size:26px;line-height:1.1}
+  .market-hero-stats small{display:block;margin-top:6px;font-size:8px;color:#a4adb7;text-transform:uppercase;letter-spacing:.1em;line-height:1.5}
 
-  @media(max-width:900px){.market-bar{top:72px}.market-layout{grid-template-columns:1fr}.market-filters{display:none}.market-grid{grid-template-columns:repeat(2,1fr)}.market-hero-grid{align-items:flex-start;flex-direction:column}.market-search{grid-template-columns:1fr 120px}.market-search select{display:none}.market-shell{width:min(100% - 28px,1480px)}}
+  .market-bar{background:#fff;border-bottom:1px solid var(--market-line);position:sticky;top:88px;z-index:40}
+  .market-search{min-height:76px;display:grid;grid-template-columns:minmax(220px,1fr) 190px 190px 145px;gap:10px;align-items:center;padding-block:12px}
+  .market-search input,.market-search select{width:100%;height:46px;border:1px solid #d4d9de;border-radius:3px;background:#fff;padding:0 14px;color:var(--market-ink);font-size:12px;outline:none}
+  .market-search input:focus,.market-search select:focus{border-color:var(--market-accent);box-shadow:0 0 0 3px rgba(237,49,56,.1)}
+  .market-search button{height:46px;border:0;border-radius:3px;background:var(--market-accent);color:#fff;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;cursor:pointer}
 
-  @media(max-width:560px){.market-grid{grid-template-columns:1fr}.product-media{height:330px}.market-hero-stats{gap:18px}.market-search{grid-template-columns:1fr 95px}.market-results-head{align-items:flex-start;flex-direction:column}}
+  .market-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:30px;padding:36px 0 90px}
+  .market-filters{background:#fff;border:1px solid var(--market-line);padding:22px;align-self:start;position:sticky;top:185px}
+  .market-filters h2{font-size:23px;margin:0 0 22px}
+  .filter-group{padding:20px 0;border-top:1px solid #e7eaed}
+  .filter-group h3{font-size:11px;margin:0 0 12px;text-transform:uppercase;letter-spacing:.06em}
+  .filter-group a{display:flex;justify-content:space-between;gap:12px;padding:8px 0;color:#626b74;font-size:11px;text-decoration:none}
+  .filter-group a:hover{color:var(--market-accent)}
+  .filter-check{display:flex;align-items:center;gap:8px;font-size:10px;color:#626b74;margin:11px 0}
+  .filter-check i{width:14px;height:14px;border:1px solid #bec5cb;flex:0 0 14px}
 
-</style>{% endblock %}
+  .market-results-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-bottom:22px}
+  .market-results-head h2{font-size:29px;margin:0;overflow-wrap:anywhere}
+  .market-results-head p{font-size:11px;color:#6e7780;margin:7px 0 0;line-height:1.6}
+  .page-counter{flex:0 0 auto;font-size:9px;color:#7e8790;letter-spacing:.08em;font-weight:800}
 
-{% block content %}<main class="market-page">
+  .market-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+  .product-card{background:var(--market-paper);border:1px solid var(--market-line);min-width:0;display:flex;flex-direction:column;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+  .product-card:hover{transform:translateY(-4px);border-color:#cfd5da;box-shadow:0 18px 45px rgba(21,26,31,.11)}
+  .product-media{display:block;aspect-ratio:4/3;position:relative;background:linear-gradient(135deg,#e8edf1,#dce3e8);overflow:hidden}
+  .product-media img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .45s ease}
+  .product-card:hover .product-media img{transform:scale(1.035)}
+  .product-media.image-missing::before{content:"Product image temporarily unavailable";position:absolute;inset:0;display:grid;place-items:center;padding:28px;text-align:center;color:#65717c;font-size:11px;font-weight:800}
+  .real-photo{position:absolute;left:10px;top:10px;background:rgba(255,255,255,.94);padding:7px 8px;border-radius:2px;font-size:7px;font-weight:900;letter-spacing:.04em;box-shadow:0 3px 12px rgba(0,0,0,.08)}
+  .real-photo::before{content:"";display:inline-block;width:6px;height:6px;background:#2bb866;border-radius:50%;margin-right:6px}
+  .video-mark{position:absolute;left:10px;bottom:10px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.68);color:#fff;font-size:10px}
+  .wishlist{position:absolute;right:10px;top:10px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.95);color:#626b74;font-size:19px}
 
-  <section class="market-hero"><div class="market-shell market-hero-grid"><div><span>FABS GAMING MARKETPLACE</span><h1>Gaming products for global buyers.</h1><p>Compare commercial arcade, immersive VR, racing, tabletop and OEM gaming products with authentic media, clear minimum order quantities and direct inquiry tools.</p></div><div class="market-hero-stats"><div><strong>{{ '{:,}'.format(catalogue_total) }}</strong><small>Product combinations</small></div><div><strong>999</strong><small>Catalogue pages</small></div><div><strong>24/7</strong><small>Buyer access</small></div></div></div></section>
+  .product-body{padding:15px;display:flex;flex:1;flex-direction:column}
+  .secured{align-self:flex-start;display:inline-flex;background:#e9f7ee;color:var(--market-green);font-size:7px;font-weight:900;padding:6px 7px;text-transform:uppercase;letter-spacing:.04em}
+  .product-body h3{font-size:14px;line-height:1.45;margin:10px 0 6px;min-height:41px;overflow-wrap:anywhere}
+  .product-body h3 a{color:inherit;text-decoration:none}
+  .product-price{display:block;font-size:20px;margin:7px 0}
+  .product-moq{display:block;color:#444c54;font-size:10px}
+  .product-supplier{display:block;color:#747d86;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:10px 0 5px}
+  .photo-source{display:block;color:#8b939b;font-size:8px;line-height:1.45;min-height:24px;overflow:hidden}
+  .supplier-tags{display:flex;flex-wrap:wrap;gap:7px;color:#1c63aa;font-size:8px;margin:10px 0 14px}
+  .product-actions{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:7px;margin-top:auto}
+  .product-actions a{height:41px;display:flex;align-items:center;justify-content:center;border:1px solid var(--market-accent);color:var(--market-accent);font-size:9px;font-weight:900;text-transform:uppercase;text-decoration:none}
+  .product-actions a:first-child{background:var(--market-accent);color:#fff}
 
-  <div class="market-bar"><form class="market-shell market-search" method="get"><input type="search" name="q" value="{{ query }}" placeholder="Search arcade, VR, racing, tabletop or supplier…" aria-label="Search gaming products"><select name="category"><option value="">All categories</option>{% for item in ['Arcade Game','VR Simulator','Racing Simulator','Board Game','Sports Arcade','Table Game'] %}<option value="{{ item }}" {% if category==item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select><select name="platform"><option value="">All platforms</option>{% for item in ['Arcade','VR','Tabletop','Commercial'] %}<option value="{{ item }}" {% if platform==item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select><button type="submit">Search products</button></form></div>
+  .pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:40px;flex-wrap:wrap}
+  .pagination a,.pagination span{min-width:40px;height:40px;padding:0 12px;display:grid;place-items:center;background:#fff;border:1px solid #d4d9de;color:var(--market-ink);font-size:10px;text-decoration:none}
+  .pagination .current{background:var(--market-accent);border-color:var(--market-accent);color:#fff}
+  .pagination .next{background:var(--market-accent);color:#fff;border-color:var(--market-accent);padding-inline:18px}
+  .pagination .ellipsis{border-color:transparent;background:transparent;padding-inline:4px;min-width:22px}
 
-  <div class="market-shell market-layout"><aside class="market-filters"><h2>Filter</h2><div class="filter-group"><h3>Buyer assurance</h3><span class="filter-check"><i></i> Audited supplier</span><span class="filter-check"><i></i> Secured trading</span><span class="filter-check"><i></i> Real product media</span></div><div class="filter-group"><h3>Business type</h3><span class="filter-check"><i></i> Manufacturer / factory</span><span class="filter-check"><i></i> Trading company</span><span class="filter-check"><i></i> OEM producer</span></div><div class="filter-group"><h3>Categories</h3><a href="{{ url_for('games',category='Arcade Game') }}">Arcade machines <span>›</span></a><a href="{{ url_for('games',category='VR Simulator') }}">VR simulators <span>›</span></a><a href="{{ url_for('games',category='Racing Simulator') }}">Racing systems <span>›</span></a><a href="{{ url_for('games',category='Board Game') }}">Board games <span>›</span></a></div></aside><section><header class="market-results-head"><div><h2>“{{ query or category or 'Game' }}” products</h2><p>Products from commercial suppliers with MOQ and direct inquiry support.</p></div><span>PAGE {{ page }} OF {{ total_pages }}</span></header>
+  .catalogue-note{margin-top:42px;background:#fff;border:1px solid var(--market-line);padding:30px}
+  .catalogue-note h2{font-size:23px;margin:0 0 12px}
+  .catalogue-note p{font-size:11px;color:#69727b;line-height:1.8}
+  .catalogue-note-tags{display:flex;flex-wrap:wrap;gap:8px}
+  .catalogue-note-tags a{padding:10px 13px;border:1px solid #d4d9de;color:var(--market-ink);font-size:9px;text-decoration:none}
 
-    {% set catalogue_tags={
-      'Arcade Game':'arcade,machine,gaming',
-      'VR Simulator':'virtual,reality,gaming',
-      'Racing Simulator':'racing,simulator,gaming',
-      'Board Game':'board,game,tabletop',
-      'Sports Arcade':'sports,arcade,gaming',
-      'Table Game':'tabletop,game,recreation'
-    } %}
-    <div class="market-grid">
-      {% for game in games %}
-        {% set media_tag=catalogue_tags.get(game.genre,'gaming,arcade,technology') %}
-        {% set image_lock=((page|int - 1) * 100) + loop.index %}
-        <article class="product-card">
-          <a class="product-media" href="{{ url_for('game_detail',slug=game.slug) }}">
-            <img src="https://loremflickr.com/900/700/{{ media_tag }}?lock={{ image_lock }}" data-fallback="{{ game.image_url }}" alt="{{ game.title }} category reference photograph" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=this.dataset.fallback">
-            <span class="real-photo">LIVE CATEGORY MEDIA · PAGE {{ page }}</span>
-            {% if game.trailer_url %}<span class="video-mark">▶</span>{% endif %}
-            <span class="wishlist">♡</span>
-          </a>
-          <div class="product-body"><span class="secured">✓ Secured Trading</span><h3><a href="{{ url_for('game_detail',slug=game.slug) }}">{{ game.title }}</a></h3><strong class="product-price">US${{ '{:,.2f}'.format(game.price) }}</strong><span class="product-moq">{{ game.minimum_order }}</span><span class="product-supplier">{{ game.supplier }}</span><div class="supplier-tags"><span>◆ Audited</span><span>▣ {{ game.region }}</span></div><div class="product-actions"><a href="{{ url_for('game_inquiry',slug=game.slug) }}">Send inquiry</a><a href="{{ url_for('game_detail',slug=game.slug) }}" aria-label="View {{ game.title }}">↗</a></div></div>
-        </article>
-      {% else %}
-        <div class="catalogue-note"><h2>No matching products</h2><p>Adjust the filter or send an RFQ and our sourcing team will help locate the required game.</p></div>
-      {% endfor %}
+  @media(max-width:1180px){
+    .market-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .market-search{grid-template-columns:minmax(220px,1fr) 170px 145px}
+    .market-search select:nth-of-type(2){display:none}
+  }
+
+  @media(max-width:940px){
+    .market-shell{width:min(100% - 32px,1440px)}
+    .market-bar{top:72px}
+    .market-layout{grid-template-columns:1fr;padding-top:28px}
+    .market-filters{display:none}
+    .market-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .market-hero-grid{align-items:flex-start;flex-direction:column}
+    .market-hero-stats{width:100%;min-width:0}
+  }
+
+  @media(max-width:680px){
+    .market-shell{width:min(100% - 24px,1440px)}
+    .market-hero{padding:44px 0 38px}
+    .market-hero h1{font-size:clamp(36px,12vw,50px)}
+    .market-hero-stats{gap:10px}
+    .market-hero-stats strong{font-size:20px}
+    .market-bar{position:static}
+    .market-search{grid-template-columns:1fr;gap:8px;padding-block:12px}
+    .market-search select,.market-search select:nth-of-type(2){display:block}
+    .market-grid{grid-template-columns:1fr;gap:18px}
+    .product-media{aspect-ratio:16/10}
+    .market-results-head{align-items:flex-start;flex-direction:column}
+    .page-counter{font-size:8px}
+    .catalogue-note{padding:22px}
+    .pagination a,.pagination span{min-width:38px;height:38px;padding:0 10px}
+  }
+
+  @media(max-width:420px){
+    .market-shell{width:min(100% - 18px,1440px)}
+    .market-hero-stats{grid-template-columns:1fr 1fr}
+    .market-hero-stats>div:last-child{grid-column:1/-1}
+    .product-media{aspect-ratio:4/3}
+    .product-body{padding:13px}
+    .pagination{gap:4px}
+    .pagination .next{width:100%;margin-top:4px}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="market-page">
+  <section class="market-hero">
+    <div class="market-shell market-hero-grid">
+      <div>
+        <span class="market-kicker">FABS Gaming Marketplace</span>
+        <h1>Commercial gaming products for global buyers.</h1>
+        <p>Compare arcade machines, immersive VR systems, racing simulators, tabletop manufacturing and esports venue equipment using real product photography, clear minimum order quantities and direct inquiry tools.</p>
+      </div>
+      <div class="market-hero-stats" aria-label="Catalogue statistics">
+        <div><strong>{{ '{:,}'.format(catalogue_total) }}</strong><small>Catalogue products</small></div>
+        <div><strong>{{ total_pages }}</strong><small>Catalogue pages</small></div>
+        <div><strong>24/7</strong><small>Buyer access</small></div>
+      </div>
     </div>
+  </section>
 
-    {% if total_pages>1 %}<nav class="pagination" aria-label="Catalogue pagination">{% if page>1 %}<a href="{{ url_for('games',page=page-1,q=query,category=category,platform=platform) }}" aria-label="Previous catalogue page">‹</a>{% endif %}{% for number in range(1,10) %}<a class="{% if page==number %}current{% endif %}" href="{{ url_for('games',page=number,q=query,category=category,platform=platform) }}" {% if page==number %}aria-current="page"{% endif %}>{{ number }}</a>{% endfor %}{% if page>9 and page<999 %}<span>…</span><span class="current" aria-current="page">{{ page }}</span>{% endif %}<a href="{{ url_for('games',page=999,q=query,category=category,platform=platform) }}">999</a>{% if page<total_pages %}<a class="next" href="{{ url_for('games',page=page+1,q=query,category=category,platform=platform) }}">Next ›</a>{% endif %}</nav>{% endif %}
+  <div class="market-bar">
+    <form class="market-shell market-search" method="get">
+      <input type="search" name="q" value="{{ query }}" placeholder="Search arcade, VR, racing, tabletop or supplier…" aria-label="Search gaming products">
+      <select name="category" aria-label="Filter by category">
+        <option value="">All categories</option>
+        {% for item in ['Arcade Game','VR Simulator','Racing Simulator','Board Game','Sports Arcade','Table Game','Esports System'] %}
+          <option value="{{ item }}" {% if category == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+      <select name="platform" aria-label="Filter by platform">
+        <option value="">All platforms</option>
+        {% for item in ['Arcade','VR','Tabletop','Commercial','PC','Interactive'] %}
+          <option value="{{ item }}" {% if platform == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Search products</button>
+    </form>
+  </div>
 
-    <div class="catalogue-note"><h2>You may also be interested in</h2><div class="catalogue-note-tags"><a href="{{ url_for('games',category='Arcade Game') }}">Commercial arcade machines</a><a href="{{ url_for('games',category='VR Simulator') }}">Wholesale VR systems</a><a href="{{ url_for('games',category='Board Game') }}">Custom board games</a><a href="{{ url_for('games',category='Racing Simulator') }}">Racing simulators</a><a href="{{ url_for('request_quote') }}">OEM game production</a></div></div>
+  <div class="market-shell market-layout">
+    <aside class="market-filters">
+      <h2>Filter</h2>
+      <div class="filter-group">
+        <h3>Buyer assurance</h3>
+        <span class="filter-check"><i></i> Supplier review</span>
+        <span class="filter-check"><i></i> Secured trading</span>
+        <span class="filter-check"><i></i> Real product media</span>
+      </div>
+      <div class="filter-group">
+        <h3>Business type</h3>
+        <span class="filter-check"><i></i> Manufacturer / factory</span>
+        <span class="filter-check"><i></i> Trading company</span>
+        <span class="filter-check"><i></i> OEM producer</span>
+      </div>
+      <div class="filter-group">
+        <h3>Categories</h3>
+        <a href="{{ url_for('games',category='Arcade Game') }}">Arcade machines <span>›</span></a>
+        <a href="{{ url_for('games',category='VR Simulator') }}">VR simulators <span>›</span></a>
+        <a href="{{ url_for('games',category='Racing Simulator') }}">Racing systems <span>›</span></a>
+        <a href="{{ url_for('games',category='Board Game') }}">Board games <span>›</span></a>
+        <a href="{{ url_for('games',category='Esports System') }}">Esports systems <span>›</span></a>
+      </div>
+    </aside>
 
-  </section></div>
+    <section aria-label="Gaming catalogue results">
+      <header class="market-results-head">
+        <div>
+          <h2>“{{ query or category or 'Gaming' }}” products</h2>
+          <p>Each card uses its own product-specific photograph from the catalogue record.</p>
+        </div>
+        <span class="page-counter">PAGE {{ page }} OF {{ total_pages }}</span>
+      </header>
 
-</main>{% endblock %}
+      <div class="market-grid">
+        {% for game in games %}
+          <article class="product-card">
+            <a class="product-media" href="{{ url_for('game_detail',slug=game.slug) }}">
+              <img
+                src="{{ game.image_url }}"
+                alt="Real product photograph of {{ game.title }}"
+                loading="{{ 'eager' if loop.index <= 4 else 'lazy' }}"
+                decoding="async"
+                fetchpriority="{{ 'high' if loop.index == 1 else 'auto' }}"
+                referrerpolicy="no-referrer"
+                onerror="this.hidden=true;this.closest('.product-media').classList.add('image-missing');"
+              >
+              <span class="real-photo">REAL PRODUCT PHOTO</span>
+              {% if game.trailer_url %}<span class="video-mark" aria-hidden="true">▶</span>{% endif %}
+              <span class="wishlist" aria-hidden="true">♡</span>
+            </a>
+            <div class="product-body">
+              <span class="secured">✓ Secured trading</span>
+              <h3><a href="{{ url_for('game_detail',slug=game.slug) }}">{{ game.title }}</a></h3>
+              <strong class="product-price">US${{ '{:,.2f}'.format(game.price) }}</strong>
+              <span class="product-moq">{{ game.minimum_order }}</span>
+              <span class="product-supplier">{{ game.supplier }}</span>
+              {% if game.photo_source %}<span class="photo-source">Photo reference: {{ game.photo_source }}</span>{% endif %}
+              <div class="supplier-tags"><span>◆ Supplier review</span><span>▣ {{ game.region }}</span></div>
+              <div class="product-actions">
+                <a href="{{ url_for('game_inquiry',slug=game.slug) }}">Send inquiry</a>
+                <a href="{{ url_for('game_detail',slug=game.slug) }}" aria-label="View {{ game.title }}">↗</a>
+              </div>
+            </div>
+          </article>
+        {% else %}
+          <div class="catalogue-note">
+            <h2>No matching products</h2>
+            <p>Adjust the filter or send an RFQ and our sourcing team will help locate the required gaming equipment.</p>
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if total_pages > 1 %}
+        {% set window_start = page - 2 if page > 3 else 1 %}
+        {% set window_end = page + 2 if page + 2 < total_pages else total_pages %}
+        <nav class="pagination" aria-label="Catalogue pagination">
+          {% if page > 1 %}
+            <a href="{{ url_for('games',page=page-1,q=query,category=category,platform=platform) }}" aria-label="Previous catalogue page">‹</a>
+          {% endif %}
+
+          {% if window_start > 1 %}
+            <a href="{{ url_for('games',page=1,q=query,category=category,platform=platform) }}">1</a>
+            {% if window_start > 2 %}<span class="ellipsis">…</span>{% endif %}
+          {% endif %}
+
+          {% for number in range(window_start,window_end + 1) %}
+            <a class="{% if page == number %}current{% endif %}" href="{{ url_for('games',page=number,q=query,category=category,platform=platform) }}" {% if page == number %}aria-current="page"{% endif %}>{{ number }}</a>
+          {% endfor %}
+
+          {% if window_end < total_pages %}
+            {% if window_end < total_pages - 1 %}<span class="ellipsis">…</span>{% endif %}
+            <a href="{{ url_for('games',page=total_pages,q=query,category=category,platform=platform) }}">{{ total_pages }}</a>
+          {% endif %}
+
+          {% if page < total_pages %}
+            <a class="next" href="{{ url_for('games',page=page+1,q=query,category=category,platform=platform) }}">Next ›</a>
+          {% endif %}
+        </nav>
+      {% endif %}
+
+      <div class="catalogue-note">
+        <h2>You may also be interested in</h2>
+        <div class="catalogue-note-tags">
+          <a href="{{ url_for('games',category='Arcade Game') }}">Commercial arcade machines</a>
+          <a href="{{ url_for('games',category='VR Simulator') }}">Wholesale VR systems</a>
+          <a href="{{ url_for('games',category='Board Game') }}">Custom board games</a>
+          <a href="{{ url_for('games',category='Racing Simulator') }}">Racing simulators</a>
+          <a href="{{ url_for('games',category='Esports System') }}">Esports venue systems</a>
+          <a href="{{ url_for('request_quote') }}">OEM game production</a>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+{% endblock %}
