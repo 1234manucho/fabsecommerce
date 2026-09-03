@@ -47,16 +47,12 @@
   .games-stage small { margin-top: 4px; color: var(--games-muted); font-size: .69rem; }
 
   .games-search-band { background: #fff; border-bottom: 1px solid var(--games-line); }
-  .games-search { min-height: 86px; display: grid; grid-template-columns: minmax(260px, 1fr) 190px 190px 120px 132px; align-items: center; gap: 10px; }
+  .games-search { min-height: 86px; display: grid; grid-template-columns: minmax(280px, 1fr) 220px 220px 150px; align-items: center; gap: 10px; }
   .games-search input, .games-search select, .games-search button { width: 100%; height: 48px; border-radius: 0; font: inherit; }
   .games-search input, .games-search select { border: 1px solid #cfd7df; background: #fff; color: var(--games-ink); outline: 0; padding: 0 14px; }
   .games-search input:focus, .games-search select:focus { border-color: var(--games-red); box-shadow: 0 0 0 3px rgba(227,6,44,.10); }
   .games-search button { border: 0; background: var(--games-red); color: #fff; font-size: .72rem; font-weight: 900; text-transform: uppercase; cursor: pointer; }
   .games-search button:hover { background: var(--games-red-dark); }
-  .games-search .games-cart-trigger { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--games-ink); background: var(--games-ink); color: #fff; }
-  .games-search .games-cart-trigger:hover { background: #0b1729; }
-  .games-cart-trigger svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-  .games-cart-trigger strong { min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; border-radius: 999px; background: var(--games-red); color: #fff; font-size: .62rem; }
 
   .games-layout { display: grid; grid-template-columns: 252px minmax(0, 1fr); gap: 32px; padding: 38px 0 88px; }
   .games-filters { align-self: start; position: sticky; top: 110px; background: #fff; border: 1px solid var(--games-line); }
@@ -99,11 +95,9 @@
   .game-moq-row { margin: 10px 0 0; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-block: 1px solid #e8edf1; color: #526176; font-size: .69rem; }
   .game-moq-row strong { color: var(--games-ink); text-align: right; }
   .game-supplier { margin: 10px 0 14px; color: var(--games-muted); font-size: .64rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .game-actions { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-  .game-actions a, .game-actions button { min-height: 40px; padding: 0 8px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--games-red); background: var(--games-red); color: #fff; font: inherit; font-size: .62rem; font-weight: 900; text-decoration: none; text-transform: uppercase; cursor: pointer; }
-  .game-actions a { background: #fff; color: var(--games-red); }
-  .game-actions button:hover { background: var(--games-red-dark); }
-  .game-actions a:hover { background: #fff0f3; }
+  .game-actions { margin-top: auto; display: grid; grid-template-columns: 1fr 42px; gap: 7px; }
+  .game-actions a { min-height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--games-red); background: var(--games-red); color: #fff; font-size: .66rem; font-weight: 900; text-decoration: none; text-transform: uppercase; }
+  .game-actions a:last-child { background: #fff; color: var(--games-red); font-size: 1rem; }
 
   .games-pagination { margin-top: 36px; display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; }
   .games-pagination a, .games-pagination span { min-width: 42px; height: 42px; padding: 0 13px; display: grid; place-items: center; border: 1px solid #cfd7df; background: #fff; color: var(--games-ink); font-size: .72rem; font-weight: 800; text-decoration: none; }
@@ -116,45 +110,6 @@
   .games-commercial-note h2 { margin: 0; font-size: 1.5rem; letter-spacing: -.03em; }
   .games-commercial-note p { margin: 0; color: #c3cfdd; font-size: .78rem; line-height: 1.8; }
 
-  body.games-cart-open { overflow: hidden; }
-  .games-cart-backdrop[hidden], .games-cart-empty[hidden], .games-cart-contents[hidden] { display: none !important; }
-  .games-cart-backdrop { position: fixed; inset: 0; z-index: 1100; background: rgba(7,16,29,.64); backdrop-filter: blur(3px); opacity: 0; transition: opacity .22s ease; }
-  .games-cart-backdrop.is-visible { opacity: 1; }
-  .games-cart-drawer { position: fixed; inset: 0 0 0 auto; z-index: 1110; width: min(500px, 100%); display: flex; flex-direction: column; background: #f6f8fa; color: var(--games-ink); box-shadow: -24px 0 70px rgba(7,16,29,.25); transform: translateX(102%); transition: transform .26s ease; }
-  .games-cart-drawer.is-open { transform: translateX(0); }
-  .games-cart-head { padding: 28px 28px 22px; display: flex; align-items: flex-start; justify-content: space-between; gap: 22px; background: #fff; border-bottom: 1px solid var(--games-line); }
-  .games-cart-head .games-kicker { margin-bottom: 7px; }
-  .games-cart-head h2 { margin: 0; font-size: 1.55rem; line-height: 1.12; letter-spacing: -.04em; }
-  .games-cart-close { width: 42px; height: 42px; flex: 0 0 42px; border: 1px solid var(--games-line); background: #fff; color: var(--games-ink); font-size: 1.75rem; line-height: 1; cursor: pointer; }
-  .games-cart-assurance { min-height: 42px; padding: 0 28px; display: flex; align-items: center; gap: 18px; background: #edf7f1; color: var(--games-green); font-size: .67rem; font-weight: 850; }
-  .games-cart-empty { margin: auto; max-width: 350px; padding: 44px 28px; text-align: center; }
-  .games-cart-empty-icon { width: 64px; height: 64px; margin: 0 auto 20px; display: grid; place-items: center; border: 1px solid #cbd4dd; border-radius: 50%; color: var(--games-red); font-size: 2rem; }
-  .games-cart-empty h3 { margin: 0; font-size: 1.3rem; }
-  .games-cart-empty p { margin: 10px 0 22px; color: var(--games-muted); font-size: .78rem; line-height: 1.7; }
-  .games-cart-empty button { min-height: 44px; padding: 0 18px; border: 0; background: var(--games-ink); color: #fff; font-weight: 850; cursor: pointer; }
-  .games-cart-contents { min-height: 0; display: flex; flex: 1; flex-direction: column; }
-  .games-cart-items { min-height: 0; padding: 18px 20px; flex: 1; overflow-y: auto; }
-  .games-cart-item { margin-bottom: 10px; padding: 12px; display: grid; grid-template-columns: 82px minmax(0,1fr) auto; gap: 12px; background: #fff; border: 1px solid var(--games-line); }
-  .games-cart-item img { width: 82px; height: 82px; object-fit: cover; background: #e7ebef; }
-  .games-cart-item h3 { margin: 0 0 5px; font-size: .77rem; line-height: 1.35; }
-  .games-cart-item-price { margin: 0; color: var(--games-muted); font-size: .65rem; }
-  .games-cart-item-moq { margin: 5px 0 0; font-size: .64rem; font-weight: 800; }
-  .games-cart-remove { align-self: start; border: 0; background: transparent; color: #8a95a1; font-size: 1.1rem; cursor: pointer; }
-  .games-cart-item-bottom { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .games-cart-quantity { display: grid; grid-template-columns: 30px minmax(42px,auto) 30px; border: 1px solid #cfd7df; }
-  .games-cart-quantity button { width: 30px; height: 30px; border: 0; background: #f4f6f8; color: var(--games-ink); cursor: pointer; }
-  .games-cart-quantity span { min-width: 44px; padding: 0 5px; display: grid; place-items: center; border-inline: 1px solid #cfd7df; background: #fff; font-size: .66rem; font-weight: 850; }
-  .games-cart-line-total { font-size: .72rem; font-weight: 900; }
-  .games-cart-summary { padding: 22px 28px 26px; background: #fff; border-top: 1px solid var(--games-line); box-shadow: 0 -10px 30px rgba(20,36,61,.06); }
-  .games-cart-summary > div { padding: 5px 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: .75rem; }
-  .games-cart-summary > div:nth-child(2) { margin-top: 7px; padding-top: 14px; border-top: 1px solid var(--games-line); font-size: .9rem; }
-  .games-cart-summary > div:nth-child(2) strong { color: var(--games-red); font-size: 1.2rem; }
-  .games-cart-summary p { margin: 12px 0 16px; color: var(--games-muted); font-size: .64rem; line-height: 1.55; }
-  .games-cart-checkout { min-height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; background: var(--games-red); color: #fff; font-size: .72rem; font-weight: 900; text-decoration: none; text-transform: uppercase; }
-  .games-cart-clear { width: 100%; margin-top: 8px; min-height: 38px; border: 0; background: transparent; color: var(--games-muted); font-size: .66rem; font-weight: 750; cursor: pointer; text-decoration: underline; }
-  .games-cart-toast { position: fixed; right: 24px; bottom: 24px; z-index: 1120; max-width: min(360px, calc(100% - 32px)); padding: 13px 16px; background: var(--games-ink); color: #fff; font-size: .72rem; font-weight: 750; box-shadow: 0 14px 36px rgba(7,16,29,.28); opacity: 0; transform: translateY(12px); pointer-events: none; transition: opacity .2s ease, transform .2s ease; }
-  .games-cart-toast.is-visible { opacity: 1; transform: translateY(0); }
-
   @media (max-width: 1220px) {
     .games-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .games-hero-grid { grid-template-columns: minmax(0, 1fr) 360px; gap: 44px; }
@@ -164,7 +119,7 @@
     .games-shell { width: min(100% - 32px, 1440px); }
     .games-hero-grid { grid-template-columns: 1fr; gap: 34px; }
     .games-proof { max-width: 620px; }
-    .games-search { grid-template-columns: minmax(220px, 1fr) 180px 120px 132px; }
+    .games-search { grid-template-columns: minmax(220px, 1fr) 180px 140px; }
     .games-search select:nth-of-type(2) { display: none; }
     .games-layout { grid-template-columns: 1fr; }
     .games-mobile-filter { display: block; }
@@ -180,10 +135,8 @@
     .games-hero p:last-child { font-size: .88rem; }
     .games-stage-track { overflow-x: auto; scroll-snap-type: x mandatory; }
     .games-stage { min-width: 76vw; scroll-snap-align: start; padding: 16px 18px; }
-    .games-search { padding: 12px 0; grid-template-columns: 1fr 112px 52px; }
+    .games-search { padding: 12px 0; grid-template-columns: 1fr 120px; }
     .games-search select { display: none; }
-    .games-search .games-cart-trigger { grid-column: 3; padding-inline: 0; }
-    .games-cart-trigger > span { display: none; }
     .games-results-head { align-items: flex-start; flex-direction: column; gap: 12px; }
     .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .games-commercial-note { grid-template-columns: 1fr; gap: 14px; padding: 24px; }
@@ -199,13 +152,6 @@
     .games-grid { grid-template-columns: 1fr; gap: 14px; }
     .game-media { aspect-ratio: 16 / 10; }
     .game-body h3 { min-height: 0; font-size: 1rem; }
-    .games-cart-head { padding: 22px 18px 18px; }
-    .games-cart-assurance { padding-inline: 18px; gap: 10px; justify-content: space-between; }
-    .games-cart-items { padding: 12px 10px; }
-    .games-cart-item { grid-template-columns: 70px minmax(0,1fr) auto; gap: 9px; padding: 10px; }
-    .games-cart-item img { width: 70px; height: 76px; }
-    .games-cart-summary { padding: 18px 18px 20px; }
-    .games-cart-toast { right: 16px; bottom: 16px; }
   }
 </style>
 {% endblock %}
@@ -264,10 +210,6 @@
         {% endfor %}
       </select>
       <button type="submit">Search</button>
-      <button class="games-cart-trigger" id="openGamesCart" type="button" aria-controls="gamesCartDrawer" aria-expanded="false">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L20.3 8H6.1M10 20h.01M17 20h.01"/></svg>
-        <span>Basket</span><strong id="gamesCartCount" aria-label="0 products in basket">0</strong>
-      </button>
     </form>
   </section>
 
@@ -322,18 +264,7 @@
               </div>
               <div class="game-moq-row"><span>Minimum order</span><strong>{{ game.minimum_order }}</strong></div>
               <p class="game-supplier">{{ game.supplier }}</p>
-              <div class="game-actions">
-                <button
-                  class="games-add-cart"
-                  type="button"
-                  data-id="{{ game.slug|e }}"
-                  data-title="{{ game.title|e }}"
-                  data-price="{{ game.price }}"
-                  data-moq-label="{{ game.minimum_order|e }}"
-                  data-image="{{ game.image_url|e }}"
-                >Add to basket</button>
-                <a href="{{ url_for('game_inquiry', slug=game.slug) }}">Request quote</a>
-              </div>
+              <div class="game-actions"><a href="{{ url_for('game_inquiry', slug=game.slug) }}">Request quote</a><a href="{{ url_for('game_detail', slug=game.slug) }}" aria-label="View {{ game.title }}">↗</a></div>
             </div>
           </article>
         {% else %}
@@ -359,199 +290,16 @@
   </div>
 </main>
 
-<div id="gamesCartBackdrop" class="games-cart-backdrop" hidden></div>
-<aside id="gamesCartDrawer" class="games-cart-drawer" role="dialog" aria-modal="true" aria-labelledby="gamesCartTitle" aria-hidden="true">
-  <header class="games-cart-head">
-    <div><p class="games-kicker">Procurement basket</p><h2 id="gamesCartTitle">Build your order request.</h2></div>
-    <button id="closeGamesCart" class="games-cart-close" type="button" aria-label="Close basket">×</button>
-  </header>
-  <div class="games-cart-assurance"><span>✓ MOQ protected</span><span>✓ Saved on this device</span></div>
-  <div id="gamesCartEmpty" class="games-cart-empty">
-    <span class="games-cart-empty-icon" aria-hidden="true">⌑</span>
-    <h3>Your basket is empty</h3>
-    <p>Add products from any catalogue page. Your selections remain available while you compare options.</p>
-    <button id="continueGamesShopping" type="button">Continue shopping</button>
-  </div>
-  <div id="gamesCartContents" class="games-cart-contents" hidden>
-    <div id="gamesCartItems" class="games-cart-items"></div>
-    <div class="games-cart-summary">
-      <div><span>Product lines</span><strong id="gamesCartLineCount">0</strong></div>
-      <div><span>Estimated subtotal</span><strong id="gamesCartSubtotal">US$0.00</strong></div>
-      <p>The estimate uses each product's starting unit price and minimum order. Freight, taxes, installation and customisation are confirmed in the final quotation.</p>
-      <a id="gamesCartCheckout" class="games-cart-checkout" href="mailto:e-trades@fabstrading.com">Request checkout quote <span aria-hidden="true">↗</span></a>
-      <button id="clearGamesCart" class="games-cart-clear" type="button">Clear basket</button>
-    </div>
-  </div>
-</aside>
-
-<div id="gamesCartToast" class="games-cart-toast" role="status" aria-live="polite" aria-atomic="true"></div>
-
 <script>
   (() => {
     const panel = document.getElementById('gamesFilters');
     const openButton = document.getElementById('openGameFilters');
     const closeButton = document.getElementById('closeGameFilters');
-    const cartButton = document.getElementById('openGamesCart');
-    const cartClose = document.getElementById('closeGamesCart');
-    const cartContinue = document.getElementById('continueGamesShopping');
-    const cartDrawer = document.getElementById('gamesCartDrawer');
-    const cartBackdrop = document.getElementById('gamesCartBackdrop');
-    const cartCount = document.getElementById('gamesCartCount');
-    const cartEmpty = document.getElementById('gamesCartEmpty');
-    const cartContents = document.getElementById('gamesCartContents');
-    const cartItems = document.getElementById('gamesCartItems');
-    const cartLineCount = document.getElementById('gamesCartLineCount');
-    const cartSubtotal = document.getElementById('gamesCartSubtotal');
-    const cartCheckout = document.getElementById('gamesCartCheckout');
-    const cartClear = document.getElementById('clearGamesCart');
-    const cartToast = document.getElementById('gamesCartToast');
-    const storageKey = 'fabs-games-cart';
-    let cart = {};
-
-    try { cart = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; }
-    catch (error) { cart = {}; }
-
-    const openFilters = () => {
-      panel.classList.add('is-open');
-      document.body.classList.add('games-filter-open');
-      openButton.setAttribute('aria-expanded', 'true');
-    };
-
-    const closeFilters = () => {
-      panel.classList.remove('is-open');
-      document.body.classList.remove('games-filter-open');
-      openButton.setAttribute('aria-expanded', 'false');
-    };
-
-    const money = value => Number(value).toLocaleString('en-US', {
-      style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2
-    });
-
-    const minimumQuantity = label => {
-      const match = String(label || '').match(/[\d,]+/);
-      return match ? Math.max(1, parseInt(match[0].replace(/,/g, ''), 10)) : 1;
-    };
-
-    const cleanText = value => String(value || '').replace(/[<>]/g, '');
-    const safeImage = value => /^(https?:\/\/|\/)/i.test(String(value || '')) ? String(value) : '';
-    const saveCart = () => localStorage.setItem(storageKey, JSON.stringify(cart));
-    const rows = () => Object.values(cart).filter(item => item && item.id && Number(item.quantity) > 0);
-
-    const emailLink = items => {
-      const lines = items.map((item, index) => `${index + 1}. ${item.title}\nQuantity: ${Number(item.quantity).toLocaleString('en-US')}\nStarting unit price: ${money(item.price)}\nEstimated line subtotal: ${money(item.price * item.quantity)}`).join('\n\n');
-      const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      const subject = encodeURIComponent(`FABS basket quotation request — ${items.length} product${items.length === 1 ? '' : 's'}`);
-      const body = encodeURIComponent(`Hello FABS Trading,\n\nPlease prepare a formal quotation for the following basket:\n\n${lines}\n\nEstimated product subtotal: ${money(total)}\n\nDestination country:\nCompany name:\nContact person:\nPhone number:\nPreferred delivery date:\n\nPlease confirm specifications, availability, freight, taxes, installation, warranty and final commercial terms.\n\nThank you.`);
-      return `mailto:e-trades@fabstrading.com?subject=${subject}&body=${body}`;
-    };
-
-    const showToast = message => {
-      cartToast.textContent = message;
-      cartToast.classList.add('is-visible');
-      window.clearTimeout(showToast.timer);
-      showToast.timer = window.setTimeout(() => cartToast.classList.remove('is-visible'), 2200);
-    };
-
-    const renderCart = () => {
-      const items = rows();
-      const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      cartCount.textContent = String(items.length);
-      cartCount.setAttribute('aria-label', `${items.length} product${items.length === 1 ? '' : 's'} in basket`);
-      cartEmpty.hidden = items.length > 0;
-      cartContents.hidden = items.length === 0;
-      cartLineCount.textContent = String(items.length);
-      cartSubtotal.textContent = money(total);
-
-      cartItems.innerHTML = items.map(item => `
-        <article class="games-cart-item" data-cart-id="${cleanText(item.id)}">
-          <img src="${safeImage(item.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">
-          <div>
-            <h3>${cleanText(item.title)}</h3>
-            <p class="games-cart-item-price">From ${money(item.price)} per unit</p>
-            <p class="games-cart-item-moq">${cleanText(item.moqLabel)}</p>
-            <div class="games-cart-item-bottom">
-              <div class="games-cart-quantity" aria-label="Quantity for ${cleanText(item.title)}">
-                <button type="button" data-cart-action="decrease" aria-label="Decrease quantity">−</button>
-                <span>${Number(item.quantity).toLocaleString('en-US')}</span>
-                <button type="button" data-cart-action="increase" aria-label="Increase quantity">+</button>
-              </div>
-              <strong class="games-cart-line-total">${money(item.price * item.quantity)}</strong>
-            </div>
-          </div>
-          <button class="games-cart-remove" type="button" data-cart-action="remove" aria-label="Remove ${cleanText(item.title)}">×</button>
-        </article>`).join('');
-      cartCheckout.href = items.length ? emailLink(items) : 'mailto:e-trades@fabstrading.com';
-    };
-
-    const openCart = () => {
-      cartBackdrop.hidden = false;
-      requestAnimationFrame(() => cartBackdrop.classList.add('is-visible'));
-      cartDrawer.classList.add('is-open');
-      cartDrawer.setAttribute('aria-hidden', 'false');
-      cartButton.setAttribute('aria-expanded', 'true');
-      document.body.classList.add('games-cart-open');
-      cartClose.focus();
-    };
-
-    const closeCart = () => {
-      cartDrawer.classList.remove('is-open');
-      cartDrawer.setAttribute('aria-hidden', 'true');
-      cartButton.setAttribute('aria-expanded', 'false');
-      cartBackdrop.classList.remove('is-visible');
-      document.body.classList.remove('games-cart-open');
-      window.setTimeout(() => { cartBackdrop.hidden = true; }, 220);
-    };
-
-    document.querySelectorAll('.games-add-cart').forEach(button => {
-      button.addEventListener('click', () => {
-        const moq = minimumQuantity(button.dataset.moqLabel);
-        const existing = cart[button.dataset.id];
-        cart[button.dataset.id] = {
-          id: button.dataset.id,
-          title: button.dataset.title,
-          price: Number(button.dataset.price),
-          moq,
-          moqLabel: button.dataset.moqLabel,
-          image: button.dataset.image,
-          quantity: existing ? Math.max(moq, Number(existing.quantity) || moq) : moq
-        };
-        saveCart();
-        renderCart();
-        showToast(`${button.dataset.title} added to your basket.`);
-      });
-    });
-
-    cartItems.addEventListener('click', event => {
-      const actionButton = event.target.closest('[data-cart-action]');
-      const itemNode = event.target.closest('[data-cart-id]');
-      if (!actionButton || !itemNode || !cart[itemNode.dataset.cartId]) return;
-      const item = cart[itemNode.dataset.cartId];
-      const action = actionButton.dataset.cartAction;
-      if (action === 'increase') item.quantity += 1;
-      if (action === 'decrease') item.quantity = Math.max(item.moq, item.quantity - 1);
-      if (action === 'remove') delete cart[itemNode.dataset.cartId];
-      saveCart();
-      renderCart();
-    });
-
-    cartClear.addEventListener('click', () => {
-      cart = {};
-      saveCart();
-      renderCart();
-      showToast('Your basket has been cleared.');
-    });
-
-    openButton.addEventListener('click', openFilters);
-    closeButton.addEventListener('click', closeFilters);
-    cartButton.addEventListener('click', openCart);
-    cartClose.addEventListener('click', closeCart);
-    cartContinue.addEventListener('click', closeCart);
-    cartBackdrop.addEventListener('click', closeCart);
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape') { closeFilters(); if (cartDrawer.classList.contains('is-open')) closeCart(); }
-    });
-
-    renderCart();
+    const open = () => { panel.classList.add('is-open'); document.body.classList.add('games-filter-open'); openButton.setAttribute('aria-expanded', 'true'); };
+    const close = () => { panel.classList.remove('is-open'); document.body.classList.remove('games-filter-open'); openButton.setAttribute('aria-expanded', 'false'); };
+    openButton.addEventListener('click', open);
+    closeButton.addEventListener('click', close);
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') close(); });
   })();
 </script>
 {% endblock %}
