@@ -34,8 +34,8 @@
   .games-proof span { margin-top: 8px; color: #b9c4d2; font-size: .68rem; line-height: 1.35; }
 
   .games-stages { background: #fff; border-bottom: 1px solid var(--games-line); }
-  .games-stage-track { display: grid; grid-template-columns: repeat(3, 1fr); }
-  .games-stage { min-height: 92px; padding: 20px 28px; display: flex; align-items: center; gap: 16px; border-left: 1px solid var(--games-line); color: var(--games-ink); text-decoration: none; position: relative; }
+  .games-stage-track { display: grid; grid-template-columns: repeat(5, 1fr); }
+  .games-stage { min-height: 92px; padding: 18px 16px; display: flex; align-items: center; gap: 12px; border-left: 1px solid var(--games-line); color: var(--games-ink); text-decoration: none; position: relative; }
   .games-stage:last-child { border-right: 1px solid var(--games-line); }
   .games-stage::after { content: ""; position: absolute; inset: auto 0 0; height: 4px; background: transparent; }
   .games-stage:hover { background: #f8fafc; }
@@ -91,7 +91,7 @@
   .game-stage-badge { position: absolute; right: 10px; bottom: 10px; padding: 6px 9px; background: var(--games-ink); color: #fff; font-size: .57rem; font-weight: 900; }
   .game-body { padding: 16px; display: flex; flex: 1; flex-direction: column; }
   .game-category { color: var(--games-red); font-size: .61rem; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
-  .game-body h3 { min-height: 44px; margin: 8px 0 10px; font-size: .88rem; line-height: 1.45; }
+  .game-body h3 { min-height: 61px; margin: 8px 0 10px; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; font-size: .88rem; line-height: 1.45; }
   .game-body h3 a { color: inherit; text-decoration: none; }
   .game-price-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
   .game-price-row strong { font-size: 1.08rem; letter-spacing: -.03em; }
@@ -105,10 +105,20 @@
   .game-actions button:hover { background: var(--games-red-dark); }
   .game-actions a:hover { background: #fff0f3; }
 
-  .games-pagination { margin-top: 36px; display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; }
-  .games-pagination a, .games-pagination span { min-width: 42px; height: 42px; padding: 0 13px; display: grid; place-items: center; border: 1px solid #cfd7df; background: #fff; color: var(--games-ink); font-size: .72rem; font-weight: 800; text-decoration: none; }
-  .games-pagination .current, .games-pagination a:hover { border-color: var(--games-red); background: var(--games-red); color: #fff; }
-  .games-pagination .ellipsis { border-color: transparent; background: transparent; }
+  .games-pagination { margin-top: 38px; padding: 12px; display: grid; grid-template-columns: minmax(150px,1fr) auto minmax(150px,1fr); align-items: stretch; gap: 12px; background: #fff; border: 1px solid var(--games-line); }
+  .games-page-numbers { display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .games-page-numbers a { min-width: 40px; height: 44px; padding: 0 12px; display: grid; place-items: center; border: 1px solid #cfd7df; background: #fff; color: var(--games-ink); font-size: .72rem; font-weight: 800; text-decoration: none; }
+  .games-page-numbers .current, .games-page-numbers a:hover { border-color: var(--games-red); background: var(--games-red); color: #fff; }
+  .games-page-direction { width: 100%; height: 58px; padding: 0 18px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--games-ink); background: var(--games-ink); color: #fff; font-size: .72rem; font-weight: 800; text-decoration: none; text-align: left; }
+  .games-page-direction:hover { border-color: var(--games-red); background: var(--games-red); color: #fff; }
+  .games-page-next { justify-content: flex-end; text-align: right; }
+  .games-page-direction strong, .games-page-direction small { display: block; }
+  .games-page-direction strong { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; }
+  .games-page-direction small { margin-top: 3px; color: #bfc9d5; font-size: .58rem; font-weight: 650; }
+  .games-page-direction:hover small { color: #fff; }
+  .games-page-arrow { font-size: 1.25rem; line-height: 1; }
+  .games-page-direction.disabled { border-color: #e4e8ec; background: #f4f6f8; color: #9ba5b0; }
+  .games-page-direction.disabled small { color: #aab2bb; }
 
   .games-empty, .games-commercial-note { margin-top: 24px; padding: 30px; background: #fff; border: 1px solid var(--games-line); }
   .games-empty h3 { margin: 0; }
@@ -158,6 +168,7 @@
   @media (max-width: 1220px) {
     .games-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .games-hero-grid { grid-template-columns: minmax(0, 1fr) 360px; gap: 44px; }
+    .games-stage-track { grid-template-columns: repeat(5, minmax(230px, 1fr)); overflow-x: auto; }
   }
 
   @media (max-width: 960px) {
@@ -179,7 +190,7 @@
     .games-hero h1 { font-size: clamp(2.35rem, 11vw, 4rem); }
     .games-hero p:last-child { font-size: .88rem; }
     .games-stage-track { overflow-x: auto; scroll-snap-type: x mandatory; }
-    .games-stage { min-width: 76vw; scroll-snap-align: start; padding: 16px 18px; }
+    .games-stage { min-width: 72vw; scroll-snap-align: start; padding: 16px 18px; }
     .games-search { padding: 12px 0; grid-template-columns: 1fr 112px 52px; }
     .games-search select { display: none; }
     .games-search .games-cart-trigger { grid-column: 3; padding-inline: 0; }
@@ -187,6 +198,10 @@
     .games-results-head { align-items: flex-start; flex-direction: column; gap: 12px; }
     .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .games-commercial-note { grid-template-columns: 1fr; gap: 14px; padding: 24px; }
+    .games-pagination { grid-template-columns: 1fr 1fr; }
+    .games-page-numbers { grid-column: 1 / -1; grid-row: 1; padding-bottom: 8px; overflow-x: auto; justify-content: flex-start; }
+    .games-page-previous { grid-column: 1; }
+    .games-page-next { grid-column: 2; }
   }
 
   @media (max-width: 520px) {
@@ -199,6 +214,11 @@
     .games-grid { grid-template-columns: 1fr; gap: 14px; }
     .game-media { aspect-ratio: 16 / 10; }
     .game-body h3 { min-height: 0; font-size: 1rem; }
+    .games-pagination { padding: 8px; gap: 8px; }
+    .games-page-direction { height: 52px; padding-inline: 12px; }
+    .games-page-direction small { display: none; }
+    .games-page-numbers { gap: 4px; }
+    .games-page-numbers a { min-width: 37px; height: 40px; padding-inline: 9px; }
     .games-cart-head { padding: 22px 18px 18px; }
     .games-cart-assurance { padding-inline: 18px; gap: 10px; justify-content: space-between; }
     .games-cart-items { padding: 12px 10px; }
@@ -211,11 +231,18 @@
 {% endblock %}
 
 {% block content %}
-{% set stage = page if page in [1, 2, 3] else 1 %}
-{% set stage_data = {
-  1: ('Factory volume', 'Lower unit costs through volume.', 'Custom printing, packaging and components with production MOQs that reflect factory setup.'),
-  2: ('Venue expansion', 'Build a stronger venue mix.', 'Small multi-unit orders for linked play, consistent floor design and better landed economics.'),
-  3: ('Starter orders', 'Start small. Prove demand first.', 'Single-unit commercial machines for first venues, pilots and product trials.')
+{% set catalogue_page = page if page in range(1, 11) else 1 %}
+{% set page_data = {
+  1: ('Entry products', 'Start with accessible, testable orders.', 'Low-cost cards, learning games and tabletop products for early market validation.'),
+  2: ('Branded tabletop', 'Build a focused retail range.', 'Customisable tabletop products with practical pricing for promotions, retail and events.'),
+  3: ('Premium tabletop', 'Move into higher-value game formats.', 'Storage, chess, outdoor and compact electronic products from US$10 to US$100.'),
+  4: ('Compact equipment', 'Introduce commercial amusement equipment.', 'Entry arcade, vending and interactive products designed for small venue pilots.'),
+  5: ('Venue essentials', 'Strengthen the core attraction mix.', 'Commercial equipment and game systems for growing family entertainment venues.'),
+  6: ('Revenue builders', 'Add dependable mid-range attractions.', 'Sports, redemption and arcade systems for operators expanding venue capacity.'),
+  7: ('Commercial systems', 'Invest in high-engagement equipment.', 'Larger arcade, racing and immersive products for established entertainment floors.'),
+  8: ('Advanced attractions', 'Create a more distinctive guest experience.', 'Interactive projection, racing and simulation systems for destination venues.'),
+  9: ('Premium installations', 'Scale into flagship entertainment systems.', 'High-performance commercial attractions approaching the US$10,000 investment level.'),
+  10: ('Flagship systems', 'Plan premium projects up to US$20,000.', 'Advanced VR, bowling and simulator systems for professionally managed installations.')
 } %}
 
 <main class="games-page">
@@ -223,8 +250,8 @@
     <div class="games-shell games-hero-grid">
       <div>
         <p class="games-kicker">FABS Gaming Marketplace</p>
-        <h1>Buy at the volume that fits your business.</h1>
-        <p>Begin with factory-volume tabletop production, compare small multi-unit venue orders, then continue to single-machine starter options. Every listing has a product-specific photograph, practical MOQ and indicative unit-price range.</p>
+        <h1>Start small. Scale into serious entertainment.</h1>
+        <p>Explore a clear ten-page buying path: accessible tabletop products first, compact venue equipment next, and premium commercial systems up to approximately US$20,000 on the final page. Every listing uses unique product-specific media and a practical MOQ.</p>
       </div>
       <div class="games-proof" aria-label="Catalogue statistics">
         <div><strong>{{ '{:,}'.format(catalogue_total) }}</strong><span>Curated products</span></div>
@@ -234,16 +261,22 @@
     </div>
   </section>
 
-  <nav class="games-stages" aria-label="Order volume stages">
+  <nav class="games-stages" aria-label="Catalogue price bands">
     <div class="games-shell games-stage-track">
-      <a class="games-stage {% if page == 1 %}is-active{% endif %}" href="{{ url_for('games', page=1, q=query, category=category, platform=platform) }}">
-        <span class="games-stage-number">01</span><span><strong>Factory volume</strong><small>MOQ 10–10,000 · customise</small></span>
+      <a class="games-stage {% if page in [1, 2] %}is-active{% endif %}" href="{{ url_for('games', page=1, q=query, category=category, platform=platform) }}">
+        <span class="games-stage-number">01</span><span><strong>Entry & tabletop</strong><small>Pages 1–2 · under US$10</small></span>
       </a>
-      <a class="games-stage {% if page == 2 %}is-active{% endif %}" href="{{ url_for('games', page=2, q=query, category=category, platform=platform) }}">
-        <span class="games-stage-number">02</span><span><strong>Venue expansion</strong><small>MOQ 2+ · grow capacity</small></span>
+      <a class="games-stage {% if page in [3, 4] %}is-active{% endif %}" href="{{ url_for('games', page=3, q=query, category=category, platform=platform) }}">
+        <span class="games-stage-number">03</span><span><strong>Compact equipment</strong><small>Pages 3–4 · US$10–400</small></span>
       </a>
-      <a class="games-stage {% if page == 3 %}is-active{% endif %}" href="{{ url_for('games', page=3, q=query, category=category, platform=platform) }}">
-        <span class="games-stage-number">03</span><span><strong>Starter orders</strong><small>MOQ 1 · test demand</small></span>
+      <a class="games-stage {% if page in [5, 6] %}is-active{% endif %}" href="{{ url_for('games', page=5, q=query, category=category, platform=platform) }}">
+        <span class="games-stage-number">05</span><span><strong>Venue essentials</strong><small>Pages 5–6 · US$400–1,500</small></span>
+      </a>
+      <a class="games-stage {% if page in [7, 8] %}is-active{% endif %}" href="{{ url_for('games', page=7, q=query, category=category, platform=platform) }}">
+        <span class="games-stage-number">07</span><span><strong>Commercial systems</strong><small>Pages 7–8 · US$1,500–6,000</small></span>
+      </a>
+      <a class="games-stage {% if page in [9, 10] %}is-active{% endif %}" href="{{ url_for('games', page=9, q=query, category=category, platform=platform) }}">
+        <span class="games-stage-number">09</span><span><strong>Premium installations</strong><small>Pages 9–10 · US$6,000–20,000</small></span>
       </a>
     </div>
   </nav>
@@ -253,13 +286,13 @@
       <input type="search" name="q" value="{{ query }}" placeholder="Search arcade, VR, tabletop or sports games" aria-label="Search gaming products">
       <select name="category" aria-label="Filter by category">
         <option value="">All categories</option>
-        {% for item in ['Arcade Game', 'Sports Arcade', 'Table Game', 'Racing Simulator', 'VR Simulator', 'Board Game'] %}
+        {% for item in ['Arcade Game', 'Redemption Game', 'Sports Game', 'Racing Simulator', 'VR Simulator', 'Tabletop Game'] %}
           <option value="{{ item }}" {% if category == item %}selected{% endif %}>{{ item }}</option>
         {% endfor %}
       </select>
       <select name="platform" aria-label="Filter by platform">
         <option value="">All platforms</option>
-        {% for item in ['Arcade / Commercial', 'Arcade / Sports', 'Arcade / VR', 'Tabletop'] %}
+        {% for item in ['Arcade / Commercial', 'Arcade / Redemption', 'Arcade / Racing', 'Arcade / VR', 'Sports / Recreation', 'Tabletop / Retail'] %}
           <option value="{{ item }}" {% if platform == item %}selected{% endif %}>{{ item }}</option>
         {% endfor %}
       </select>
@@ -275,10 +308,12 @@
     <aside class="games-filters" id="gamesFilters">
       <div class="games-filter-heading"><h2>Refine results</h2><button id="closeGameFilters" type="button" aria-label="Close filters">×</button></div>
       <div class="games-filter-group">
-        <h3>Order stage</h3>
-        <a href="{{ url_for('games', page=1) }}">Factory volume <span>01</span></a>
-        <a href="{{ url_for('games', page=2) }}">Venue expansion <span>02</span></a>
-        <a href="{{ url_for('games', page=3) }}">Starter orders <span>03</span></a>
+        <h3>Price path</h3>
+        <a href="{{ url_for('games', page=1) }}">Entry & tabletop <span>01–02</span></a>
+        <a href="{{ url_for('games', page=3) }}">Compact equipment <span>03–04</span></a>
+        <a href="{{ url_for('games', page=5) }}">Venue essentials <span>05–06</span></a>
+        <a href="{{ url_for('games', page=7) }}">Commercial systems <span>07–08</span></a>
+        <a href="{{ url_for('games', page=9) }}">Premium installations <span>09–10</span></a>
       </div>
       <div class="games-filter-group">
         <h3>Buyer assurance</h3>
@@ -289,9 +324,9 @@
       <div class="games-filter-group">
         <h3>Categories</h3>
         <a href="{{ url_for('games', category='Arcade Game') }}">Arcade machines <span>›</span></a>
-        <a href="{{ url_for('games', category='Sports Arcade') }}">Sports games <span>›</span></a>
+        <a href="{{ url_for('games', category='Sports Game') }}">Sports games <span>›</span></a>
         <a href="{{ url_for('games', category='VR Simulator') }}">VR systems <span>›</span></a>
-        <a href="{{ url_for('games', category='Board Game') }}">Tabletop & custom <span>›</span></a>
+        <a href="{{ url_for('games', category='Tabletop Game') }}">Tabletop & custom <span>›</span></a>
       </div>
       <div class="games-price-note"><strong>How pricing works</strong><p>Displayed ranges are indicative unit prices. Freight, taxes, installation and customisation are quoted separately.</p></div>
     </aside>
@@ -299,7 +334,7 @@
     <section class="games-results" aria-label="Gaming catalogue results">
       <button class="games-mobile-filter" id="openGameFilters" type="button" aria-expanded="false" aria-controls="gamesFilters">Open filters</button>
       <header class="games-results-head">
-        <div><p class="games-kicker">Stage {{ '%02d'|format(stage) }} · {{ stage_data[stage][0] }}</p><h2>{{ stage_data[stage][1] }}</h2><p>{{ stage_data[stage][2] }}</p></div>
+        <div><p class="games-kicker">Page {{ '%02d'|format(catalogue_page) }} · {{ page_data[catalogue_page][0] }}</p><h2>{{ page_data[catalogue_page][1] }}</h2><p>{{ page_data[catalogue_page][2] }}</p></div>
         <span class="games-result-count">PAGE {{ page }} OF {{ total_pages }}</span>
       </header>
 
@@ -309,19 +344,19 @@
             <a class="game-media" href="{{ url_for('game_detail', slug=game.slug) }}">
               <img src="{{ game.image_url }}" alt="{{ game.title }}" loading="{{ 'eager' if loop.index <= 4 else 'lazy' }}" decoding="async" referrerpolicy="no-referrer">
               <span class="game-photo-badge">Product photo</span>
-              <span class="game-stage-badge">Stage {{ '%02d'|format(stage) }}</span>
+              <span class="game-stage-badge">Page {{ '%02d'|format(catalogue_page) }}</span>
             </a>
             <div class="game-body">
               <span class="game-category">{{ game.genre }}</span>
               <h3><a href="{{ url_for('game_detail', slug=game.slug) }}">{{ game.title }}</a></h3>
               <div class="game-price-row">
                 <strong>
-                  US${{ '{:,.2f}'.format(game.price) }}{% if game.compare_price and game.compare_price > game.price %}–US${{ '{:,.2f}'.format(game.compare_price) }}{% endif %}
+                  {% if game.compare_price and game.compare_price > game.price %}US${{ '{:,.2f}'.format(game.price) }}–US${{ '{:,.2f}'.format(game.compare_price) }}{% else %}From US${{ '{:,.2f}'.format(game.price) }}{% endif %}
                 </strong>
                 <small>per unit</small>
               </div>
               <div class="game-moq-row"><span>Minimum order</span><strong>{{ game.minimum_order }}</strong></div>
-              <p class="game-supplier">{{ game.supplier }}</p>
+              <p class="game-supplier">Listed manufacturer · {{ game.supplier }}</p>
               <div class="game-actions">
                 <button
                   class="games-add-cart"
@@ -343,16 +378,26 @@
 
       {% if total_pages > 1 %}
         <nav class="games-pagination" aria-label="Catalogue pages">
-          {% if page > 1 %}<a href="{{ url_for('games', page=page-1, q=query, category=category, platform=platform) }}">‹ Previous</a>{% endif %}
-          {% for number in range(1, total_pages + 1) %}
-            <a class="{% if page == number %}current{% endif %}" href="{{ url_for('games', page=number, q=query, category=category, platform=platform) }}" {% if page == number %}aria-current="page"{% endif %}>{{ number }}</a>
-          {% endfor %}
-          {% if page < total_pages %}<a href="{{ url_for('games', page=page+1, q=query, category=category, platform=platform) }}">Next ›</a>{% endif %}
+          {% if page > 1 %}
+            <a class="games-page-direction games-page-previous" href="{{ url_for('games', page=page-1, q=query, category=category, platform=platform) }}"><span class="games-page-arrow" aria-hidden="true">←</span><span><strong>Previous</strong><small>Lower price range</small></span></a>
+          {% else %}
+            <span class="games-page-direction games-page-previous disabled"><span class="games-page-arrow" aria-hidden="true">←</span><span><strong>Previous</strong><small>Lower price range</small></span></span>
+          {% endif %}
+          <span class="games-page-numbers">
+            {% for number in range(1, total_pages + 1) %}
+              <a class="{% if page == number %}current{% endif %}" href="{{ url_for('games', page=number, q=query, category=category, platform=platform) }}" {% if page == number %}aria-current="page"{% endif %}>{{ number }}</a>
+            {% endfor %}
+          </span>
+          {% if page < total_pages %}
+            <a class="games-page-direction games-page-next" href="{{ url_for('games', page=page+1, q=query, category=category, platform=platform) }}"><span><strong>Next</strong><small>Higher price range</small></span><span class="games-page-arrow" aria-hidden="true">→</span></a>
+          {% else %}
+            <span class="games-page-direction games-page-next disabled"><span><strong>Next</strong><small>Higher price range</small></span><span class="games-page-arrow" aria-hidden="true">→</span></span>
+          {% endif %}
         </nav>
       {% endif %}
 
       <div class="games-commercial-note">
-        <div><p class="games-kicker">Commercial note</p><h2>Pricing that scales without misleading buyers.</h2></div>
+        <div><p class="games-kicker">Commercial note</p><h2>A clear investment path from entry products to flagship systems.</h2></div>
         <p>Custom printed games and components carry higher MOQs because setup, tooling and print runs drive unit cost. Large arcade and VR equipment remains available in small quantities because buyers often test a location first. Final quotations confirm specification, warranty, lead time, Incoterms and destination costs.</p>
       </div>
     </section>
