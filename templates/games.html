@@ -105,20 +105,16 @@
   .game-actions button:hover { background: var(--games-red-dark); }
   .game-actions a:hover { background: #fff0f3; }
 
-  .games-pagination { margin-top: 38px; padding: 12px; display: grid; grid-template-columns: minmax(150px,1fr) auto minmax(150px,1fr); align-items: stretch; gap: 12px; background: #fff; border: 1px solid var(--games-line); }
-  .games-page-numbers { display: flex; align-items: center; justify-content: center; gap: 5px; }
-  .games-page-numbers a { min-width: 40px; height: 44px; padding: 0 12px; display: grid; place-items: center; border: 1px solid #cfd7df; background: #fff; color: var(--games-ink); font-size: .72rem; font-weight: 800; text-decoration: none; }
-  .games-page-numbers .current, .games-page-numbers a:hover { border-color: var(--games-red); background: var(--games-red); color: #fff; }
-  .games-page-direction { width: 100%; height: 58px; padding: 0 18px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--games-ink); background: var(--games-ink); color: #fff; font-size: .72rem; font-weight: 800; text-decoration: none; text-align: left; }
-  .games-page-direction:hover { border-color: var(--games-red); background: var(--games-red); color: #fff; }
-  .games-page-next { justify-content: flex-end; text-align: right; }
-  .games-page-direction strong, .games-page-direction small { display: block; }
-  .games-page-direction strong { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; }
-  .games-page-direction small { margin-top: 3px; color: #bfc9d5; font-size: .58rem; font-weight: 650; }
-  .games-page-direction:hover small { color: #fff; }
-  .games-page-arrow { font-size: 1.25rem; line-height: 1; }
-  .games-page-direction.disabled { border-color: #e4e8ec; background: #f4f6f8; color: #9ba5b0; }
-  .games-page-direction.disabled small { color: #aab2bb; }
+  .games-pagination { margin-top: 38px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .games-page-numbers { display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .games-page-numbers a { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #cfd7df; border-radius: 6px; background: #fff; color: var(--games-ink); font-size: .76rem; font-weight: 850; text-decoration: none; transition: border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease; }
+  .games-page-numbers a:hover { border-color: var(--games-red); color: var(--games-red); transform: translateY(-1px); }
+  .games-page-numbers .current { border-color: var(--games-red); background: var(--games-red); color: #fff; box-shadow: 0 7px 18px rgba(227,6,44,.18); }
+  .games-page-numbers .current:hover { color: #fff; }
+  .games-page-direction { min-width: 118px; height: 44px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--games-ink); border-radius: 6px; background: var(--games-ink); color: #fff; font-size: .72rem; font-weight: 850; text-decoration: none; text-transform: uppercase; letter-spacing: .035em; transition: border-color .18s ease, background .18s ease, transform .18s ease; }
+  .games-page-direction:hover { border-color: var(--games-red); background: var(--games-red); color: #fff; transform: translateY(-1px); }
+  .games-page-arrow { font-size: 1rem; line-height: 1; }
+  .games-page-direction.disabled { border-color: #dfe4e9; background: #edf0f3; color: #9aa4af; cursor: not-allowed; }
 
   .games-empty, .games-commercial-note { margin-top: 24px; padding: 30px; background: #fff; border: 1px solid var(--games-line); }
   .games-empty h3 { margin: 0; }
@@ -198,10 +194,7 @@
     .games-results-head { align-items: flex-start; flex-direction: column; gap: 12px; }
     .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .games-commercial-note { grid-template-columns: 1fr; gap: 14px; padding: 24px; }
-    .games-pagination { grid-template-columns: 1fr 1fr; }
-    .games-page-numbers { grid-column: 1 / -1; grid-row: 1; padding-bottom: 8px; overflow-x: auto; justify-content: flex-start; }
-    .games-page-previous { grid-column: 1; }
-    .games-page-next { grid-column: 2; }
+    .games-pagination { gap: 7px; }
   }
 
   @media (max-width: 520px) {
@@ -214,11 +207,10 @@
     .games-grid { grid-template-columns: 1fr; gap: 14px; }
     .game-media { aspect-ratio: 16 / 10; }
     .game-body h3 { min-height: 0; font-size: 1rem; }
-    .games-pagination { padding: 8px; gap: 8px; }
-    .games-page-direction { height: 52px; padding-inline: 12px; }
-    .games-page-direction small { display: none; }
+    .games-pagination { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); gap: 6px; }
+    .games-page-direction { min-width: 0; height: 42px; padding-inline: 9px; font-size: .64rem; }
     .games-page-numbers { gap: 4px; }
-    .games-page-numbers a { min-width: 37px; height: 40px; padding-inline: 9px; }
+    .games-page-numbers a { width: 38px; height: 42px; }
     .games-cart-head { padding: 22px 18px 18px; }
     .games-cart-assurance { padding-inline: 18px; gap: 10px; justify-content: space-between; }
     .games-cart-items { padding: 12px 10px; }
@@ -231,7 +223,8 @@
 {% endblock %}
 
 {% block content %}
-{% set catalogue_page = page if page in range(1, 11) else 1 %}
+{% set catalogue_pages = 10 if total_pages > 10 else total_pages %}
+{% set catalogue_page = page if page in range(1, catalogue_pages + 1) else 1 %}
 {% set page_data = {
   1: ('Entry products', 'Start with accessible, testable orders.', 'Low-cost cards, learning games and tabletop products for early market validation.'),
   2: ('Branded tabletop', 'Build a focused retail range.', 'Customisable tabletop products with practical pricing for promotions, retail and events.'),
@@ -255,7 +248,7 @@
       </div>
       <div class="games-proof" aria-label="Catalogue statistics">
         <div><strong>{{ '{:,}'.format(catalogue_total) }}</strong><span>Curated products</span></div>
-        <div><strong>{{ total_pages }}</strong><span>Order pages</span></div>
+        <div><strong>{{ catalogue_pages }}</strong><span>Order pages</span></div>
         <div><strong>100%</strong><span>Unique product media</span></div>
       </div>
     </div>
@@ -335,7 +328,7 @@
       <button class="games-mobile-filter" id="openGameFilters" type="button" aria-expanded="false" aria-controls="gamesFilters">Open filters</button>
       <header class="games-results-head">
         <div><p class="games-kicker">Page {{ '%02d'|format(catalogue_page) }} · {{ page_data[catalogue_page][0] }}</p><h2>{{ page_data[catalogue_page][1] }}</h2><p>{{ page_data[catalogue_page][2] }}</p></div>
-        <span class="games-result-count">PAGE {{ page }} OF {{ total_pages }}</span>
+        <span class="games-result-count">PAGE {{ catalogue_page }} OF {{ catalogue_pages }}</span>
       </header>
 
       <div class="games-grid">
@@ -376,22 +369,25 @@
         {% endfor %}
       </div>
 
-      {% if total_pages > 1 %}
+      {% if catalogue_pages > 1 %}
+        {% set nav_start = page - 1 if page > 1 else 1 %}
+        {% set nav_end = nav_start + 2 if nav_start + 2 < catalogue_pages else catalogue_pages %}
+        {% set nav_start = nav_end - 2 if nav_end > 2 else 1 %}
         <nav class="games-pagination" aria-label="Catalogue pages">
           {% if page > 1 %}
-            <a class="games-page-direction games-page-previous" href="{{ url_for('games', page=page-1, q=query, category=category, platform=platform) }}"><span class="games-page-arrow" aria-hidden="true">←</span><span><strong>Previous</strong><small>Lower price range</small></span></a>
+            <a class="games-page-direction games-page-previous" href="{{ url_for('games', page=page-1, q=query, category=category, platform=platform) }}" rel="prev"><span class="games-page-arrow" aria-hidden="true">←</span><span>Previous</span></a>
           {% else %}
-            <span class="games-page-direction games-page-previous disabled"><span class="games-page-arrow" aria-hidden="true">←</span><span><strong>Previous</strong><small>Lower price range</small></span></span>
+            <span class="games-page-direction games-page-previous disabled" aria-disabled="true"><span class="games-page-arrow" aria-hidden="true">←</span><span>Previous</span></span>
           {% endif %}
           <span class="games-page-numbers">
-            {% for number in range(1, total_pages + 1) %}
+            {% for number in range(nav_start, nav_end + 1) %}
               <a class="{% if page == number %}current{% endif %}" href="{{ url_for('games', page=number, q=query, category=category, platform=platform) }}" {% if page == number %}aria-current="page"{% endif %}>{{ number }}</a>
             {% endfor %}
           </span>
-          {% if page < total_pages %}
-            <a class="games-page-direction games-page-next" href="{{ url_for('games', page=page+1, q=query, category=category, platform=platform) }}"><span><strong>Next</strong><small>Higher price range</small></span><span class="games-page-arrow" aria-hidden="true">→</span></a>
+          {% if page < catalogue_pages %}
+            <a class="games-page-direction games-page-next" href="{{ url_for('games', page=page+1, q=query, category=category, platform=platform) }}" rel="next"><span>Next</span><span class="games-page-arrow" aria-hidden="true">→</span></a>
           {% else %}
-            <span class="games-page-direction games-page-next disabled"><span><strong>Next</strong><small>Higher price range</small></span><span class="games-page-arrow" aria-hidden="true">→</span></span>
+            <span class="games-page-direction games-page-next disabled" aria-disabled="true"><span>Next</span><span class="games-page-arrow" aria-hidden="true">→</span></span>
           {% endif %}
         </nav>
       {% endif %}
