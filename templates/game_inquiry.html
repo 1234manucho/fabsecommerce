@@ -1,3 +1,204 @@
-{% extends 'base.html' %}{% from 'macros.html' import field %}{% block title %}Send a Gaming Inquiry | FABS Trading{% endblock %}
-{% block head %}<style>.inq-page{background:#f3f4f5;color:#171a1f}.inq-hero{background:#16191d;color:#fff;padding:64px 0}.inq-shell{width:min(1180px,calc(100% - 38px));margin:auto}.inq-hero span{font-size:8px;color:#ff6970;letter-spacing:.15em;font-weight:900}.inq-hero h1{font-size:clamp(42px,5vw,67px);letter-spacing:-.05em;margin:12px 0}.inq-hero p{max-width:620px;color:#aab0b7;font-size:12px;line-height:1.8}.inq-layout{display:grid;grid-template-columns:.7fr 1.3fr;gap:28px;padding:55px 0 80px;align-items:start}.inq-product{background:#fff;border:1px solid #e0e3e6;position:sticky;top:125px}.inq-product img{width:100%;height:330px;object-fit:cover}.inq-product div{padding:22px}.inq-product span{font-size:7px;color:#df2f37;text-transform:uppercase;font-weight:900}.inq-product h2{font-size:24px;line-height:1.2;margin:9px 0}.inq-product p{font-size:9px;color:#6d757d;line-height:1.7}.inq-product dl{display:grid;grid-template-columns:1fr auto;gap:8px;border-top:1px solid #e5e7e9;padding-top:15px}.inq-product dt{font-size:8px;color:#7a8188}.inq-product dd{font-size:9px;font-weight:800;margin:0}.inq-form{background:#fff;border:1px solid #e0e3e6;padding:34px}.inq-form-head{display:grid;grid-template-columns:43px 1fr;gap:15px;margin-bottom:24px}.inq-form-head>span{color:#e83139;font-size:9px}.inq-form-head h2{font-size:24px;margin:0 0 5px}.inq-form-head p{font-size:9px;color:#707981;margin:0}.inq-fields{display:grid;grid-template-columns:1fr 1fr;gap:17px}.inq-form label{display:flex;flex-direction:column;gap:7px;color:#565f68;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.07em}.inq-form input,.inq-form select,.inq-form textarea{width:100%;min-height:48px;border:1px solid #d8dcdf;background:#fafafa;padding:0 12px;color:#171a1f;font-size:11px;text-transform:none;letter-spacing:0}.inq-form textarea{padding:12px;min-height:120px}.inq-full{margin-top:17px}.inq-check{flex-direction:row!important;align-items:flex-start;gap:10px!important;margin-top:22px;text-transform:none!important;letter-spacing:0!important;font-weight:500!important}.inq-check input{width:auto;min-height:auto;margin-top:3px}.inq-submit{margin-top:23px;border:0;background:#ed3138;color:#fff;height:51px;padding:0 22px;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;cursor:pointer}.field-error{color:#d72b33;font-size:8px;text-transform:none}@media(max-width:850px){.inq-layout{grid-template-columns:1fr}.inq-product{position:static}.inq-fields{grid-template-columns:1fr}}@media(max-width:520px){.inq-form{padding:22px}.inq-product img{height:270px}}</style>{% endblock %}
-{% block content %}<main class="inq-page"><section class="inq-hero"><div class="inq-shell"><span>FABS COMMERCIAL BUYER DESK</span><h1>Send a product inquiry.</h1><p>Tell us the product, quantity, destination and specifications. The system will create a traceable inquiry reference for the FABS sourcing team.</p></div></section><div class="inq-shell inq-layout">{% if game %}<aside class="inq-product"><img src="{{ game.image_url }}" alt="{{ game.title }} real product media"><div><span>Selected product</span><h2>{{ game.title }}</h2><p>{{ game.description }}</p><dl><dt>Indicative price</dt><dd>US${{ '{:,.2f}'.format(game.price) }}</dd><dt>Minimum order</dt><dd>{{ game.minimum_order }}</dd><dt>Supplier profile</dt><dd>{{ game.supplier }}</dd></dl></div></aside>{% else %}<aside class="inq-product"><img src="{{ url_for('static',filename='images/home-media/coin-operated-arcade.jpg') }}" alt="Commercial arcade equipment"><div><span>Global sourcing request</span><h2>Choose from the FABS gaming catalogue.</h2><p>Select the closest product below. Add custom specifications if you require another configuration, branding or MOQ.</p><dl><dt>Catalogue</dt><dd>2,399,976 products</dd><dt>Access</dt><dd>24/7</dd><dt>Response</dt><dd>Traceable reference</dd></dl></div></aside>{% endif %}<form class="inq-form" method="post">{{ form.hidden_tag() }}<div class="inq-form-head"><span>01</span><div><h2>Product and buyer details</h2><p>Use the authorised contact details for your commercial request.</p></div></div><div class="inq-fields">{{ field(form.product_id) }}{{ field(form.quantity) }}{{ field(form.full_name) }}{{ field(form.company) }}{{ field(form.email) }}{{ field(form.phone) }}{{ field(form.country) }}{{ field(form.destination) }}</div><div class="inq-full">{{ field(form.requirements,placeholder='Required configuration, branding, certification, voltage, packaging, installation or delivery instructions…') }}</div><label class="inq-check">{{ form.confirm() }}<span>{{ form.confirm.label.text }}</span></label>{{ form.submit(class_='inq-submit') }}</form></div></main>{% endblock %}
+{% extends 'base.html' %}
+
+{% block title %}Request a Gaming Quote | FABS Trading{% endblock %}
+
+{% macro rfq_field(control, label, placeholder='') %}
+  <div class="game-rfq-field">
+    <label for="{{ control.id }}">{{ label }}</label>
+    {{ control(class_='game-rfq-control', placeholder=placeholder) }}
+    {% if control.description %}<small>{{ control.description }}</small>{% endif %}
+    {% for error in control.errors %}<span class="game-rfq-error">{{ error }}</span>{% endfor %}
+  </div>
+{% endmacro %}
+
+{% block head %}
+<style>
+  :root {
+    --rfq-ink: #14243d;
+    --rfq-ink-soft: #243955;
+    --rfq-red: #e3062c;
+    --rfq-red-dark: #bd001f;
+    --rfq-bg: #f4f6f8;
+    --rfq-line: #dce2e8;
+    --rfq-muted: #627184;
+    --rfq-green: #16734a;
+  }
+
+  .game-rfq-page, .game-rfq-page * { box-sizing: border-box; }
+  .game-rfq-page { min-height: 100vh; background: var(--rfq-bg); color: var(--rfq-ink); }
+  .game-rfq-shell { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+
+  .game-rfq-hero { padding: 68px 0 72px; position: relative; overflow: hidden; background: linear-gradient(120deg, #0d1b30 0%, #14243d 62%, #223d62 100%); color: #fff; }
+  .game-rfq-hero::after { content: "RFQ"; position: absolute; right: -24px; bottom: -84px; color: rgba(255,255,255,.035); font-size: clamp(10rem, 22vw, 19rem); font-weight: 950; line-height: 1; letter-spacing: -.08em; pointer-events: none; }
+  .game-rfq-hero-inner { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 48px; }
+  .game-rfq-kicker { margin: 0 0 14px; color: #ff7388; font-size: .68rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+  .game-rfq-hero h1 { max-width: 780px; margin: 0; font-size: clamp(2.4rem, 5vw, 4.6rem); line-height: 1; letter-spacing: -.055em; }
+  .game-rfq-hero-copy { max-width: 720px; margin: 22px 0 0; color: #c7d0db; font-size: .94rem; line-height: 1.75; }
+  .game-rfq-assurance { min-width: 225px; padding: 20px 22px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); backdrop-filter: blur(8px); }
+  .game-rfq-assurance span { display: block; padding: 7px 0; color: #d9e1ea; font-size: .7rem; font-weight: 750; }
+  .game-rfq-assurance span::before { content: "✓"; margin-right: 9px; color: #65d49d; font-weight: 950; }
+
+  .game-rfq-section { padding: 0 0 88px; }
+  .game-rfq-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 28px; align-items: start; transform: translateY(-28px); }
+  .game-rfq-guide { position: sticky; top: 110px; background: #fff; border: 1px solid var(--rfq-line); }
+  .game-rfq-guide-head { padding: 22px; border-bottom: 1px solid var(--rfq-line); }
+  .game-rfq-guide-head span { color: var(--rfq-red); font-size: .62rem; font-weight: 900; letter-spacing: .11em; text-transform: uppercase; }
+  .game-rfq-guide-head h2 { margin: 7px 0 0; font-size: 1.05rem; }
+  .game-rfq-step { padding: 18px 20px; display: grid; grid-template-columns: 34px 1fr; gap: 12px; border-bottom: 1px solid var(--rfq-line); }
+  .game-rfq-step > span { width: 34px; height: 34px; display: grid; place-items: center; background: var(--rfq-ink); color: #fff; font-size: .65rem; font-weight: 900; }
+  .game-rfq-step strong, .game-rfq-step small { display: block; }
+  .game-rfq-step strong { margin-top: 1px; font-size: .76rem; }
+  .game-rfq-step small { margin-top: 4px; color: var(--rfq-muted); font-size: .64rem; line-height: 1.45; }
+  .game-rfq-help { padding: 20px; background: #edf7f1; }
+  .game-rfq-help strong { color: var(--rfq-green); font-size: .74rem; }
+  .game-rfq-help p { margin: 7px 0 0; color: #456255; font-size: .65rem; line-height: 1.6; }
+
+  .game-rfq-form { overflow: hidden; background: #fff; border: 1px solid var(--rfq-line); box-shadow: 0 22px 60px rgba(20,36,61,.09); }
+  .game-rfq-selected { padding: 20px 24px; display: grid; grid-template-columns: 92px minmax(0,1fr) auto; align-items: center; gap: 18px; background: #f8fafb; border-bottom: 1px solid var(--rfq-line); }
+  .game-rfq-selected img { width: 92px; height: 74px; display: block; object-fit: cover; background: #e7ebef; }
+  .game-rfq-selected-label { margin: 0 0 5px; color: var(--rfq-red); font-size: .58rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+  .game-rfq-selected h2 { margin: 0; font-size: .88rem; line-height: 1.4; }
+  .game-rfq-selected-meta { color: var(--rfq-muted); font-size: .67rem; text-align: right; }
+  .game-rfq-selected-meta strong { display: block; margin-bottom: 4px; color: var(--rfq-ink); font-size: .8rem; }
+
+  .game-rfq-form-head { padding: 30px 32px 24px; border-bottom: 1px solid var(--rfq-line); }
+  .game-rfq-form-head h2 { margin: 0; font-size: clamp(1.4rem, 2.4vw, 2rem); letter-spacing: -.035em; }
+  .game-rfq-form-head p { max-width: 700px; margin: 9px 0 0; color: var(--rfq-muted); font-size: .76rem; line-height: 1.7; }
+  .game-rfq-block { padding: 28px 32px 32px; border-bottom: 1px solid var(--rfq-line); }
+  .game-rfq-block-title { margin-bottom: 22px; display: flex; align-items: flex-start; gap: 13px; }
+  .game-rfq-block-title > span { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; background: var(--rfq-red); color: #fff; font-size: .66rem; font-weight: 900; }
+  .game-rfq-block-title h3 { margin: 0; font-size: 1rem; }
+  .game-rfq-block-title p { margin: 5px 0 0; color: var(--rfq-muted); font-size: .69rem; line-height: 1.5; }
+  .game-rfq-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .game-rfq-field { min-width: 0; }
+  .game-rfq-field.full { grid-column: 1 / -1; }
+  .game-rfq-field label { display: block; margin: 0 0 8px; color: var(--rfq-ink); font-size: .69rem; font-weight: 850; }
+  .game-rfq-control { width: 100%; min-height: 48px; padding: 0 13px; border: 1px solid #cdd6df; border-radius: 0; background: #fff; color: var(--rfq-ink); font: inherit; font-size: .78rem; outline: none; }
+  textarea.game-rfq-control { min-height: 132px; padding-block: 13px; resize: vertical; line-height: 1.6; }
+  .game-rfq-control:focus { border-color: var(--rfq-red); box-shadow: 0 0 0 3px rgba(227,6,44,.09); }
+  .game-rfq-field small { display: block; margin-top: 6px; color: var(--rfq-muted); font-size: .61rem; }
+  .game-rfq-error { display: block; margin-top: 6px; color: var(--rfq-red); font-size: .64rem; font-weight: 750; }
+  .game-rfq-action { padding: 24px 32px 28px; }
+  .game-rfq-consent { padding: 15px 16px; display: flex; align-items: flex-start; gap: 11px; background: #f4f6f8; border: 1px solid var(--rfq-line); }
+  .game-rfq-consent input { width: 17px; height: 17px; margin-top: 1px; flex: 0 0 17px; accent-color: var(--rfq-red); }
+  .game-rfq-consent label { color: #536276; font-size: .68rem; line-height: 1.55; cursor: pointer; }
+  .game-rfq-submit-row { margin-top: 18px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+  .game-rfq-submit-row p { max-width: 460px; margin: 0; color: var(--rfq-muted); font-size: .63rem; line-height: 1.55; }
+  .game-rfq-submit { min-height: 48px; padding: 0 24px; border: 0; background: var(--rfq-red); color: #fff; font: inherit; font-size: .7rem; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
+  .game-rfq-submit:hover { background: var(--rfq-red-dark); }
+
+  @media (max-width: 900px) {
+    .game-rfq-hero-inner { grid-template-columns: 1fr; gap: 28px; }
+    .game-rfq-assurance { min-width: 0; max-width: 620px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .game-rfq-layout { grid-template-columns: 1fr; }
+    .game-rfq-guide { position: static; display: grid; grid-template-columns: repeat(3, 1fr); }
+    .game-rfq-guide-head, .game-rfq-help { grid-column: 1 / -1; }
+    .game-rfq-step { border-right: 1px solid var(--rfq-line); }
+  }
+
+  @media (max-width: 620px) {
+    .game-rfq-shell { width: min(100% - 20px, 1180px); }
+    .game-rfq-hero { padding: 46px 0 58px; }
+    .game-rfq-hero-copy { font-size: .83rem; }
+    .game-rfq-assurance { grid-template-columns: 1fr; gap: 0; }
+    .game-rfq-layout { transform: translateY(-20px); }
+    .game-rfq-guide { display: none; }
+    .game-rfq-selected { grid-template-columns: 72px minmax(0,1fr); padding: 15px; gap: 12px; }
+    .game-rfq-selected img { width: 72px; height: 66px; }
+    .game-rfq-selected-meta { grid-column: 1 / -1; text-align: left; }
+    .game-rfq-form-head, .game-rfq-block, .game-rfq-action { padding-inline: 18px; }
+    .game-rfq-grid { grid-template-columns: 1fr; gap: 15px; }
+    .game-rfq-submit-row { align-items: stretch; flex-direction: column; }
+    .game-rfq-submit { width: 100%; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="game-rfq-page">
+  <section class="game-rfq-hero">
+    <div class="game-rfq-shell game-rfq-hero-inner">
+      <div>
+        <p class="game-rfq-kicker">Gaming Product RFQ</p>
+        <h1>Build a documented gaming order request.</h1>
+        <p class="game-rfq-hero-copy">Share your preferred game, quantity, specification and delivery requirements. Our sourcing team will review supplier availability, commercial terms, freight and lead time before issuing a formal quotation.</p>
+      </div>
+      <div class="game-rfq-assurance" aria-label="Quotation assurances">
+        <span>Structured commercial review</span>
+        <span>Supplier and specification checks</span>
+        <span>Clear delivery terms</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="game-rfq-section">
+    <div class="game-rfq-shell game-rfq-layout">
+      <aside class="game-rfq-guide" aria-label="Quotation process">
+        <div class="game-rfq-guide-head"><span>How it works</span><h2>From enquiry to quotation</h2></div>
+        <div class="game-rfq-step"><span>01</span><div><strong>Buyer details</strong><small>Confirm the contracting entity and contact person.</small></div></div>
+        <div class="game-rfq-step"><span>02</span><div><strong>Product scope</strong><small>Define the game, model, quantity and destination.</small></div></div>
+        <div class="game-rfq-step"><span>03</span><div><strong>Commercial review</strong><small>We confirm availability, lead time and final pricing.</small></div></div>
+        <div class="game-rfq-help"><strong>Procurement support</strong><p>Final quotations confirm specifications, MOQ, warranty, Incoterms, freight and applicable taxes.</p></div>
+      </aside>
+
+      <form class="game-rfq-form" method="post" novalidate>
+        {{ form.hidden_tag() }}
+
+        {% if game %}
+          <div class="game-rfq-selected">
+            <img src="{{ game.image_url }}" alt="{{ game.title }}" loading="eager" decoding="async" referrerpolicy="no-referrer">
+            <div><p class="game-rfq-selected-label">Selected gaming product</p><h2>{{ game.title }}</h2></div>
+            <div class="game-rfq-selected-meta"><strong>From US${{ '{:,.2f}'.format(game.price) }}</strong><span>{{ game.minimum_order }}</span></div>
+          </div>
+        {% endif %}
+
+        <header class="game-rfq-form-head">
+          <h2>Request a gaming quotation</h2>
+          <p>Complete the information below as accurately as possible. Fields marked as required by the form must be completed before submission.</p>
+        </header>
+
+        <section class="game-rfq-block">
+          <div class="game-rfq-block-title"><span>01</span><div><h3>Company and buyer</h3><p>Use the legal entity and authorised contact details for this enquiry.</p></div></div>
+          <div class="game-rfq-grid">
+            {{ rfq_field(form.full_name, 'Contact person', 'Full name') }}
+            {{ rfq_field(form.company, 'Company name', 'Registered or trading name') }}
+            {{ rfq_field(form.email, 'Business email', 'name@company.com') }}
+            {{ rfq_field(form.phone, 'Phone / WhatsApp', '+254 ...') }}
+            {{ rfq_field(form.country, 'Country', 'Country of operation') }}
+          </div>
+        </section>
+
+        <section class="game-rfq-block">
+          <div class="game-rfq-block-title"><span>02</span><div><h3>Gaming product requirement</h3><p>Define the selected product, preferred specification, order volume and delivery scope.</p></div></div>
+          <div class="game-rfq-grid">
+            {{ rfq_field(form.product_id, 'Gaming product', 'Select a gaming product') }}
+            {{ rfq_field(form.quantity, 'Required quantity', 'Enter units, sets or pieces') }}
+            {{ rfq_field(form.destination, 'Delivery destination', 'Country, city, airport or seaport') }}
+          </div>
+        </section>
+
+        <section class="game-rfq-block">
+          <div class="game-rfq-block-title"><span>03</span><div><h3>Additional requirements</h3><p>Include branding, installation, accessories, warranty, target budget or required delivery date.</p></div></div>
+          <div class="game-rfq-field full">
+            <label for="{{ form.requirements.id }}">Project notes and specifications</label>
+            {{ form.requirements(class_='game-rfq-control', placeholder='Describe the intended use, required features, customisation, accessories, preferred delivery date and any other commercial requirements.') }}
+            {% for error in form.requirements.errors %}<span class="game-rfq-error">{{ error }}</span>{% endfor %}
+          </div>
+        </section>
+
+        <div class="game-rfq-action">
+          <div class="game-rfq-consent">
+            {{ form.confirm() }}
+            <label for="{{ form.confirm.id }}">{{ form.confirm.label.text }}</label>
+          </div>
+          {% for error in form.confirm.errors %}<span class="game-rfq-error">{{ error }}</span>{% endfor %}
+          <div class="game-rfq-submit-row">
+            <p>Submitting this request does not create a binding purchase contract. Final pricing and availability remain subject to written confirmation.</p>
+            {{ form.submit(class_='game-rfq-submit') }}
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+{% endblock %}
