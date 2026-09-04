@@ -13,25 +13,25 @@ from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
-from forms import CheckoutForm, ContactForm, GameForm, GameInquiryForm, LoginForm, QuoteForm, RegisterForm
-from models import AuditLog, Commodity, ContactMessage, DigitalEntitlement, Game, GameInquiry, Order, OrderItem, PaymentTransaction, Quote, User, WebhookEvent, db
+from forms import CheckoutForm, ContactForm, GameForm, GameInquiryForm, LoginForm, RegisterForm
+from models import AuditLog, ContactMessage, DigitalEntitlement, Game, GameInquiry, Order, OrderItem, PaymentTransaction, User, WebhookEvent, db
 from seed import seed_catalogue
 from services.payment import BankMIDGateway, PaymentConfigurationError
 
 MEDIA_PAGES = {
-    "industries": {"eyebrow":"Industries", "title":"Materials selected for the work they must perform.", "lead":"FABS translates sector requirements into defined grades, packaging, documentation and delivery scopes.", "image":"https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1800&q=85", "video":"https://videos.pexels.com/video-files/6066355/6066355-hd_1920_1080_30fps.mp4", "sections":[("Roads & infrastructure","Bitumen, modifiers and mineral inputs scoped against project requirements."),("Manufacturing","Base oils, rubber inputs, surfactants and process materials sourced to specification."),("Water & mining","Treatment and processing materials documented through the RFQ workflow.")]},
-    "logistics": {"eyebrow":"Trade logistics", "title":"Documentation moves with the cargo.", "lead":"Every milestone should have an owner, an evidence trail and an exception path.", "image":"https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&w=1800&q=85", "video":"https://videos.pexels.com/video-files/9211525/9211525-hd_1920_1080_25fps.mp4", "sections":[("Pre-shipment readiness","Confirm specification, packing, inspection and shipment instructions."),("Milestone visibility","Track booking, loading, documents and arrival against the transaction plan."),("Controlled handover","Reconcile transport and quality records before destination handover.")]},
-    "quality": {"eyebrow":"Quality", "title":"Specifications before assumptions.", "lead":"Define the grade, standard, tolerance and evidence before supplier selection.", "image":"https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1800&q=85", "sections":[("Specification control","Connect the commercial description to measurable requirements."),("Evidence package","Identify certificates, inspection records and shipment documentation."),("Exception handling","Write variance and resolution responsibilities into the contract.")]},
-    "sustainability": {"eyebrow":"Sustainability", "title":"Responsible choices need transaction evidence.", "lead":"Supplier, product and routing requirements can be made visible enough to review.", "image":"https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&w=1800&q=85", "sections":[("Requirement capture","Record origin, certification or reporting needs before sourcing."),("Evidence review","Request relevant declarations and certificates for buyer evaluation."),("Continuous improvement","Use transaction outcomes to strengthen future requirements.")]},
-    "partners": {"eyebrow":"Partnerships", "title":"A network is only as strong as its controls.", "lead":"Clear responsibilities for suppliers, publishers, payment providers, inspectors and logistics partners.", "image":"https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1800&q=85", "sections":[("Digital ecosystem","Authorised distribution and fulfilment capabilities."),("Industrial ecosystem","Manufacturers, suppliers, inspectors and logistics specialists."),("Financial ecosystem","Banks and technology providers supporting checkout and reconciliation.")]},
-    "investors": {"eyebrow":"Investor information", "title":"Two resilient commerce models. One control framework.", "lead":"Scalable digital retail architecture and structured industrial procurement.", "image":"https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1800&q=85", "sections":[("Digital commerce","Catalogue, account, checkout and fulfilment architecture."),("Industrial workflow","RFQ, KYB, commercial approval, settlement and logistics."),("Shared controls","Finance, risk, data, access management and customer support.")]},
-    "careers": {"eyebrow":"Careers", "title":"Build commerce that earns confidence.", "lead":"We value people who make digital experiences effortless and complex trade understandable.", "image":"https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1800&q=85", "sections":[("Technology & product","Build reliable customer journeys and operational tooling."),("Trade & operations","Translate requirements into controlled commercial execution."),("Risk & customer trust","Strengthen verification, service quality and issue resolution.")]},
+    "industries": {"eyebrow":"Gaming categories", "title":"Gaming products for retail, leisure and commercial venues.", "lead":"FABS connects buyers with carefully presented tabletop, arcade, redemption, racing, sports and immersive gaming products.", "image":"https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1800&q=85", "sections":[("Arcade & redemption","Coin-operated, prize, shooting and interactive cabinets for entertainment venues."),("Racing & simulation","Driving, sports and motion-based simulators for high-engagement experiences."),("Tabletop & recreation","Board, card, educational and recreational games for retail and group use.")]},
+    "logistics": {"eyebrow":"Gaming delivery", "title":"Every gaming order follows a documented delivery plan.", "lead":"Product configuration, packing, freight, delivery milestones and destination handover are confirmed before fulfilment.", "image":"https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1800&q=85", "sections":[("Order readiness","Confirm model, cabinet, voltage, accessories, quantity and packing requirements."),("Delivery visibility","Track preparation, dispatch and arrival against the agreed fulfilment plan."),("Controlled handover","Verify the delivered gaming product, accessories and supporting documentation.")]},
+    "quality": {"eyebrow":"Gaming quality", "title":"Specifications before purchase.", "lead":"Gaming products are reviewed against their model, configuration, condition, compatibility and intended commercial use.", "image":"https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1800&q=85", "sections":[("Product verification","Confirm the title, model, platform, cabinet and technical configuration."),("Supplier evidence","Review available product media, specifications, warranty and supplier information."),("After-sales planning","Define installation, spare-parts and support expectations before approval.")]},
+    "sustainability": {"eyebrow":"Responsible gaming commerce", "title":"Better product decisions create longer service life.", "lead":"FABS supports documented product selection, practical order quantities and responsible equipment lifecycle planning.", "image":"https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1800&q=85", "sections":[("Right-sized orders","Match quantities and specifications to the buyer's real operating requirements."),("Durability review","Consider product construction, serviceability and available support."),("Lifecycle planning","Plan maintenance, accessories and responsible replacement of gaming equipment.")]},
+    "partners": {"eyebrow":"Gaming partnerships", "title":"A gaming network built around clear responsibilities.", "lead":"Publishers, manufacturers, venue operators, payment providers and fulfilment partners support the FABS gaming marketplace.", "image":"https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1800&q=85", "sections":[("Gaming ecosystem","Publishers, manufacturers and suppliers supporting the product catalogue."),("Venue ecosystem","Arcades, entertainment centres, retailers and corporate buyers."),("Payment ecosystem","Approved providers supporting secure checkout and transaction reconciliation.")]},
+    "investors": {"eyebrow":"Investor information", "title":"A scalable gaming-commerce platform.", "lead":"FABS combines a structured gaming catalogue, commercial enquiries, secure checkout and managed fulfilment.", "image":"https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1800&q=85", "sections":[("Gaming marketplace","Search, product discovery, quotation, account and order-management capabilities."),("Commercial workflow","Product enquiries, supplier confirmation, checkout and fulfilment."),("Shared controls","Finance, risk, data, access management and customer support.")]},
+    "careers": {"eyebrow":"Careers", "title":"Build gaming commerce that earns confidence.", "lead":"We value people who make gaming discovery, purchasing and fulfilment dependable for every buyer.", "image":"https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1800&q=85", "sections":[("Technology & product","Build reliable catalogue, account, quotation and checkout experiences."),("Gaming operations","Translate product requirements into controlled sourcing and fulfilment."),("Risk & customer trust","Strengthen verification, service quality and issue resolution.")]},
     "digital-delivery": {"eyebrow":"FABS Games", "title":"From checkout to your next world.", "lead":"Compatibility checks before payment and activation guidance after authorisation.", "image":"https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1800&q=85", "video":"https://videos.pexels.com/video-files/7774512/7774512-uhd_3840_2160_30fps.mp4", "sections":[("Confirm compatibility","Review platform, edition, region and activation requirements."),("Authorise securely","Card entry occurs on the approved bank-hosted checkout."),("Access fulfilment","Verified orders receive delivery instructions online.")]},
-    "corporate-sales": {"eyebrow":"Corporate digital sales", "title":"Digital products for managed programmes.", "lead":"A structured enquiry route for approved business purchases, incentives and events.", "image":"https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1800&q=85", "sections":[("Define the programme","Identify audience, territories, quantities, timing and budget."),("Confirm availability","Review publisher permissions and regional restrictions."),("Document fulfilment","Agree recipient, distribution and exception-handling rules.")]},
+    "corporate-sales": {"eyebrow":"Corporate gaming sales", "title":"Gaming products for managed programmes and venues.", "lead":"A structured enquiry route for arcades, entertainment centres, retailers, incentives and organised events.", "image":"https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1800&q=85", "sections":[("Define the requirement","Identify the audience, venue, product mix, quantity, timing and budget."),("Confirm availability","Review gaming product specifications, supplier availability and regional requirements."),("Document fulfilment","Agree delivery, installation, support and exception-handling responsibilities.")]},
 }
 
 NEWS_ARTICLES = {
-    "bitumen-buyers-guide": ("Trade insight", "Understanding bitumen grades before an RFQ", "State the application, standard, grade, packaging, volume, destination and required quality evidence.", "https://images.unsplash.com/photo-1517089596392-fb9a9033e05b?auto=format&fit=crop&w=1800&q=85"),
+    "gaming-venue-buyers-guide": ("Gaming insight", "Choosing the right products for an entertainment venue", "Match the game category, audience, floor space, power requirements, budget and support plan before placing an order.", "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1800&q=85"),
     "hosted-checkout-security": ("Payments", "Why hosted checkout matters", "A bank-hosted page separates sensitive card capture from the merchant application and returns a signed transaction result.", "https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=1800&q=85"),
     "digital-game-compatibility": ("Digital", "Buying the correct game edition", "Check the platform, device generation, edition, region and activation method before payment.", "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1800&q=85"),
 }
@@ -96,7 +96,7 @@ def register_routes(app):
     @app.get("/")
     def index():
         featured = Game.query.filter_by(is_active=True).order_by(Game.is_featured.desc(), Game.id).all()
-        return render_template("index.html", games=featured, commodities=Commodity.query.filter_by(is_active=True).limit(3).all())
+        return render_template("index.html", games=featured, commodities=[])
 
     @app.get("/games")
     def games():
@@ -319,29 +319,17 @@ def register_routes(app):
 
     @app.get("/commodities")
     def commodities():
-        query = request.args.get("q", "").strip()
-        products = Commodity.query.filter_by(is_active=True)
-        if query: products = products.filter(Commodity.name.ilike(f"%{query}%"))
-        return render_template("commodities.html", commodities=products.order_by(Commodity.category, Commodity.name).all(), query=query)
+        return redirect(url_for("games"), code=301)
 
     @app.get("/commodities/<slug>")
     def commodity_detail(slug):
-        return render_template("commodity_detail.html", commodity=Commodity.query.filter_by(slug=slug, is_active=True).first_or_404())
+        return redirect(url_for("games"), code=301)
 
     @app.route("/request-quote", methods=["GET", "POST"])
     def request_quote():
-        form = QuoteForm()
-        products = Commodity.query.filter_by(is_active=True).order_by(Commodity.name).all()
-        form.commodity_id.choices = [(item.id, item.name) for item in products]
-        requested_slug = request.args.get("product")
-        if requested_slug and request.method == "GET":
-            selected = next((x for x in products if x.slug == requested_slug), None)
-            if selected: form.commodity_id.data = selected.id
-        if form.validate_on_submit():
-            quote = Quote(reference=make_reference("RFQ"), user_id=current_user.id if current_user.is_authenticated else None, company_name=form.company_name.data, contact_name=form.contact_name.data, email=form.email.data.lower(), phone=form.phone.data, incorporation_country=form.incorporation_country.data, commodity_id=form.commodity_id.data, grade=form.grade.data, quantity=form.quantity.data, delivery_country=form.delivery_country.data, destination=form.destination.data, incoterm=form.incoterm.data, requirements=form.requirements.data)
-            db.session.add(quote); audit("quote_submitted", "quote", detail=quote.reference); db.session.commit()
-            return render_template("quote_success.html", quote=quote)
-        return render_template("request_quote.html", form=form)
+        # Preserve old bookmarks while ensuring every quotation starts from the
+        # gaming-only inquiry workflow.
+        return redirect(url_for("inquiry"), code=303 if request.method == "POST" else 302)
 
     @app.route("/contact", methods=["GET", "POST"])
     def contact():
@@ -386,16 +374,16 @@ def register_routes(app):
     @app.get("/account")
     @login_required
     def account():
-        return render_template("account.html", orders=Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all(), quotes=Quote.query.filter_by(user_id=current_user.id).order_by(Quote.created_at.desc()).all(), inquiries=GameInquiry.query.filter_by(user_id=current_user.id).order_by(GameInquiry.created_at.desc()).all())
+        return render_template("account.html", orders=Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all(), quotes=[], inquiries=GameInquiry.query.filter_by(user_id=current_user.id).order_by(GameInquiry.created_at.desc()).all())
 
     @app.get("/about")
-    def about(): return render_template("content.html", eyebrow="Company", title="Commerce without category boundaries.", lead="FABS Trading combines digital entertainment and industrial procurement through one disciplined global commerce platform.", sections=[("Two specialist divisions","FABS Games serves fast-moving digital retail. FABS Commodities manages specification-led B2B enquiries, compliance and fulfilment."),("One governance standard","Finance, risk, technology, security and customer protection are managed as shared controls across the business.")])
+    def about(): return render_template("content.html", eyebrow="Company", title="A focused global gaming-commerce company.", lead="FABS Trading connects customers, retailers and entertainment operators with gaming products through a structured digital marketplace.", sections=[("Gaming product marketplace","Explore tabletop, arcade, redemption, racing, sports and immersive gaming products across practical price and MOQ ranges."),("Commercial procurement","Submit a documented enquiry for product configuration, quantity, delivery, installation and after-sales requirements."),("One governance standard","Finance, risk, technology, payment security and customer protection are managed as shared controls across the business.")])
 
     @app.get("/how-it-works")
-    def how_it_works(): return render_template("content.html", eyebrow="Customer journey", title="Two purpose-built workflows.", lead="Digital products and industrial commodities require different buying, payment and fulfilment controls.", sections=[("Games","Discover, verify compatibility, check out through the hosted bank MID page, then receive digital fulfilment instructions."),("Commodities","Submit an RFQ, complete commercial and KYB review, approve the offer and contract, then settle and track delivery.")])
+    def how_it_works(): return render_template("content.html", eyebrow="Customer journey", title="A structured gaming procurement workflow.", lead="Browse verified gaming products, request commercial terms and complete secure payment through the approved checkout flow.", sections=[("Discover","Compare active gaming products, platforms, specifications, prices and minimum order quantities."),("Request a quotation","Select a game, confirm the required quantity and provide your delivery and configuration requirements."),("Review and fulfilment","Approve the final quotation, complete secure payment and track fulfilment with the FABS Trading team.")])
 
     @app.get("/compliance")
-    def compliance(): return render_template("content.html", eyebrow="Governance", title="Controls proportionate to every transaction.", lead="Risk-based retail controls, KYB, sanctions review, payment security and documented commercial approvals.", sections=[("Cardholder data boundary","FABS uses hosted or tokenised bank checkout and does not store raw card numbers or CVV data."),("Trade controls","Corporate identity, ownership, authority, destination, counterparty and transaction documentation are reviewed before approval.")])
+    def compliance(): return render_template("content.html", eyebrow="Governance", title="Controls proportionate to every gaming transaction.", lead="Risk-based customer controls, KYB, sanctions review, payment security and documented commercial approvals.", sections=[("Cardholder data boundary","FABS uses hosted or tokenised checkout and does not store raw card numbers or CVV data."),("Gaming commerce controls","Product, customer, authority, destination, payment and fulfilment information may be reviewed before approval.")])
 
     @app.get("/<page_name>")
     def media_page(page_name):
@@ -428,7 +416,7 @@ def register_routes(app):
     @app.get("/admin")
     @admin_required
     def admin_dashboard():
-        return render_template("admin/dashboard.html", stats={"orders":Order.query.count(),"paid":Order.query.filter_by(payment_status="paid").count(),"quotes":Quote.query.count(),"inquiries":GameInquiry.query.count(),"users":User.query.filter_by(role="customer").count()}, orders=Order.query.order_by(Order.created_at.desc()).limit(8).all(), quotes=Quote.query.order_by(Quote.created_at.desc()).limit(8).all())
+        return render_template("admin/dashboard.html", stats={"orders":Order.query.count(),"paid":Order.query.filter_by(payment_status="paid").count(),"quotes":0,"inquiries":GameInquiry.query.count(),"users":User.query.filter_by(role="customer").count()}, orders=Order.query.order_by(Order.created_at.desc()).limit(8).all(), quotes=[])
 
     @app.get("/admin/orders")
     @admin_required
@@ -436,7 +424,7 @@ def register_routes(app):
 
     @app.get("/admin/quotes")
     @admin_required
-    def admin_quotes(): return render_template("admin/quotes.html", quotes=Quote.query.order_by(Quote.created_at.desc()).all())
+    def admin_quotes(): return redirect(url_for("admin_inquiries"), code=302)
 
     @app.get("/admin/inquiries")
     @admin_required
@@ -458,9 +446,7 @@ def register_routes(app):
     @app.post("/admin/quotes/<int:quote_id>/status")
     @admin_required
     def admin_quote_status(quote_id):
-        quote = Quote.query.get_or_404(quote_id); allowed={"submitted","kyb_review","sourcing","offer_issued","contracting","won","closed"}; status=request.form.get("status")
-        if status not in allowed: abort(400)
-        quote.status=status; audit("quote_status_changed","quote",quote.id,status); db.session.commit(); flash("Quote status updated.","success"); return redirect(url_for("admin_quotes"))
+        return redirect(url_for("admin_inquiries"), code=303)
 
     @app.route("/admin/games/new", methods=["GET", "POST"])
     @admin_required
