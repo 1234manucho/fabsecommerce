@@ -1,1 +1,568 @@
-{% extends 'base.html' %}{% from 'macros.html' import field %}{% block title %}Secure Checkout | FABS Trading{% endblock %}{% block content %}<main class="light-page"><section class="small-hero"><div class="shell"><span class="kicker">Secure checkout</span><h1>Review and continue.</h1></div></section><section class="section light"><div class="shell checkout-layout"><form method="post" class="form-card">{{ form.hidden_tag() }}<span class="kicker">Customer details</span><h2>Complete your order information.</h2><div class="form-grid">{{ field(form.full_name) }}{{ field(form.email) }}{{ field(form.country) }}</div><div class="payment-box"><strong>Credit or debit card</strong><small>Visa · Mastercard · Approved acquiring bank MID</small><p>After you continue, the bank collects and authorises the card information on its PCI-compliant hosted page.</p></div><label class="check-row">{{ form.accept_terms() }}<span>{{ form.accept_terms.label.text }}</span></label>{{ form.submit(class_='button primary full') }}</form><aside class="summary"><span class="kicker">Order summary</span>{% for item in items %}<div class="checkout-item"><span>{{ item.title }}<small>{{ item.platform }} · {{ item.region }}</small></span><strong>${{ '%.2f'|format(item.price) }}</strong></div>{% endfor %}<dl><div><dt>Total</dt><dd>${{ '%.2f'|format(total) }}</dd></div></dl></aside></div></section></main>{% endblock %}
+{% extends 'base.html' %}
+{% from 'macros.html' import field %}
+
+{% block title %}Secure Checkout | FABS Trading{% endblock %}
+
+{% block head %}
+<style>
+    .checkout-page {
+        --checkout-red: #ed3138;
+        --checkout-red-dark: #c91f28;
+        --checkout-green: #21842a;
+        --checkout-ink: #161a1f;
+        --checkout-muted: #68717a;
+        --checkout-line: #e0e3e6;
+        --checkout-soft: #f4f5f6;
+        min-height: 72vh;
+        background: var(--checkout-soft);
+        color: var(--checkout-ink);
+    }
+
+    .checkout-shell {
+        width: min(1180px, calc(100% - 40px));
+        margin-inline: auto;
+    }
+
+    .checkout-hero {
+        position: relative;
+        overflow: hidden;
+        padding: clamp(52px, 8vw, 90px) 0;
+        background:
+            radial-gradient(circle at 88% 18%, rgba(237, 49, 56, 0.16), transparent 28%),
+            linear-gradient(135deg, #11161b 0%, #1d242b 100%);
+        color: #fff;
+    }
+
+    .checkout-hero::after {
+        content: "";
+        position: absolute;
+        right: -80px;
+        bottom: -145px;
+        width: 350px;
+        height: 350px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+    }
+
+    .checkout-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 14px;
+        color: #ff7479;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .checkout-kicker::before {
+        content: "";
+        width: 24px;
+        height: 2px;
+        background: currentColor;
+    }
+
+    .checkout-hero h1 {
+        max-width: 760px;
+        margin: 0;
+        font-size: clamp(2.5rem, 6vw, 4.65rem);
+        letter-spacing: -0.055em;
+        line-height: 0.99;
+    }
+
+    .checkout-hero p {
+        max-width: 660px;
+        margin: 18px 0 0;
+        color: #bdc5cc;
+        font-size: clamp(0.94rem, 2vw, 1.06rem);
+        line-height: 1.7;
+    }
+
+    .checkout-section {
+        padding: clamp(38px, 6vw, 72px) 0 88px;
+    }
+
+    .checkout-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(340px, 410px);
+        align-items: start;
+        gap: 28px;
+    }
+
+    .checkout-card,
+    .checkout-summary {
+        background: #fff;
+        border: 1px solid var(--checkout-line);
+        box-shadow: 0 18px 55px rgba(17, 24, 39, 0.06);
+    }
+
+    .checkout-card {
+        padding: clamp(24px, 4vw, 42px);
+    }
+
+    .checkout-card-header {
+        padding-bottom: 24px;
+        margin-bottom: 26px;
+        border-bottom: 1px solid var(--checkout-line);
+    }
+
+    .checkout-card-header h2 {
+        margin: 0;
+        font-size: clamp(1.7rem, 3vw, 2.35rem);
+        letter-spacing: -0.04em;
+        line-height: 1.15;
+    }
+
+    .checkout-card-header p {
+        margin: 10px 0 0;
+        color: var(--checkout-muted);
+        font-size: 0.88rem;
+        line-height: 1.65;
+    }
+
+    .checkout-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .checkout-form-grid > :last-child {
+        grid-column: 1 / -1;
+    }
+
+    .checkout-card label:not(.checkout-check-row) {
+        color: #32383e;
+        font-size: 0.76rem;
+        font-weight: 850;
+    }
+
+    .checkout-card input:not([type="checkbox"]),
+    .checkout-card select,
+    .checkout-card textarea {
+        width: 100%;
+        min-height: 52px;
+        padding: 12px 14px;
+        border: 1px solid #cfd4d8;
+        border-radius: 0;
+        background: #fff;
+        color: var(--checkout-ink);
+        font: inherit;
+        font-size: 0.9rem;
+        transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .checkout-card input:not([type="checkbox"]):focus,
+    .checkout-card select:focus,
+    .checkout-card textarea:focus {
+        border-color: var(--checkout-red);
+        box-shadow: 0 0 0 3px rgba(237, 49, 56, 0.12);
+        outline: none;
+    }
+
+    .checkout-payment-box {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 15px;
+        padding: 22px;
+        margin: 28px 0 22px;
+        background: #f7f8f9;
+        border: 1px solid var(--checkout-line);
+        border-left: 4px solid var(--checkout-green);
+    }
+
+    .checkout-payment-icon {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        background: #e9f7e7;
+        color: var(--checkout-green);
+        border-radius: 50%;
+        font-size: 1rem;
+        font-weight: 900;
+    }
+
+    .checkout-payment-copy strong,
+    .checkout-payment-copy small {
+        display: block;
+    }
+
+    .checkout-payment-copy strong {
+        font-size: 0.96rem;
+    }
+
+    .checkout-payment-copy small {
+        margin-top: 5px;
+        color: var(--checkout-green);
+        font-size: 0.68rem;
+        font-weight: 850;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .checkout-payment-copy p {
+        margin: 10px 0 0;
+        color: var(--checkout-muted);
+        font-size: 0.78rem;
+        line-height: 1.65;
+    }
+
+    .checkout-check-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: start;
+        gap: 11px;
+        padding: 16px;
+        margin: 0 0 20px;
+        background: #fff;
+        border: 1px solid var(--checkout-line);
+        color: #4f5860;
+        font-size: 0.8rem;
+        line-height: 1.55;
+        cursor: pointer;
+    }
+
+    .checkout-check-row input {
+        width: 18px;
+        height: 18px;
+        margin: 1px 0 0;
+        accent-color: var(--checkout-red);
+    }
+
+    .checkout-submit {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 56px;
+        padding: 13px 18px;
+        border: 1px solid var(--checkout-red);
+        border-radius: 0;
+        background: var(--checkout-red);
+        color: #fff;
+        font: inherit;
+        font-size: 0.76rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-align: center;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: background-color 160ms ease, transform 160ms ease;
+    }
+
+    .checkout-submit:hover {
+        background: var(--checkout-red-dark);
+        transform: translateY(-1px);
+    }
+
+    .checkout-submit:focus-visible {
+        outline: 3px solid rgba(237, 49, 56, 0.24);
+        outline-offset: 3px;
+    }
+
+    .checkout-summary {
+        position: sticky;
+        top: 120px;
+        padding: 28px;
+    }
+
+    .checkout-summary h2 {
+        margin: 0 0 20px;
+        font-size: 1.7rem;
+        letter-spacing: -0.035em;
+    }
+
+    .checkout-items {
+        border-top: 1px solid var(--checkout-line);
+    }
+
+    .checkout-item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 16px;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--checkout-line);
+    }
+
+    .checkout-item-name {
+        min-width: 0;
+        font-size: 0.85rem;
+        font-weight: 850;
+        line-height: 1.4;
+    }
+
+    .checkout-item-name small {
+        display: block;
+        margin-top: 5px;
+        color: var(--checkout-muted);
+        font-size: 0.66rem;
+        font-weight: 700;
+        line-height: 1.45;
+        text-transform: uppercase;
+    }
+
+    .checkout-item-price {
+        text-align: right;
+    }
+
+    .checkout-money-kes,
+    .checkout-money-usd {
+        display: block;
+        white-space: nowrap;
+    }
+
+    .checkout-money-kes {
+        color: var(--checkout-ink);
+        font-size: 0.84rem;
+        font-weight: 900;
+    }
+
+    .checkout-money-usd {
+        margin-top: 4px;
+        color: var(--checkout-green);
+        font-size: 0.68rem;
+        font-weight: 800;
+    }
+
+    .checkout-totals {
+        margin: 6px 0 0;
+    }
+
+    .checkout-total-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 14px;
+        padding: 13px 0;
+    }
+
+    .checkout-total-row dt {
+        color: var(--checkout-muted);
+        font-size: 0.78rem;
+        font-weight: 750;
+    }
+
+    .checkout-total-row dd {
+        margin: 0;
+        text-align: right;
+    }
+
+    .checkout-total-row.grand-total {
+        padding-top: 20px;
+        margin-top: 4px;
+        border-top: 1px solid var(--checkout-line);
+    }
+
+    .checkout-total-row.grand-total dt {
+        color: var(--checkout-ink);
+        font-size: 0.92rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .checkout-total-row.grand-total .checkout-money-kes {
+        font-size: 1.45rem;
+        letter-spacing: -0.035em;
+    }
+
+    .checkout-total-row.grand-total .checkout-money-usd {
+        font-size: 0.8rem;
+    }
+
+    .checkout-rate-note,
+    .checkout-security-note {
+        color: #7a828a;
+        font-size: 0.7rem;
+        line-height: 1.6;
+    }
+
+    .checkout-rate-note {
+        padding-top: 16px;
+        margin: 16px 0 0;
+        border-top: 1px solid var(--checkout-line);
+    }
+
+    .checkout-security-note {
+        display: flex;
+        gap: 8px;
+        padding: 14px;
+        margin: 16px 0 0;
+        background: #f7f8f9;
+    }
+
+    .checkout-security-note::before {
+        content: "✓";
+        flex: 0 0 auto;
+        color: var(--checkout-green);
+        font-weight: 900;
+    }
+
+    @media (max-width: 900px) {
+        .checkout-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .checkout-summary {
+            position: static;
+            order: -1;
+        }
+    }
+
+    @media (max-width: 620px) {
+        .checkout-shell {
+            width: min(100% - 24px, 1180px);
+        }
+
+        .checkout-form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .checkout-form-grid > :last-child {
+            grid-column: auto;
+        }
+
+        .checkout-card,
+        .checkout-summary {
+            padding: 22px 18px;
+        }
+    }
+
+    @media (max-width: 420px) {
+        .checkout-payment-box {
+            grid-template-columns: 1fr;
+        }
+
+        .checkout-payment-icon {
+            width: 38px;
+            height: 38px;
+        }
+
+        .checkout-item,
+        .checkout-total-row {
+            gap: 9px;
+        }
+
+        .checkout-money-kes,
+        .checkout-money-usd {
+            white-space: normal;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="checkout-page">
+    <section class="checkout-hero">
+        <div class="checkout-shell">
+            <span class="checkout-kicker">Secure checkout</span>
+            <h1>Review and continue.</h1>
+            <p>
+                Confirm your customer information and order summary before proceeding to the
+                secure hosted payment page.
+            </p>
+        </div>
+    </section>
+
+    <section class="checkout-section" aria-label="Checkout information">
+        <div class="checkout-shell checkout-layout">
+            <form method="post" class="checkout-card">
+                {{ form.hidden_tag() }}
+
+                <header class="checkout-card-header">
+                    <span class="checkout-kicker">Customer details</span>
+                    <h2>Complete your order information.</h2>
+                    <p>
+                        Enter the details that should appear on your order and payment record.
+                    </p>
+                </header>
+
+                <div class="checkout-form-grid">
+                    {{ field(form.full_name) }}
+                    {{ field(form.email) }}
+                    {{ field(form.country) }}
+                </div>
+
+                <div class="checkout-payment-box">
+                    <span class="checkout-payment-icon" aria-hidden="true">✓</span>
+                    <div class="checkout-payment-copy">
+                        <strong>Credit or debit card</strong>
+                        <small>Visa · Mastercard · Secure hosted checkout</small>
+                        <p>
+                            After you continue, the approved payment provider securely collects
+                            and authorises your card details on its PCI-compliant hosted page.
+                            FABS Trading does not store your full card number or security code.
+                        </p>
+                    </div>
+                </div>
+
+                <label class="checkout-check-row">
+                    {{ form.accept_terms() }}
+                    <span>{{ form.accept_terms.label.text }}</span>
+                </label>
+
+                {{ form.submit(class_='checkout-submit') }}
+            </form>
+
+            <aside class="checkout-summary" aria-labelledby="checkout-summary-title">
+                <span class="checkout-kicker">Order summary</span>
+                <h2 id="checkout-summary-title">Your order</h2>
+
+                <div class="checkout-items">
+                    {% for item in items %}
+                    <div class="checkout-item">
+                        <div class="checkout-item-name">
+                            {{ item.title }}
+                            <small>{{ item.platform }} · {{ item.region }}</small>
+                        </div>
+                        <div class="checkout-item-price" aria-label="Item price">
+                            <strong class="checkout-money-kes">{{ item.price|money_kes }}</strong>
+                            <span class="checkout-money-usd">{{ item.price|money_usd }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <dl class="checkout-totals">
+                    <div class="checkout-total-row">
+                        <dt>Subtotal</dt>
+                        <dd>
+                            <strong class="checkout-money-kes">{{ total|money_kes }}</strong>
+                            <span class="checkout-money-usd">{{ total|money_usd }}</span>
+                        </dd>
+                    </div>
+
+                    <div class="checkout-total-row">
+                        <dt>Delivery</dt>
+                        <dd>
+                            <strong class="checkout-money-kes">KES 0.00</strong>
+                            <span class="checkout-money-usd">USD 0.00</span>
+                        </dd>
+                    </div>
+
+                    <div class="checkout-total-row grand-total">
+                        <dt>Total</dt>
+                        <dd>
+                            <strong class="checkout-money-kes">{{ total|money_kes }}</strong>
+                            <span class="checkout-money-usd">{{ total|money_usd }}</span>
+                        </dd>
+                    </div>
+                </dl>
+
+                <p class="checkout-rate-note">
+                    KES is displayed first for local convenience. USD is the catalogue base
+                    currency. Indicative conversion: 1 USD = KES
+                    {{ '{:,.2f}'.format(usd_kes_rate) }}. The hosted checkout confirms the final
+                    payable amount and applicable exchange rate.
+                </p>
+
+                <p class="checkout-security-note">
+                    Your order is created before payment so its reference can be used for secure
+                    status verification and reconciliation.
+                </p>
+            </aside>
+        </div>
+    </section>
+</main>
+{% endblock %}
