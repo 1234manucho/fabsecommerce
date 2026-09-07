@@ -7,8 +7,24 @@ from decimal import Decimal, InvalidOperation
 from functools import wraps
 
 from dotenv import load_dotenv
-from flask import Flask, abort, flash, jsonify, redirect, render_template, request, session, url_for
-from flask_login import LoginManager, current_user, login_required, login_user, logout_user
+from flask import (
+    Flask,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+from flask_login import (
+    LoginManager,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+)
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -39,6 +55,18 @@ NEWS_ARTICLES = {
 load_dotenv()
 login_manager = LoginManager()
 csrf = CSRFProtect()
+DEFAULT_USD_KES_RATE = Decimal("130.00")
+CATALOGUE_PAGE_SIZE = 8
+
+
+def _positive_decimal(value, default=DEFAULT_USD_KES_RATE):
+    """Return a positive finite Decimal or a safe fallback value."""
+
+    try:
+        number = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return default
+    return number if number.is_finite() and number > 0 else default
 
 
 def create_app(config_class=Config):
@@ -52,13 +80,28 @@ def create_app(config_class=Config):
     login_manager.login_view = "login"
     login_manager.login_message = "Sign in to continue."
 
-    try:
-        usd_kes_rate = Decimal(str(os.getenv("USD_KES_RATE", "130.00")))
-        if usd_kes_rate <= 0:
-            raise ValueError
-    except (InvalidOperation, TypeError, ValueError):
-        usd_kes_rate = Decimal("130.00")
+    usd_kes_rate = _positive_decimal(
+        app.config.get("USD_KES_RATE", os.getenv("USD_KES_RATE", "130.00"))
+    ).quantize(Decimal("0.01"))
     app.config["USD_KES_RATE"] = usd_kes_rate
+
+    @app.template_filter("money_usd")
+    def money_usd(value):
+        amount = _positive_decimal(value, Decimal("0.00"))
+        return f"US$ {amount:,.2f}"
+
+    @app.template_filter("money_kes")
+    def money_kes(value):
+        amount = _positive_decimal(value, Decimal("0.00"))
+        converted = (amount * app.config["USD_KES_RATE"]).quantize(
+            Decimal("1")
+        )
+        return f"KES {converted:,.0f}"
+
+    @app.template_filter("usd_to_kes")
+    def usd_to_kes(value):
+        amount = _positive_decimal(value, Decimal("0.00"))
+        return (amount * app.config["USD_KES_RATE"]).quantize(Decimal("1"))
 
     @app.context_processor
     def inject_globals():
@@ -71,6 +114,8 @@ def create_app(config_class=Config):
             "whatsapp_kenya": app.config["WHATSAPP_KENYA"],
             "whatsapp_greece": app.config["WHATSAPP_GREECE"],
             "usd_kes_rate": app.config["USD_KES_RATE"],
+            "primary_display_currency": "KES",
+            "secondary_display_currency": "USD",
         }
 
     register_routes(app)
@@ -104,7 +149,12 @@ def audit(action, entity_type, entity_id=None, detail=None):
 def register_routes(app):
     @app.get("/")
     def index():
-        featured = Game.query.filter_by(is_active=True).order_by(Game.is_featured.desc(), Game.id).all()
+        featured = (
+            Game.query.filter_by(is_active=True)
+            .order_by(Game.is_featured.desc(), Game.price.asc(), Game.id.asc())
+            .limit(CATALOGUE_PAGE_SIZE)
+            .all()
+        )
         return render_template("index.html", games=featured, commodities=[])
 
     @app.get("/games")
@@ -117,18 +167,30 @@ def register_routes(app):
         except (TypeError, ValueError):
             page = 1
         products = Game.query.filter_by(is_active=True)
-        if query: products = products.filter(db.or_(Game.title.ilike(f"%{query}%"), Game.genre.ilike(f"%{query}%"), Game.supplier.ilike(f"%{query}%")))
-        if platform: products = products.filter(Game.platform.ilike(f"%{platform}%"))
-        if category: products = products.filter(Game.genre.ilike(f"%{category}%"))
+        if query:
+            products = products.filter(
+                db.or_(
+                    Game.title.ilike(f"%{query}%"),
+                    Game.genre.ilike(f"%{query}%"),
+                    Game.supplier.ilike(f"%{query}%"),
+                )
+            )
+        if platform:
+            products = products.filter(Game.platform.ilike(f"%{platform}%"))
+        if category:
+            products = products.filter(Game.genre.ilike(f"%{category}%"))
 
-        page_size = 8
         catalogue_total = products.count()
-        total_pages = max(1, (catalogue_total + page_size - 1) // page_size)
+        total_pages = max(
+            1,
+            (catalogue_total + CATALOGUE_PAGE_SIZE - 1)
+            // CATALOGUE_PAGE_SIZE,
+        )
         page = min(page, total_pages)
         catalogue = (
             products.order_by(Game.price.asc(), Game.id.asc())
-            .offset((page - 1) * page_size)
-            .limit(page_size)
+            .offset((page - 1) * CATALOGUE_PAGE_SIZE)
+            .limit(CATALOGUE_PAGE_SIZE)
             .all()
         )
         return render_template(
@@ -223,13 +285,27 @@ def register_routes(app):
 
     @app.get("/cart")
     def cart():
-        items = Game.query.filter(Game.id.in_(session.get("cart", []) or [-1]), Game.is_active.is_(True)).all()
+        items = (
+            Game.query.filter(
+                Game.id.in_(session.get("cart", []) or [-1]),
+                Game.is_active.is_(True),
+            )
+            .order_by(Game.price.asc(), Game.id.asc())
+            .all()
+        )
         total = sum((item.price for item in items), Decimal("0.00"))
         return render_template("cart.html", items=items, total=total)
 
     @app.route("/checkout", methods=["GET", "POST"])
     def checkout():
-        items = Game.query.filter(Game.id.in_(session.get("cart", []) or [-1]), Game.is_active.is_(True)).all()
+        items = (
+            Game.query.filter(
+                Game.id.in_(session.get("cart", []) or [-1]),
+                Game.is_active.is_(True),
+            )
+            .order_by(Game.price.asc(), Game.id.asc())
+            .all()
+        )
         if not items:
             flash("Your cart is empty.", "warning")
             return redirect(url_for("games"))
@@ -240,21 +316,45 @@ def register_routes(app):
             form.email.data = current_user.email
             form.country.data = current_user.country
         if form.validate_on_submit():
-            order = Order(reference=make_reference("GM"), user_id=current_user.id if current_user.is_authenticated else None, email=form.email.data.lower(), full_name=form.full_name.data, country=form.country.data, currency="USD", subtotal=total, total=total)
+            order = Order(
+                reference=make_reference("GM"),
+                user_id=current_user.id if current_user.is_authenticated else None,
+                email=form.email.data.lower(),
+                full_name=form.full_name.data,
+                country=form.country.data,
+                currency=app.config.get("BASE_CURRENCY", "USD"),
+                subtotal=total,
+                total=total,
+            )
             db.session.add(order)
             db.session.flush()
             for item in items:
-                order.items.append(OrderItem(game_id=item.id, title=item.title, platform=item.platform, unit_price=item.price, quantity=1))
+                order.items.append(
+                    OrderItem(
+                        game_id=item.id,
+                        title=item.title,
+                        platform=item.platform,
+                        unit_price=item.price,
+                        quantity=1,
+                    )
+                )
             audit("order_created", "order", order.id, order.reference)
             db.session.commit()
             session.pop("cart", None)
+            session["last_order_reference"] = order.reference
             return redirect(url_for("start_payment", order_id=order.id))
         return render_template("checkout.html", form=form, items=items, total=total)
 
     @app.get("/payments/start/<int:order_id>")
     def start_payment(order_id):
         order = Order.query.get_or_404(order_id)
-        if current_user.is_authenticated and order.user_id and order.user_id != current_user.id and not current_user.is_admin: abort(403)
+        if order.user_id:
+            if not current_user.is_authenticated:
+                abort(403)
+            if order.user_id != current_user.id and not current_user.is_admin:
+                abort(403)
+        elif session.get("last_order_reference") != order.reference:
+            abort(403)
         try:
             checkout_session = BankMIDGateway().create_checkout(order)
         except PaymentConfigurationError as exc:
@@ -275,6 +375,8 @@ def register_routes(app):
         if request.method == "POST":
             outcome = request.form.get("outcome")
             transaction = PaymentTransaction.query.filter_by(order_id=order.id).order_by(PaymentTransaction.id.desc()).first()
+            if transaction is None:
+                abort(404)
             if outcome == "approve":
                 order.payment_status, order.status = "paid", "processing"
                 transaction.status = "approved"
@@ -329,7 +431,13 @@ def register_routes(app):
     @app.get("/orders/<reference>")
     def order_detail(reference):
         order = Order.query.filter_by(reference=reference).first_or_404()
-        if order.user_id and (not current_user.is_authenticated or (order.user_id != current_user.id and not current_user.is_admin)): abort(403)
+        if order.user_id:
+            if not current_user.is_authenticated:
+                abort(403)
+            if order.user_id != current_user.id and not current_user.is_admin:
+                abort(403)
+        elif session.get("last_order_reference") != order.reference:
+            abort(403)
         return render_template("order_detail.html", order=order)
 
     @app.get("/commodities")
@@ -478,10 +586,25 @@ def register_routes(app):
 def register_cli(app):
     @app.cli.command("init-db")
     def init_db():
-        db.create_all(); seed_catalogue()
-        email=app.config["ADMIN_EMAIL"].lower(); password=app.config["ADMIN_PASSWORD"]
-        if password and not User.query.filter_by(email=email).first():
-            admin=User(full_name="FABS Administrator",email=email,role="admin"); admin.set_password(password); db.session.add(admin); db.session.commit()
+        db.create_all()
+        seed_catalogue()
+
+        email = app.config["ADMIN_EMAIL"].lower()
+        password = app.config["ADMIN_PASSWORD"]
+        admin = User.query.filter(db.func.lower(User.email) == email).first()
+
+        if admin is None and password:
+            admin = User(
+                full_name="FABS Administrator",
+                email=email,
+                role="admin",
+            )
+            admin.set_password(password)
+            db.session.add(admin)
+        elif admin is not None and admin.role != "admin":
+            admin.role = "admin"
+
+        db.session.commit()
         print("Database initialised and catalogue seeded.")
 
 
