@@ -3,7 +3,7 @@ import json
 import os
 import secrets
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from functools import wraps
 
 from dotenv import load_dotenv
@@ -52,6 +52,14 @@ def create_app(config_class=Config):
     login_manager.login_view = "login"
     login_manager.login_message = "Sign in to continue."
 
+    try:
+        usd_kes_rate = Decimal(str(os.getenv("USD_KES_RATE", "130.00")))
+        if usd_kes_rate <= 0:
+            raise ValueError
+    except (InvalidOperation, TypeError, ValueError):
+        usd_kes_rate = Decimal("130.00")
+    app.config["USD_KES_RATE"] = usd_kes_rate
+
     @app.context_processor
     def inject_globals():
         cart_ids = session.get("cart", [])
@@ -62,6 +70,7 @@ def create_app(config_class=Config):
             "support_email": app.config["SUPPORT_EMAIL"],
             "whatsapp_kenya": app.config["WHATSAPP_KENYA"],
             "whatsapp_greece": app.config["WHATSAPP_GREECE"],
+            "usd_kes_rate": app.config["USD_KES_RATE"],
         }
 
     register_routes(app)
@@ -104,18 +113,24 @@ def register_routes(app):
         platform = request.args.get("platform", "").strip()
         category = request.args.get("category", "").strip()
         try:
-            page = max(1, min(app.config["CATALOGUE_MAX_PAGES"], int(request.args.get("page", "1"))))
-        except ValueError:
+            page = max(1, int(request.args.get("page", "1")))
+        except (TypeError, ValueError):
             page = 1
         products = Game.query.filter_by(is_active=True)
         if query: products = products.filter(db.or_(Game.title.ilike(f"%{query}%"), Game.genre.ilike(f"%{query}%"), Game.supplier.ilike(f"%{query}%")))
         if platform: products = products.filter(Game.platform.ilike(f"%{platform}%"))
         if category: products = products.filter(Game.genre.ilike(f"%{category}%"))
-        catalogue = products.order_by(Game.is_featured.desc(), Game.title).all()
-        if catalogue and not (query or platform or category):
-            shift = ((page - 1) * 12) % len(catalogue)
-            catalogue = (catalogue[shift:] + catalogue[:shift])[:12]
-        total_pages = app.config["CATALOGUE_MAX_PAGES"] if not (query or platform or category) else 1
+
+        page_size = 8
+        catalogue_total = products.count()
+        total_pages = max(1, (catalogue_total + page_size - 1) // page_size)
+        page = min(page, total_pages)
+        catalogue = (
+            products.order_by(Game.price.asc(), Game.id.asc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
         return render_template(
             "games.html",
             games=catalogue,
@@ -124,7 +139,7 @@ def register_routes(app):
             category=category,
             page=page,
             total_pages=total_pages,
-            catalogue_total=app.config["CATALOGUE_TOTAL"],
+            catalogue_total=catalogue_total,
         )
 
     @app.get("/games/<slug>")
