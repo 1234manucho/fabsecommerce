@@ -1,1 +1,558 @@
-{% extends 'base.html' %}{% block title %}Cart | FABS Trading{% endblock %}{% block content %}<main class="light-page"><section class="small-hero"><div class="shell"><span class="kicker">Secure order</span><h1>Your cart.</h1><p>Review platform, region and edition before continuing.</p></div></section><section class="section light"><div class="shell cart-layout"><div>{% for item in items %}<article class="cart-item"><div style="background-image:url('{{ item.image_url }}')"></div><span><small>{{ item.platform }} · {{ item.region }}</small><h2>{{ item.title }}</h2><p>{{ item.edition }}</p><form method="post" action="{{ url_for('remove_from_cart',game_id=item.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button>Remove</button></form></span><strong>${{ '%.2f'|format(item.price) }}</strong></article>{% else %}<div class="empty"><h2>Your cart is empty.</h2><p>Explore the catalogue to begin.</p><a class="button primary" href="{{ url_for('games') }}">Browse games</a></div>{% endfor %}</div>{% if items %}<aside class="summary"><span class="kicker">Order summary</span><dl><div><dt>Subtotal</dt><dd>${{ '%.2f'|format(total) }}</dd></div><div><dt>Delivery</dt><dd>$0.00</dd></div><div><dt>Total</dt><dd>${{ '%.2f'|format(total) }}</dd></div></dl><a class="button primary full" href="{{ url_for('checkout') }}">Continue to checkout</a><p>Cards are processed on the approved bank-hosted checkout.</p></aside>{% endif %}</div></section></main>{% endblock %}
+{% extends 'base.html' %}
+
+{% block title %}Cart | FABS Trading{% endblock %}
+
+{% block head %}
+<style>
+    .cart-page {
+        --cart-red: #ed3138;
+        --cart-red-dark: #c91f28;
+        --cart-green: #21842a;
+        --cart-ink: #161a1f;
+        --cart-muted: #68717a;
+        --cart-line: #e0e3e6;
+        --cart-soft: #f4f5f6;
+        min-height: 70vh;
+        background: var(--cart-soft);
+        color: var(--cart-ink);
+    }
+
+    .cart-shell {
+        width: min(1180px, calc(100% - 40px));
+        margin-inline: auto;
+    }
+
+    .cart-hero {
+        position: relative;
+        overflow: hidden;
+        padding: clamp(54px, 8vw, 92px) 0;
+        background:
+            radial-gradient(circle at 88% 20%, rgba(237, 49, 56, 0.16), transparent 28%),
+            linear-gradient(135deg, #11161b 0%, #1d242b 100%);
+        color: #fff;
+    }
+
+    .cart-hero::after {
+        content: "";
+        position: absolute;
+        right: -80px;
+        bottom: -130px;
+        width: 330px;
+        height: 330px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+    }
+
+    .cart-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 15px;
+        color: #ff7479;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .cart-kicker::before {
+        content: "";
+        width: 24px;
+        height: 2px;
+        background: currentColor;
+    }
+
+    .cart-hero h1 {
+        max-width: 760px;
+        margin: 0;
+        font-size: clamp(2.5rem, 6vw, 4.7rem);
+        letter-spacing: -0.055em;
+        line-height: 0.98;
+    }
+
+    .cart-hero p {
+        max-width: 680px;
+        margin: 18px 0 0;
+        color: #bdc5cc;
+        font-size: clamp(0.95rem, 2vw, 1.08rem);
+        line-height: 1.7;
+    }
+
+    .cart-section {
+        padding: clamp(38px, 6vw, 74px) 0 86px;
+    }
+
+    .cart-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+        align-items: start;
+        gap: 28px;
+    }
+
+    .cart-list {
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+    }
+
+    .cart-item {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr) minmax(145px, auto);
+        align-items: center;
+        gap: 22px;
+        padding: 18px;
+        background: #fff;
+        border: 1px solid var(--cart-line);
+        box-shadow: 0 10px 30px rgba(17, 24, 39, 0.04);
+        transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    .cart-item:hover {
+        border-color: #cfd4d8;
+        box-shadow: 0 16px 42px rgba(17, 24, 39, 0.07);
+        transform: translateY(-1px);
+    }
+
+    .cart-item-media {
+        display: grid;
+        place-items: center;
+        width: 150px;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        background: #f0f2f3;
+    }
+
+    .cart-item-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .cart-item-copy {
+        min-width: 0;
+    }
+
+    .cart-item-meta {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--cart-green);
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.07em;
+        line-height: 1.45;
+        text-transform: uppercase;
+    }
+
+    .cart-item h2 {
+        margin: 0;
+        font-size: clamp(1.1rem, 2vw, 1.38rem);
+        letter-spacing: -0.025em;
+        line-height: 1.2;
+    }
+
+    .cart-item-edition {
+        margin: 7px 0 14px;
+        color: var(--cart-muted);
+        font-size: 0.82rem;
+    }
+
+    .cart-remove-form {
+        margin: 0;
+    }
+
+    .cart-remove {
+        padding: 0;
+        border: 0;
+        border-bottom: 1px solid transparent;
+        background: transparent;
+        color: #8a9198;
+        font: inherit;
+        font-size: 0.7rem;
+        font-weight: 850;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        cursor: pointer;
+    }
+
+    .cart-remove:hover,
+    .cart-remove:focus-visible {
+        border-bottom-color: var(--cart-red);
+        color: var(--cart-red);
+    }
+
+    .cart-item-price {
+        min-width: 0;
+        padding-left: 18px;
+        border-left: 1px solid var(--cart-line);
+        text-align: right;
+    }
+
+    .cart-item-price strong,
+    .cart-item-price span {
+        display: block;
+        white-space: nowrap;
+    }
+
+    .cart-item-price strong {
+        font-size: 1.1rem;
+        letter-spacing: -0.02em;
+    }
+
+    .cart-item-price span {
+        margin-top: 5px;
+        color: var(--cart-green);
+        font-size: 0.78rem;
+        font-weight: 800;
+    }
+
+    .cart-summary {
+        position: sticky;
+        top: 120px;
+        padding: 28px;
+        background: #fff;
+        border: 1px solid var(--cart-line);
+        box-shadow: 0 18px 55px rgba(17, 24, 39, 0.07);
+    }
+
+    .cart-summary h2 {
+        margin: 0 0 20px;
+        font-size: 1.7rem;
+        letter-spacing: -0.035em;
+    }
+
+    .cart-summary dl {
+        margin: 0;
+    }
+
+    .cart-summary-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 16px;
+        padding: 15px 0;
+        border-top: 1px solid var(--cart-line);
+    }
+
+    .cart-summary dt {
+        color: var(--cart-muted);
+        font-size: 0.82rem;
+        font-weight: 750;
+    }
+
+    .cart-summary dd {
+        margin: 0;
+        text-align: right;
+    }
+
+    .cart-money-kes,
+    .cart-money-usd {
+        display: block;
+        white-space: nowrap;
+    }
+
+    .cart-money-kes {
+        color: var(--cart-ink);
+        font-size: 0.92rem;
+        font-weight: 900;
+    }
+
+    .cart-money-usd {
+        margin-top: 4px;
+        color: var(--cart-green);
+        font-size: 0.72rem;
+        font-weight: 800;
+    }
+
+    .cart-summary-row.total {
+        align-items: center;
+        padding: 20px 0;
+        border-bottom: 1px solid var(--cart-line);
+    }
+
+    .cart-summary-row.total dt {
+        color: var(--cart-ink);
+        font-size: 0.95rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .cart-summary-row.total .cart-money-kes {
+        font-size: 1.45rem;
+        letter-spacing: -0.035em;
+    }
+
+    .cart-summary-row.total .cart-money-usd {
+        font-size: 0.82rem;
+    }
+
+    .cart-checkout {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 56px;
+        padding: 13px 18px;
+        margin-top: 22px;
+        background: var(--cart-red);
+        color: #fff;
+        font-size: 0.76rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        line-height: 1.25;
+        text-align: center;
+        text-decoration: none;
+        text-transform: uppercase;
+        transition: background-color 160ms ease, transform 160ms ease;
+    }
+
+    .cart-checkout:hover {
+        background: var(--cart-red-dark);
+        transform: translateY(-1px);
+    }
+
+    .cart-checkout:focus-visible {
+        outline: 3px solid rgba(237, 49, 56, 0.24);
+        outline-offset: 3px;
+    }
+
+    .cart-security-note,
+    .cart-rate-note {
+        color: #7a828a;
+        font-size: 0.7rem;
+        line-height: 1.6;
+    }
+
+    .cart-security-note {
+        display: flex;
+        gap: 8px;
+        margin: 16px 0 0;
+    }
+
+    .cart-security-note::before {
+        content: "✓";
+        flex: 0 0 auto;
+        color: var(--cart-green);
+        font-weight: 900;
+    }
+
+    .cart-rate-note {
+        padding-top: 15px;
+        margin: 15px 0 0;
+        border-top: 1px solid var(--cart-line);
+    }
+
+    .cart-empty {
+        padding: clamp(45px, 8vw, 82px) 28px;
+        background: #fff;
+        border: 1px solid var(--cart-line);
+        text-align: center;
+    }
+
+    .cart-empty-icon {
+        display: grid;
+        place-items: center;
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 20px;
+        background: #f7e9ea;
+        color: var(--cart-red);
+        border-radius: 50%;
+        font-size: 1.6rem;
+    }
+
+    .cart-empty h2 {
+        margin: 0;
+        font-size: clamp(1.65rem, 3vw, 2.25rem);
+        letter-spacing: -0.035em;
+    }
+
+    .cart-empty p {
+        margin: 12px 0 24px;
+        color: var(--cart-muted);
+    }
+
+    .cart-browse {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 52px;
+        padding: 12px 22px;
+        background: var(--cart-red);
+        color: #fff;
+        font-size: 0.76rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-decoration: none;
+        text-transform: uppercase;
+    }
+
+    @media (max-width: 900px) {
+        .cart-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .cart-summary {
+            position: static;
+        }
+    }
+
+    @media (max-width: 650px) {
+        .cart-shell {
+            width: min(100% - 24px, 1180px);
+        }
+
+        .cart-item {
+            grid-template-columns: 104px minmax(0, 1fr);
+            align-items: start;
+            gap: 16px;
+            padding: 14px;
+        }
+
+        .cart-item-media {
+            width: 104px;
+        }
+
+        .cart-item-price {
+            grid-column: 2;
+            padding: 12px 0 0;
+            border-top: 1px solid var(--cart-line);
+            border-left: 0;
+            text-align: left;
+        }
+
+        .cart-item-price strong,
+        .cart-item-price span {
+            white-space: normal;
+        }
+    }
+
+    @media (max-width: 420px) {
+        .cart-item {
+            grid-template-columns: 84px minmax(0, 1fr);
+        }
+
+        .cart-item-media {
+            width: 84px;
+        }
+
+        .cart-summary {
+            padding: 22px 18px;
+        }
+
+        .cart-summary-row {
+            gap: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="cart-page">
+    <section class="cart-hero">
+        <div class="cart-shell">
+            <span class="cart-kicker">Secure order</span>
+            <h1>Your inquiry cart.</h1>
+            <p>
+                Review each product's application, region and edition before continuing to
+                secure checkout.
+            </p>
+        </div>
+    </section>
+
+    <section class="cart-section" aria-label="Shopping cart">
+        <div class="cart-shell cart-layout">
+            <div class="cart-list">
+                {% for item in items %}
+                <article class="cart-item">
+                    <div class="cart-item-media">
+                        <img
+                            src="{{ item.image_url }}"
+                            alt="{{ item.title }} product image"
+                            loading="lazy"
+                            decoding="async"
+                            referrerpolicy="no-referrer"
+                        >
+                    </div>
+
+                    <div class="cart-item-copy">
+                        <small class="cart-item-meta">{{ item.platform }} · {{ item.region }}</small>
+                        <h2>{{ item.title }}</h2>
+                        <p class="cart-item-edition">{{ item.edition }}</p>
+
+                        <form
+                            class="cart-remove-form"
+                            method="post"
+                            action="{{ url_for('remove_from_cart', game_id=item.id) }}"
+                        >
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="cart-remove" type="submit" aria-label="Remove {{ item.title }} from cart">
+                                Remove item
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="cart-item-price" aria-label="Item price">
+                        <strong>{{ item.price|money_kes }}</strong>
+                        <span>{{ item.price|money_usd }}</span>
+                    </div>
+                </article>
+                {% else %}
+                <div class="cart-empty">
+                    <span class="cart-empty-icon" aria-hidden="true">▢</span>
+                    <h2>Your cart is empty.</h2>
+                    <p>Explore the gaming-products catalogue and add items to begin your order.</p>
+                    <a class="cart-browse" href="{{ url_for('games') }}">Browse gaming products</a>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if items %}
+            <aside class="cart-summary" aria-labelledby="cart-summary-title">
+                <span class="cart-kicker">Order summary</span>
+                <h2 id="cart-summary-title">Cart totals</h2>
+
+                <dl>
+                    <div class="cart-summary-row">
+                        <dt>Subtotal</dt>
+                        <dd>
+                            <strong class="cart-money-kes">{{ total|money_kes }}</strong>
+                            <span class="cart-money-usd">{{ total|money_usd }}</span>
+                        </dd>
+                    </div>
+
+                    <div class="cart-summary-row">
+                        <dt>Delivery</dt>
+                        <dd>
+                            <strong class="cart-money-kes">KES 0.00</strong>
+                            <span class="cart-money-usd">USD 0.00</span>
+                        </dd>
+                    </div>
+
+                    <div class="cart-summary-row total">
+                        <dt>Total</dt>
+                        <dd>
+                            <strong class="cart-money-kes">{{ total|money_kes }}</strong>
+                            <span class="cart-money-usd">{{ total|money_usd }}</span>
+                        </dd>
+                    </div>
+                </dl>
+
+                <a class="cart-checkout" href="{{ url_for('checkout') }}">
+                    Continue to secure checkout
+                </a>
+
+                <p class="cart-security-note">
+                    Card details are entered and processed through the approved secure checkout.
+                </p>
+                <p class="cart-rate-note">
+                    KES is displayed first for local convenience. USD is the catalogue base
+                    currency. Indicative conversion: 1 USD = KES
+                    {{ '{:,.2f}'.format(usd_kes_rate) }}. The final payable amount and exchange
+                    rate are confirmed at checkout.
+                </p>
+            </aside>
+            {% endif %}
+        </div>
+    </section>
+</main>
+{% endblock %}
