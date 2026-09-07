@@ -60,6 +60,7 @@
   .game-rfq-selected h2 { margin: 0; font-size: .88rem; line-height: 1.4; }
   .game-rfq-selected-meta { color: var(--rfq-muted); font-size: .67rem; text-align: right; }
   .game-rfq-selected-meta strong { display: block; margin-bottom: 4px; color: var(--rfq-ink); font-size: .8rem; }
+  .game-rfq-selected-meta em { display: block; margin-bottom: 5px; color: var(--rfq-green); font-size: .72rem; font-style: normal; font-weight: 850; }
 
   .game-rfq-form-head { padding: 30px 32px 24px; border-bottom: 1px solid var(--rfq-line); }
   .game-rfq-form-head h2 { margin: 0; font-size: clamp(1.4rem, 2.4vw, 2rem); letter-spacing: -.035em; }
@@ -115,6 +116,7 @@
 {% endblock %}
 
 {% block content %}
+{% set fx_rate = usd_kes_rate|default(130, true) %}
 <main class="game-rfq-page">
   <section class="game-rfq-hero">
     <div class="game-rfq-shell game-rfq-hero-inner">
@@ -148,7 +150,7 @@
           <div class="game-rfq-selected">
             <img src="{{ game.image_url }}" alt="{{ game.title }}" loading="eager" decoding="async" referrerpolicy="no-referrer">
             <div><p class="game-rfq-selected-label">Selected gaming product</p><h2>{{ game.title }}</h2></div>
-            <div class="game-rfq-selected-meta"><strong>From US${{ '{:,.2f}'.format(game.price) }}</strong><span>{{ game.minimum_order }}</span></div>
+            <div class="game-rfq-selected-meta"><strong>From US$ {{ '{:,.2f}'.format(game.price) }}</strong><em>From KES {{ '{:,.0f}'.format(game.price * fx_rate) }}</em><span>{{ game.minimum_order }}</span></div>
           </div>
         {% endif %}
 
