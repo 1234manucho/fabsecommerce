@@ -1,3 +1,530 @@
-{% extends 'base.html' %}{% block title %}{{ game.title }} | FABS Trading{% endblock %}
-{% block head %}<style>.game-product-page{background:#f4f5f6;color:#161a1f}.gpd-shell{width:min(1240px,calc(100% - 40px));margin:auto}.gpd-crumb{padding:18px 0;color:#757c84;font-size:9px}.gpd-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:45px;background:#fff;border:1px solid #e0e3e6;padding:30px;margin-bottom:70px}.gpd-media{position:sticky;top:125px;align-self:start}.gpd-main-image{height:600px;background:#eef0f1;position:relative}.gpd-main-image img{width:100%;height:100%;object-fit:contain}.gpd-main-image span{position:absolute;left:14px;top:14px;background:#fff;padding:8px 10px;font-size:7px;font-weight:900}.gpd-video{margin-top:10px;width:100%;height:160px;position:relative;overflow:hidden;background:#121519}.gpd-video video{width:100%;height:100%;object-fit:cover}.gpd-video b{position:absolute;left:14px;bottom:12px;color:#fff;font-size:8px}.gpd-info>span{color:#21842a;background:#e9f7e7;padding:6px 8px;font-size:8px;font-weight:900}.gpd-info h1{font-size:clamp(34px,4vw,54px);line-height:1.06;letter-spacing:-.045em;margin:18px 0}.gpd-info>p{color:#69717a;font-size:12px;line-height:1.8}.gpd-price{padding:22px;background:#f5f6f7;margin:22px 0}.gpd-price small{display:block;font-size:8px;color:#777f87}.gpd-price strong{display:block;font-size:37px;margin:6px 0}.gpd-price del{font-size:11px;color:#8a9198}.gpd-specs{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #e2e5e7;border-left:1px solid #e2e5e7}.gpd-specs div{padding:15px;border-right:1px solid #e2e5e7;border-bottom:1px solid #e2e5e7}.gpd-specs span{display:block;color:#8a9198;font-size:7px;text-transform:uppercase;letter-spacing:.09em}.gpd-specs strong{font-size:11px;display:block;margin-top:6px}.gpd-cta{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:24px}.gpd-cta a,.gpd-cta button{height:52px;border:1px solid #ed3138;display:flex;align-items:center;justify-content:center;background:#fff;color:#ed3138;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer}.gpd-cta a:first-child{background:#ed3138;color:#fff}.gpd-assurance{margin-top:22px;padding:18px;border:1px solid #e2e5e7}.gpd-assurance strong{font-size:10px}.gpd-assurance ul{padding-left:18px;color:#68717a;font-size:9px;line-height:1.8}.gpd-description{background:#fff;border:1px solid #e0e3e6;padding:35px;margin-bottom:70px}.gpd-description h2{font-size:28px}.gpd-description p{color:#68717a;line-height:1.8;font-size:11px}@media(max-width:850px){.gpd-grid{grid-template-columns:1fr}.gpd-media{position:static}.gpd-main-image{height:420px}}@media(max-width:520px){.gpd-main-image{height:330px}.gpd-cta{grid-template-columns:1fr}}</style>{% endblock %}
-{% block content %}<main class="game-product-page"><div class="gpd-shell"><div class="gpd-crumb"><a href="{{ url_for('games') }}">All Games</a> / {{ game.genre }} / {{ game.title }}</div><section class="gpd-grid"><div class="gpd-media"><div class="gpd-main-image"><img src="{{ game.image_url }}" alt="{{ game.title }} authentic product photograph"><span>● REAL PRODUCT MEDIA · {{ game.photo_source }}</span></div>{% if game.trailer_url %}<div class="gpd-video"><video autoplay muted loop playsinline poster="{{ game.image_url }}"><source src="{{ game.trailer_url }}" type="video/mp4"></video><b>▶ COMMERCIAL CATEGORY VIDEO</b></div>{% endif %}</div><article class="gpd-info"><span>✓ Secured Trading</span><h1>{{ game.title }}</h1><p>{{ game.description }}</p><div class="gpd-price"><small>INDICATIVE WHOLESALE PRICE</small><strong>US${{ '{:,.2f}'.format(game.price) }}</strong>{% if game.compare_price %}<del>US${{ '{:,.2f}'.format(game.compare_price) }}</del>{% endif %}</div><div class="gpd-specs"><div><span>Minimum order</span><strong>{{ game.minimum_order }}</strong></div><div><span>Supplier</span><strong>{{ game.supplier }}</strong></div><div><span>Category</span><strong>{{ game.genre }}</strong></div><div><span>Application</span><strong>{{ game.platform }}</strong></div><div><span>Region</span><strong>{{ game.region }}</strong></div><div><span>Availability</span><strong>Confirm by inquiry</strong></div></div><div class="gpd-cta"><a href="{{ url_for('game_inquiry',slug=game.slug) }}">Send inquiry</a><form method="post" action="{{ url_for('add_to_cart',game_id=game.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Add to inquiry basket</button></form></div><div class="gpd-assurance"><strong>Buyer assurance</strong><ul><li>Traceable FABS inquiry reference</li><li>MOQ and specification confirmation before contract</li><li>Supplier, media and commercial terms reviewed during quotation</li><li>Secure bank-hosted checkout where online payment applies</li></ul></div></article></section><section class="gpd-description"><h2>Product sourcing information</h2><p>{{ game.description }} Final specifications, branding, production samples, certification, freight, duty, installation and warranty are confirmed in the commercial quotation. Product media supports preliminary evaluation and does not replace a signed technical specification.</p></section></div></main>{% endblock %}
+{% extends 'base.html' %}
+
+{% block title %}{{ game.title }} | FABS Trading{% endblock %}
+
+{% block head %}
+<style>
+    .game-product-page {
+        --gpd-red: #ed3138;
+        --gpd-red-dark: #c91f28;
+        --gpd-green: #21842a;
+        --gpd-ink: #161a1f;
+        --gpd-muted: #68717a;
+        --gpd-line: #e0e3e6;
+        --gpd-soft: #f4f5f6;
+        background: var(--gpd-soft);
+        color: var(--gpd-ink);
+    }
+
+    .gpd-shell {
+        width: min(1240px, calc(100% - 40px));
+        margin-inline: auto;
+    }
+
+    .gpd-crumb {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 20px 0;
+        color: #757c84;
+        font-size: 0.78rem;
+    }
+
+    .gpd-crumb a {
+        color: var(--gpd-red-dark);
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .gpd-crumb a:hover,
+    .gpd-crumb a:focus-visible {
+        text-decoration: underline;
+    }
+
+    .gpd-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(380px, 0.95fr);
+        gap: clamp(30px, 4vw, 52px);
+        padding: clamp(22px, 3vw, 38px);
+        margin-bottom: 28px;
+        background: #fff;
+        border: 1px solid var(--gpd-line);
+        box-shadow: 0 18px 55px rgba(17, 24, 39, 0.06);
+    }
+
+    .gpd-media {
+        position: sticky;
+        top: 125px;
+        align-self: start;
+        min-width: 0;
+    }
+
+    .gpd-main-image {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 540px;
+        overflow: hidden;
+        background: #eef0f1;
+    }
+
+    .gpd-main-image img {
+        width: 100%;
+        height: 100%;
+        max-height: 640px;
+        object-fit: contain;
+    }
+
+    .gpd-media-badge {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        max-width: calc(100% - 28px);
+        padding: 9px 11px;
+        background: rgba(255, 255, 255, 0.94);
+        color: #343a40;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        font-size: 0.66rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        line-height: 1.35;
+        text-transform: uppercase;
+    }
+
+    .gpd-media-badge::before {
+        content: "";
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        margin-right: 6px;
+        background: var(--gpd-green);
+        border-radius: 50%;
+    }
+
+    .gpd-video {
+        position: relative;
+        height: 190px;
+        margin-top: 12px;
+        overflow: hidden;
+        background: #121519;
+    }
+
+    .gpd-video video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .gpd-video-label {
+        position: absolute;
+        left: 14px;
+        bottom: 12px;
+        padding: 7px 9px;
+        background: rgba(18, 21, 25, 0.78);
+        color: #fff;
+        font-size: 0.68rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        pointer-events: none;
+    }
+
+    .gpd-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 10px;
+        background: #e9f7e7;
+        color: var(--gpd-green);
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .gpd-info h1 {
+        margin: 18px 0 14px;
+        font-size: clamp(2.25rem, 4vw, 3.6rem);
+        letter-spacing: -0.045em;
+        line-height: 1.04;
+    }
+
+    .gpd-lead {
+        margin: 0;
+        color: var(--gpd-muted);
+        font-size: 0.96rem;
+        line-height: 1.75;
+    }
+
+    .gpd-price {
+        padding: 24px;
+        margin: 24px 0;
+        background: linear-gradient(135deg, #f7f8f9, #f1f3f4);
+        border-left: 4px solid var(--gpd-red);
+    }
+
+    .gpd-price-label {
+        display: block;
+        margin-bottom: 8px;
+        color: #777f87;
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .gpd-price-kes {
+        display: block;
+        color: var(--gpd-ink);
+        font-size: clamp(2.15rem, 4vw, 3.15rem);
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        line-height: 1.05;
+    }
+
+    .gpd-price-usd {
+        display: block;
+        margin-top: 8px;
+        color: var(--gpd-green);
+        font-size: 1.15rem;
+        font-weight: 850;
+    }
+
+    .gpd-compare {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 6px 12px;
+        margin-top: 14px;
+        color: #8a9198;
+        font-size: 0.78rem;
+    }
+
+    .gpd-compare span {
+        width: 100%;
+        color: #777f87;
+        font-size: 0.66rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .gpd-compare del:first-of-type {
+        font-weight: 800;
+    }
+
+    .gpd-rate-note {
+        margin: 14px 0 0;
+        color: #7a828a;
+        font-size: 0.72rem;
+        line-height: 1.55;
+    }
+
+    .gpd-specs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        border-top: 1px solid var(--gpd-line);
+        border-left: 1px solid var(--gpd-line);
+    }
+
+    .gpd-specs div {
+        min-width: 0;
+        padding: 16px;
+        border-right: 1px solid var(--gpd-line);
+        border-bottom: 1px solid var(--gpd-line);
+    }
+
+    .gpd-specs span {
+        display: block;
+        color: #8a9198;
+        font-size: 0.66rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .gpd-specs strong {
+        display: block;
+        margin-top: 6px;
+        overflow-wrap: anywhere;
+        font-size: 0.88rem;
+        line-height: 1.4;
+    }
+
+    .gpd-cta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 24px;
+    }
+
+    .gpd-cta form {
+        width: 100%;
+        margin: 0;
+    }
+
+    .gpd-cta a,
+    .gpd-cta button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 54px;
+        padding: 12px 16px;
+        border: 1px solid var(--gpd-red);
+        border-radius: 0;
+        background: #fff;
+        color: var(--gpd-red);
+        font: inherit;
+        font-size: 0.76rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        line-height: 1.25;
+        text-align: center;
+        text-decoration: none;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .gpd-cta a {
+        background: var(--gpd-red);
+        color: #fff;
+    }
+
+    .gpd-cta a:hover,
+    .gpd-cta button:hover {
+        background: var(--gpd-red-dark);
+        color: #fff;
+        transform: translateY(-1px);
+    }
+
+    .gpd-cta a:focus-visible,
+    .gpd-cta button:focus-visible {
+        outline: 3px solid rgba(237, 49, 56, 0.24);
+        outline-offset: 3px;
+    }
+
+    .gpd-assurance {
+        padding: 20px;
+        margin-top: 22px;
+        border: 1px solid var(--gpd-line);
+        background: #fff;
+    }
+
+    .gpd-assurance strong {
+        font-size: 0.86rem;
+    }
+
+    .gpd-assurance ul {
+        padding-left: 20px;
+        margin: 10px 0 0;
+        color: var(--gpd-muted);
+        font-size: 0.78rem;
+        line-height: 1.75;
+    }
+
+    .gpd-description {
+        display: grid;
+        grid-template-columns: minmax(220px, 0.36fr) 1fr;
+        gap: clamp(24px, 4vw, 55px);
+        padding: clamp(26px, 4vw, 44px);
+        margin-bottom: 70px;
+        background: #fff;
+        border: 1px solid var(--gpd-line);
+    }
+
+    .gpd-description h2 {
+        margin: 0;
+        font-size: clamp(1.7rem, 3vw, 2.25rem);
+        letter-spacing: -0.035em;
+        line-height: 1.15;
+    }
+
+    .gpd-description p {
+        margin: 0;
+        color: var(--gpd-muted);
+        font-size: 0.9rem;
+        line-height: 1.8;
+    }
+
+    @media (max-width: 900px) {
+        .gpd-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .gpd-media {
+            position: static;
+        }
+
+        .gpd-main-image {
+            min-height: 440px;
+        }
+    }
+
+    @media (max-width: 620px) {
+        .gpd-shell {
+            width: min(100% - 24px, 1240px);
+        }
+
+        .gpd-grid {
+            gap: 26px;
+            padding: 16px;
+        }
+
+        .gpd-main-image {
+            min-height: 330px;
+        }
+
+        .gpd-video {
+            height: 165px;
+        }
+
+        .gpd-price {
+            padding: 20px;
+        }
+
+        .gpd-cta,
+        .gpd-description {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 420px) {
+        .gpd-main-image {
+            min-height: 280px;
+        }
+
+        .gpd-specs {
+            grid-template-columns: 1fr;
+        }
+
+        .gpd-info h1 {
+            font-size: 2.05rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="game-product-page">
+    <div class="gpd-shell">
+        <nav class="gpd-crumb" aria-label="Breadcrumb">
+            <a href="{{ url_for('games') }}">All gaming products</a>
+            <span aria-hidden="true">/</span>
+            <span>{{ game.genre }}</span>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">{{ game.title }}</span>
+        </nav>
+
+        <section class="gpd-grid" aria-labelledby="game-title">
+            <div class="gpd-media">
+                <div class="gpd-main-image">
+                    <img
+                        src="{{ game.image_url }}"
+                        alt="{{ game.title }} product photograph"
+                        loading="eager"
+                        decoding="async"
+                        referrerpolicy="no-referrer"
+                    >
+                    <span class="gpd-media-badge">
+                        Product media{% if game.photo_source %} · {{ game.photo_source }}{% endif %}
+                    </span>
+                </div>
+
+                {% if game.trailer_url %}
+                <div class="gpd-video">
+                    <video muted loop playsinline controls preload="metadata" poster="{{ game.image_url }}">
+                        <source src="{{ game.trailer_url }}" type="video/mp4">
+                        Your browser does not support embedded video.
+                    </video>
+                    <span class="gpd-video-label">Commercial category video</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <article class="gpd-info">
+                <span class="gpd-status">✓ Secured trading enquiry</span>
+                <h1 id="game-title">{{ game.title }}</h1>
+                <p class="gpd-lead">{{ game.description }}</p>
+
+                <div class="gpd-price" aria-label="Indicative wholesale price">
+                    <span class="gpd-price-label">Indicative wholesale price</span>
+                    <strong class="gpd-price-kes">{{ game.price|money_kes }}</strong>
+                    <span class="gpd-price-usd">{{ game.price|money_usd }}</span>
+
+                    {% if game.compare_price and game.compare_price > game.price %}
+                    <div class="gpd-compare">
+                        <span>Previous reference price</span>
+                        <del>{{ game.compare_price|money_kes }}</del>
+                        <del>{{ game.compare_price|money_usd }}</del>
+                    </div>
+                    {% endif %}
+
+                    <p class="gpd-rate-note">
+                        KES is shown first for local convenience. USD is the catalogue base currency.
+                        Indicative conversion: 1 USD = KES {{ '{:,.2f}'.format(usd_kes_rate) }}.
+                        The final invoice confirms the applicable exchange rate and commercial terms.
+                    </p>
+                </div>
+
+                <div class="gpd-specs" aria-label="Product specifications">
+                    <div>
+                        <span>Minimum order</span>
+                        <strong>{{ game.minimum_order }}</strong>
+                    </div>
+                    <div>
+                        <span>Supplier</span>
+                        <strong>{{ game.supplier }}</strong>
+                    </div>
+                    <div>
+                        <span>Category</span>
+                        <strong>{{ game.genre }}</strong>
+                    </div>
+                    <div>
+                        <span>Application</span>
+                        <strong>{{ game.platform }}</strong>
+                    </div>
+                    <div>
+                        <span>Region</span>
+                        <strong>{{ game.region }}</strong>
+                    </div>
+                    <div>
+                        <span>Availability</span>
+                        <strong>Confirmed during enquiry</strong>
+                    </div>
+                </div>
+
+                <div class="gpd-cta">
+                    <a href="{{ url_for('game_inquiry', slug=game.slug) }}">Send product enquiry</a>
+                    <form method="post" action="{{ url_for('add_to_cart', game_id=game.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit">Add to inquiry basket</button>
+                    </form>
+                </div>
+
+                <div class="gpd-assurance">
+                    <strong>Buyer assurance</strong>
+                    <ul>
+                        <li>Traceable FABS enquiry reference</li>
+                        <li>MOQ and specification confirmation before contract</li>
+                        <li>Supplier, media and commercial terms reviewed during quotation</li>
+                        <li>Secure bank-hosted checkout where online payment applies</li>
+                    </ul>
+                </div>
+            </article>
+        </section>
+
+        <section class="gpd-description" aria-labelledby="sourcing-information-title">
+            <h2 id="sourcing-information-title">Product sourcing information</h2>
+            <p>
+                {{ game.description }} Final specifications, branding, production samples,
+                certification, freight, duty, installation and warranty are confirmed in the
+                commercial quotation. Product media supports preliminary evaluation and does not
+                replace a signed technical specification.
+            </p>
+        </section>
+    </div>
+</main>
+{% endblock %}
