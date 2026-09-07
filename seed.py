@@ -1,4 +1,4 @@
-"""Idempotent, price-ordered catalogue seed for FABS Gaming Marketplace.
+"""Idempotent, gaming-only catalogue seed for FABS Gaming Marketplace.
 
 The catalogue contains exactly 80 products: eight products on each of ten pages.
 Starting unit prices are non-decreasing from page 1 through page 10. In the
@@ -8,6 +8,11 @@ games route, preserve that contract with::
 
 Run this module inside the Flask application context. Do not execute
 ``python seed.py`` directly.
+
+Every run refreshes the 80 approved gaming products, deactivates obsolete game
+rows that are no longer part of this catalogue, and deactivates all legacy
+commodity rows. Nothing is deleted, so historical order and enquiry relations
+remain intact.
 """
 
 from decimal import Decimal
@@ -704,19 +709,19 @@ GAME_DATA = [
     },
     # 43 · PAGE 6
     {
-        "slug": "premium-stadium-flagpole-by-zksports-for-ultimate-game-day-exp-043",
-        "title": "Premium Stadium Flagpole by Zksports for Ultimate Game Day Experience",
+        "slug": "funspace-indoor-electronic-basketball-arcade-game-machine-043",
+        "title": "Funspace Indoor Electronic Basketball Arcade Game Machine",
         "genre": "Sports Game",
         "platform": "Sports / Recreation",
         "price": 899,
-        "compare": 899,
-        "image": "https://image.made-in-china.com/43f34j00zQSKgqpsfocJ/Premium-Stadium-Flagpole-by-Zksports-for-Ultimate-Game-Day-Experience.webp",
+        "compare": 999,
+        "image": "https://image.made-in-china.com/202f0j00HYPehiVzhwoI/Funspace-Factory-Price-Adult-Indoor-Electronic-Adult-Indoor-Electronic-Basketball-Arcade-Game-Machine.webp",
         "trailer": TRAILERS["sports"],
-        "moq": "1 Piece (MOQ)",
-        "supplier": "Guangdong Zhongke Intelligent Sports Technology Co., Ltd.",
+        "moq": "1 Set (MOQ)",
+        "supplier": "Guangzhou Funspace Technology Co., Ltd.",
         "source": "Made-in-China product listing",
         "region": "China",
-        "summary": "Interactive sports-entertainment product suitable for recreation venues, events and activity-based leisure businesses.",
+        "summary": "Commercial coin-operated basketball shooting game designed for arcades, family entertainment centres and indoor amusement venues.",
     },
     # 44 · PAGE 6
     {
@@ -1312,45 +1317,49 @@ GAME_DATA = [
     },
 ]
 
-
-COMMODITY_DATA = [
-    ("bitumen", "Bitumen", "Road & construction", "40/50, 60/70, 80/100, PMB", "500 MT"),
-    ("tmt-bars", "TMT Reinforcement Bars", "Steel products", "Multiple grades and diameters", "100 MT"),
-    ("steel-angles", "Steel Angles", "Steel products", "Equal and unequal angles", "50 MT"),
-    ("z-purlins", "Z Purlins", "Steel products", "Project-specific dimensions", "50 MT"),
-    ("black-pipes", "Black Steel Pipes", "Steel products", "Welded and seamless", "50 MT"),
-    ("i-beams", "I-Beams", "Structural steel", "Multiple profiles", "100 MT"),
-    ("channels", "Steel Channels", "Structural steel", "U and C profiles", "50 MT"),
-    ("chequered-plates", "Chequered Plates", "Steel plates", "Multiple thicknesses", "50 MT"),
-    ("steel-plates", "Steel Plates", "Steel products", "Commercial and project grades", "100 MT"),
-    ("expanded-metal", "Expanded Metal", "Fabricated steel", "Multiple mesh sizes", "20 MT"),
-    ("weld-mesh", "Weld Mesh", "Fabricated steel", "Multiple wire gauges", "20 MT"),
-    ("brc-mesh", "BRC Mesh", "Construction steel", "Standard sheets and rolls", "50 MT"),
-    ("nails", "Construction Nails", "Fasteners", "Multiple lengths and gauges", "20 MT"),
-    ("hollow-sections", "Hollow Sections", "Structural steel", "Square and rectangular", "50 MT"),
-    ("base-oil", "Virgin & RC Base Oil", "Base oils", "SN grades and re-refined", "100 MT"),
-    ("rpo", "Rubber Process Oil", "Process oils", "Aromatic and treated", "100 MT"),
-    ("carbon-black", "Carbon Black", "Performance materials", "N-series grades", "25 MT"),
-    ("caustic-soda", "Caustic Soda Flakes", "Industrial chemicals", "98–99%", "25 MT"),
-]
-
-
 def _duplicates(values):
     seen = set()
     return {value for value in values if value in seen or seen.add(value)}
 
 
 def validate_seed_data():
-    """Fail before database changes if order, identities or images are wrong."""
+    """Fail before database changes if catalogue integrity is compromised."""
 
     expected = PAGE_SIZE * PAGE_COUNT
     if len(GAME_DATA) != expected:
         raise ValueError(f"Expected {expected} games for ten 8-product pages; received {len(GAME_DATA)}")
 
+    required_fields = {
+        "slug",
+        "title",
+        "genre",
+        "platform",
+        "price",
+        "compare",
+        "image",
+        "trailer",
+        "moq",
+        "supplier",
+        "source",
+        "region",
+        "summary",
+    }
+    for position, item in enumerate(GAME_DATA, start=1):
+        missing = required_fields.difference(item)
+        if missing:
+            raise ValueError(
+                f"Game {position} is missing required fields: {sorted(missing)}"
+            )
+
+        empty = sorted(
+            key for key in required_fields if not str(item[key]).strip()
+        )
+        if empty:
+            raise ValueError(f"Game {position} has empty fields: {empty}")
+
     checks = {
         "game slugs": [item["slug"] for item in GAME_DATA],
         "game images": [item["image"] for item in GAME_DATA],
-        "commodity slugs": [item[0] for item in COMMODITY_DATA],
     }
     for label, values in checks.items():
         repeated = _duplicates(values)
@@ -1358,6 +1367,11 @@ def validate_seed_data():
             raise ValueError(f"Duplicate {label}: {sorted(repeated)}")
 
     prices = [Decimal(str(item["price"])) for item in GAME_DATA]
+    compare_prices = [Decimal(str(item["compare"])) for item in GAME_DATA]
+    if any(price <= 0 for price in prices):
+        raise ValueError("Every game must have a positive price")
+    if any(compare < price for price, compare in zip(prices, compare_prices)):
+        raise ValueError("A compare price cannot be lower than its selling price")
     if prices != sorted(prices):
         raise ValueError("Game prices must be in non-decreasing catalogue order")
     if prices[-1] < Decimal("10000") or prices[-1] > Decimal("20000"):
@@ -1365,11 +1379,19 @@ def validate_seed_data():
 
 
 def seed_catalogue():
-    """Create or refresh the catalogue safely and return record counts."""
+    """Upsert the gaming catalogue and deactivate all non-catalogue products."""
 
     validate_seed_data()
 
     try:
+        catalogue_slugs = [item["slug"] for item in GAME_DATA]
+
+        games_deactivated = (
+            Game.query.filter(Game.is_active.is_(True))
+            .filter(~Game.slug.in_(catalogue_slugs))
+            .update({Game.is_active: False}, synchronize_session=False)
+        )
+
         for index, item in enumerate(GAME_DATA):
             game = Game.query.filter_by(slug=item["slug"]).first()
             if game is None:
@@ -1393,26 +1415,9 @@ def seed_catalogue():
             game.is_featured = index < PAGE_SIZE
             game.is_active = True
 
-        commodity_image = "/static/images/commodity-list.jpeg"
-        for slug, name, category, grade, moq in COMMODITY_DATA:
-            commodity = Commodity.query.filter_by(slug=slug).first()
-            if commodity is None:
-                commodity = Commodity(slug=slug)
-                db.session.add(commodity)
-
-            commodity.name = name
-            commodity.category = category
-            commodity.grade = grade
-            commodity.minimum_order = moq
-            commodity.unit = "Metric tonne"
-            commodity.incoterms = "EXW · FOB · CFR · CIF"
-            commodity.description = (
-                f"{name} supplied against confirmed specification, volume, "
-                "destination and commercial terms."
-            )
-            commodity.applications = "Industrial processing|Manufacturing|Project supply"
-            commodity.image_url = commodity_image
-            commodity.is_active = True
+        commodities_deactivated = Commodity.query.filter_by(is_active=True).update(
+            {Commodity.is_active: False}, synchronize_session=False
+        )
 
         db.session.commit()
     except Exception:
@@ -1421,8 +1426,10 @@ def seed_catalogue():
 
     return {
         "games": len(GAME_DATA),
-        "commodities": len(COMMODITY_DATA),
+        "active_games": Game.query.filter_by(is_active=True).count(),
+        "games_deactivated": games_deactivated,
+        "commodities": 0,
+        "commodities_deactivated": commodities_deactivated,
         "pages": PAGE_COUNT,
         "unique_game_images": len({item["image"] for item in GAME_DATA}),
-        "unique_commodity_images": 1,
     }
