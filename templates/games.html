@@ -94,7 +94,9 @@
   .game-body h3 { min-height: 61px; margin: 8px 0 10px; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; font-size: .88rem; line-height: 1.45; }
   .game-body h3 a { color: inherit; text-decoration: none; }
   .game-price-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-  .game-price-row strong { font-size: 1.08rem; letter-spacing: -.03em; }
+  .game-price-values { min-width: 0; display: grid; gap: 3px; }
+  .game-price-values strong { font-size: 1.08rem; line-height: 1.15; letter-spacing: -.03em; }
+  .game-price-values span { color: var(--games-green); font-size: .72rem; font-weight: 850; line-height: 1.25; }
   .game-price-row small { color: var(--games-muted); font-size: .60rem; }
   .game-moq-row { margin: 10px 0 0; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-block: 1px solid #e8edf1; color: #526176; font-size: .69rem; }
   .game-moq-row strong { color: var(--games-ink); text-align: right; }
@@ -151,6 +153,10 @@
   .games-cart-quantity button { width: 30px; height: 30px; border: 0; background: #f4f6f8; color: var(--games-ink); cursor: pointer; }
   .games-cart-quantity span { min-width: 44px; padding: 0 5px; display: grid; place-items: center; border-inline: 1px solid #cfd7df; background: #fff; font-size: .66rem; font-weight: 850; }
   .games-cart-line-total { font-size: .72rem; font-weight: 900; }
+  .games-cart-line-total span, .games-cart-line-total small,
+  .games-cart-dual-total span, .games-cart-dual-total small { display: block; text-align: right; }
+  .games-cart-line-total small, .games-cart-dual-total small { margin-top: 3px; color: var(--games-green); font-size: .63rem; }
+  .games-cart-dual-total small { font-size: .76rem; }
   .games-cart-summary { padding: 22px 28px 26px; background: #fff; border-top: 1px solid var(--games-line); box-shadow: 0 -10px 30px rgba(20,36,61,.06); }
   .games-cart-summary > div { padding: 5px 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: .75rem; }
   .games-cart-summary > div:nth-child(2) { margin-top: 7px; padding-top: 14px; border-top: 1px solid var(--games-line); font-size: .9rem; }
@@ -223,6 +229,7 @@
 {% endblock %}
 
 {% block content %}
+{% set fx_rate = usd_kes_rate|default(130, true) %}
 {% set catalogue_pages = 10 if total_pages > 10 else total_pages %}
 {% set catalogue_page = page if page in range(1, catalogue_pages + 1) else 1 %}
 {% set page_data = {
@@ -343,9 +350,14 @@
               <span class="game-category">{{ game.genre }}</span>
               <h3><a href="{{ url_for('game_detail', slug=game.slug) }}">{{ game.title }}</a></h3>
               <div class="game-price-row">
-                <strong>
-                  {% if game.compare_price and game.compare_price > game.price %}US${{ '{:,.2f}'.format(game.price) }}–US${{ '{:,.2f}'.format(game.compare_price) }}{% else %}From US${{ '{:,.2f}'.format(game.price) }}{% endif %}
-                </strong>
+                <div class="game-price-values">
+                  <strong>
+                    {% if game.compare_price and game.compare_price > game.price %}US$ {{ '{:,.2f}'.format(game.price) }}–{{ '{:,.2f}'.format(game.compare_price) }}{% else %}From US$ {{ '{:,.2f}'.format(game.price) }}{% endif %}
+                  </strong>
+                  <span>
+                    {% if game.compare_price and game.compare_price > game.price %}KES {{ '{:,.0f}'.format(game.price * fx_rate) }}–{{ '{:,.0f}'.format(game.compare_price * fx_rate) }}{% else %}From KES {{ '{:,.0f}'.format(game.price * fx_rate) }}{% endif %}
+                  </span>
+                </div>
                 <small>per unit</small>
               </div>
               <div class="game-moq-row"><span>Minimum order</span><strong>{{ game.minimum_order }}</strong></div>
@@ -417,7 +429,7 @@
     <div id="gamesCartItems" class="games-cart-items"></div>
     <div class="games-cart-summary">
       <div><span>Product lines</span><strong id="gamesCartLineCount">0</strong></div>
-      <div><span>Estimated subtotal</span><strong id="gamesCartSubtotal">US$0.00</strong></div>
+      <div><span>Estimated subtotal</span><strong class="games-cart-dual-total"><span id="gamesCartSubtotalUsd">US$ 0.00</span><small id="gamesCartSubtotalKes">KES 0</small></strong></div>
       <p>The estimate uses each product's starting unit price and minimum order. Freight, taxes, installation and customisation are confirmed in the final quotation.</p>
       <a id="gamesCartCheckout" class="games-cart-checkout" href="mailto:e-trades@fabstrading.com">Request checkout quote <span aria-hidden="true">↗</span></a>
       <button id="clearGamesCart" class="games-cart-clear" type="button">Clear basket</button>
@@ -442,11 +454,13 @@
     const cartContents = document.getElementById('gamesCartContents');
     const cartItems = document.getElementById('gamesCartItems');
     const cartLineCount = document.getElementById('gamesCartLineCount');
-    const cartSubtotal = document.getElementById('gamesCartSubtotal');
+    const cartSubtotalUsd = document.getElementById('gamesCartSubtotalUsd');
+    const cartSubtotalKes = document.getElementById('gamesCartSubtotalKes');
     const cartCheckout = document.getElementById('gamesCartCheckout');
     const cartClear = document.getElementById('clearGamesCart');
     const cartToast = document.getElementById('gamesCartToast');
     const storageKey = 'fabs-games-cart';
+    const usdKesRate = Number({{ fx_rate|float }});
     let cart = {};
 
     try { cart = JSON.parse(localStorage.getItem(storageKey) || '{}') || {}; }
@@ -464,9 +478,11 @@
       openButton.setAttribute('aria-expanded', 'false');
     };
 
-    const money = value => Number(value).toLocaleString('en-US', {
-      style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2
-    });
+    const moneyUsd = value => `US$ ${Number(value).toLocaleString('en-US', {
+      minimumFractionDigits: 2, maximumFractionDigits: 2
+    })}`;
+    const moneyKes = value => `KES ${Math.round(Number(value) * usdKesRate).toLocaleString('en-KE')}`;
+    const dualMoney = value => `${moneyUsd(value)} / ${moneyKes(value)}`;
 
     const minimumQuantity = label => {
       const match = String(label || '').match(/[\d,]+/);
@@ -479,10 +495,10 @@
     const rows = () => Object.values(cart).filter(item => item && item.id && Number(item.quantity) > 0);
 
     const emailLink = items => {
-      const lines = items.map((item, index) => `${index + 1}. ${item.title}\nQuantity: ${Number(item.quantity).toLocaleString('en-US')}\nStarting unit price: ${money(item.price)}\nEstimated line subtotal: ${money(item.price * item.quantity)}`).join('\n\n');
+      const lines = items.map((item, index) => `${index + 1}. ${item.title}\nQuantity: ${Number(item.quantity).toLocaleString('en-US')}\nStarting unit price: ${dualMoney(item.price)}\nEstimated line subtotal: ${dualMoney(item.price * item.quantity)}`).join('\n\n');
       const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const subject = encodeURIComponent(`FABS basket quotation request — ${items.length} product${items.length === 1 ? '' : 's'}`);
-      const body = encodeURIComponent(`Hello FABS Trading,\n\nPlease prepare a formal quotation for the following basket:\n\n${lines}\n\nEstimated product subtotal: ${money(total)}\n\nDestination country:\nCompany name:\nContact person:\nPhone number:\nPreferred delivery date:\n\nPlease confirm specifications, availability, freight, taxes, installation, warranty and final commercial terms.\n\nThank you.`);
+      const body = encodeURIComponent(`Hello FABS Trading,\n\nPlease prepare a formal quotation for the following basket:\n\n${lines}\n\nEstimated product subtotal: ${dualMoney(total)}\nIndicative conversion rate: 1 USD = KES ${usdKesRate.toLocaleString('en-KE')}\n\nDestination country:\nCompany name:\nContact person:\nPhone number:\nPreferred delivery date:\n\nPlease confirm specifications, availability, freight, taxes, installation, warranty and final commercial terms.\n\nThank you.`);
       return `mailto:e-trades@fabstrading.com?subject=${subject}&body=${body}`;
     };
 
@@ -501,14 +517,15 @@
       cartEmpty.hidden = items.length > 0;
       cartContents.hidden = items.length === 0;
       cartLineCount.textContent = String(items.length);
-      cartSubtotal.textContent = money(total);
+      cartSubtotalUsd.textContent = moneyUsd(total);
+      cartSubtotalKes.textContent = moneyKes(total);
 
       cartItems.innerHTML = items.map(item => `
         <article class="games-cart-item" data-cart-id="${cleanText(item.id)}">
           <img src="${safeImage(item.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">
           <div>
             <h3>${cleanText(item.title)}</h3>
-            <p class="games-cart-item-price">From ${money(item.price)} per unit</p>
+            <p class="games-cart-item-price">From ${moneyUsd(item.price)} · ${moneyKes(item.price)} per unit</p>
             <p class="games-cart-item-moq">${cleanText(item.moqLabel)}</p>
             <div class="games-cart-item-bottom">
               <div class="games-cart-quantity" aria-label="Quantity for ${cleanText(item.title)}">
@@ -516,7 +533,7 @@
                 <span>${Number(item.quantity).toLocaleString('en-US')}</span>
                 <button type="button" data-cart-action="increase" aria-label="Increase quantity">+</button>
               </div>
-              <strong class="games-cart-line-total">${money(item.price * item.quantity)}</strong>
+              <strong class="games-cart-line-total"><span>${moneyUsd(item.price * item.quantity)}</span><small>${moneyKes(item.price * item.quantity)}</small></strong>
             </div>
           </div>
           <button class="games-cart-remove" type="button" data-cart-action="remove" aria-label="Remove ${cleanText(item.title)}">×</button>
