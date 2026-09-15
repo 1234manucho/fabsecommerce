@@ -368,6 +368,7 @@
                   class="games-add-cart"
                   type="button"
                   data-id="{{ game.slug|e }}"
+                  data-game-id="{{ game.id }}"
                   data-title="{{ game.title|e }}"
                   data-price="{{ game.price }}"
                   data-moq-label="{{ game.minimum_order|e }}"
@@ -441,6 +442,7 @@
 <div id="gamesCartToast" class="games-cart-toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
+  window.FABS_CSRF_TOKEN = "{{ csrf_token() }}";
   (() => {
     const panel = document.getElementById('gamesFilters');
     const openButton = document.getElementById('openGameFilters');
@@ -494,6 +496,23 @@
     const safeImage = value => /^(https?:\/\/|\/)/i.test(String(value || '')) ? String(value) : '';
     const saveCart = () => localStorage.setItem(storageKey, JSON.stringify(cart));
     const rows = () => Object.values(cart).filter(item => item && item.id && Number(item.quantity) > 0);
+
+    const syncServerCart = async gameId => {
+      if (!gameId) return;
+      try {
+        await fetch(`/cart/add/${gameId}`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': window.FABS_CSRF_TOKEN,
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          credentials: 'same-origin',
+          redirect: 'manual'
+        });
+      } catch (err) {
+        console.warn('Server cart sync failed:', err);
+      }
+    };
 
     const emailLink = items => {
       const lines = items.map((item, index) => `${index + 1}. ${item.title}\nQuantity: ${Number(item.quantity).toLocaleString('en-US')}\nStarting unit price: ${dualMoney(item.price)}\nEstimated line subtotal: ${dualMoney(item.price * item.quantity)}`).join('\n\n');
@@ -562,7 +581,7 @@
     };
 
     document.querySelectorAll('.games-add-cart').forEach(button => {
-      button.addEventListener('click', () => {
+      button.addEventListener('click', async () => {
         const moq = minimumQuantity(button.dataset.moqLabel);
         const existing = cart[button.dataset.id];
         cart[button.dataset.id] = {
@@ -577,6 +596,7 @@
         saveCart();
         renderCart();
         showToast(`${button.dataset.title} added to your basket.`);
+        await syncServerCart(button.dataset.gameId);
       });
     });
 

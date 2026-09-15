@@ -272,8 +272,15 @@ def register_routes(app):
     def add_to_cart(game_id):
         Game.query.filter_by(id=game_id, is_active=True).first_or_404()
         cart = session.get("cart", [])
-        if game_id not in cart: cart.append(game_id)
+        if game_id not in cart:
+            cart.append(game_id)
         session["cart"] = cart
+        session.modified = True
+
+        # AJAX callers (from the games page basket) get JSON; form submissions get a redirect.
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"status": "ok", "cart_count": len(cart)})
+
         flash("Game added to your cart.", "success")
         return redirect(url_for("cart"))
 
