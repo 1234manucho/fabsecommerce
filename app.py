@@ -2,7 +2,7 @@ import hashlib
 import json
 import os
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 
@@ -25,14 +25,36 @@ from flask_login import (
     login_user,
     logout_user,
 )
+from flask_migrate import Migrate  # NEW
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
-from forms import CheckoutForm, ContactForm, GameForm, GameInquiryForm, LoginForm, RegisterForm
-from models import AuditLog, ContactMessage, DigitalEntitlement, Game, GameInquiry, Order, OrderItem, PaymentTransaction, User, WebhookEvent, db
+from forms import (
+    CheckoutForm,
+    ContactForm,
+    GameForm,
+    GameInquiryForm,
+    LoginForm,
+    RegisterForm,
+)
+from models import (
+    AuditLog,
+    ContactMessage,
+    DigitalEntitlement,
+    Game,
+    GameInquiry,
+    Order,
+    OrderItem,
+    PaymentTransaction,
+    Quote,
+    User,
+    WebhookEvent,
+    db,
+)
 from seed import seed_catalogue
 from services.dpo import DPOGateway, PaymentConfigurationError
+from services.dhl import DHLService, DHLConfigurationError
 
 MEDIA_PAGES = {
     "industries": {"eyebrow":"Gaming categories", "title":"Gaming products for retail, leisure and commercial venues.", "lead":"FABS connects buyers with carefully presented tabletop, arcade, redemption, racing, sports and immersive gaming products.", "image":"https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1800&q=85", "sections":[("Arcade & redemption","Coin-operated, prize, shooting and interactive cabinets for entertainment venues."),("Racing & simulation","Driving, sports and motion-based simulators for high-engagement experiences."),("Tabletop & recreation","Board, card, educational and recreational games for retail and group use.")]},
@@ -55,13 +77,18 @@ NEWS_ARTICLES = {
 load_dotenv()
 login_manager = LoginManager()
 csrf = CSRFProtect()
+migrate = Migrate()  # NEW
 DEFAULT_USD_KES_RATE = Decimal("130.00")
 CATALOGUE_PAGE_SIZE = 8
+
+# Origin address used for DHL rate quotes
+DEFAULT_SHIP_ORIGIN_COUNTRY = os.getenv("DHL_ORIGIN_COUNTRY", "KE")
+DEFAULT_SHIP_ORIGIN_CITY = os.getenv("DHL_ORIGIN_CITY", "Nairobi")
+DEFAULT_SHIP_ORIGIN_POSTAL = os.getenv("DHL_ORIGIN_POSTAL", "00100")
 
 
 def _positive_decimal(value, default=DEFAULT_USD_KES_RATE):
     """Return a positive finite Decimal or a safe fallback value."""
-
     try:
         number = Decimal(str(value))
     except (InvalidOperation, TypeError, ValueError):
@@ -75,6 +102,7 @@ def create_app(config_class=Config):
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     os.makedirs(os.path.join(app.root_path, "instance"), exist_ok=True)
     db.init_app(app)
+    migrate.init_app(app, db)  # NEW
     csrf.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = "login"
@@ -93,9 +121,7 @@ def create_app(config_class=Config):
     @app.template_filter("money_kes")
     def money_kes(value):
         amount = _positive_decimal(value, Decimal("0.00"))
-        converted = (amount * app.config["USD_KES_RATE"]).quantize(
-            Decimal("1")
-        )
+        converted = (amount * app.config["USD_KES_RATE"]).quantize(Decimal("1"))
         return f"KES {converted:,.0f}"
 
     @app.template_filter("usd_to_kes")
@@ -137,16 +163,85 @@ def admin_required(view):
     @wraps(view)
     @login_required
     def wrapped(*args, **kwargs):
-        if not current_user.is_admin: abort(403)
+        if not current_user.is_admin:
+            abort(403)
         return view(*args, **kwargs)
     return wrapped
 
 
 def audit(action, entity_type, entity_id=None, detail=None):
-    db.session.add(AuditLog(actor_user_id=current_user.id if current_user.is_authenticated else None, action=action, entity_type=entity_type, entity_id=str(entity_id) if entity_id else None, ip_address=request.headers.get("CF-Connecting-IP", request.remote_addr), detail=detail))
+    db.session.add(AuditLog(
+        actor_user_id=current_user.id if current_user.is_authenticated else None,
+        action=action,
+        entity_type=entity_type,
+        entity_id=str(entity_id) if entity_id else None,
+        ip_address=request.headers.get("CF-Connecting-IP", request.remote_addr),
+        detail=detail,
+    ))
+
+
+def _compute_order_shipping_dims(order) -> dict:
+    """Compute total weight and package dimensions for an order."""
+    total_weight = 0.0
+    max_length = 0.0
+    max_width = 0.0
+    total_height = 0.0
+
+    for item in order.items:
+        game = getattr(item, "game", None)
+        weight = float(getattr(game, "weight_kg", None) or 1.0)
+        length = float(getattr(game, "length_cm", None) or 30.0)
+        width  = float(getattr(game, "width_cm", None) or 20.0)
+        height = float(getattr(game, "height_cm", None) or 10.0)
+
+        qty = int(item.quantity or 1)
+        total_weight += weight * qty
+        max_length = max(max_length, length)
+        max_width  = max(max_width, width)
+        total_height += height * qty
+
+    return {
+        "weight_kg": round(total_weight or 1.0, 2),
+        "length_cm": round(max_length or 30.0, 1),
+        "width_cm":  round(max_width or 20.0, 1),
+        "height_cm": round(total_height or 10.0, 1),
+    }
+
+
+def _compute_cart_shipping_dims(items) -> dict:
+    """Compute shipping dims from a list of Game objects (cart items)."""
+    total_weight = 0.0
+    max_length = 30.0
+    max_width = 20.0
+    total_height = 0.0
+    declared_value = 0.0
+
+    for game in items:
+        qty = 1
+        weight = float(getattr(game, "weight_kg", None) or 1.0)
+        length = float(getattr(game, "length_cm", None) or 30.0)
+        width  = float(getattr(game, "width_cm", None) or 20.0)
+        height = float(getattr(game, "height_cm", None) or 10.0)
+
+        total_weight += weight * qty
+        max_length = max(max_length, length)
+        max_width  = max(max_width, width)
+        total_height += height * qty
+        declared_value += float(game.price or 0)
+
+    return {
+        "weight_kg": round(total_weight or 1.0, 2),
+        "length_cm": round(max_length, 1),
+        "width_cm":  round(max_width, 1),
+        "height_cm": round(total_height or 10.0, 1),
+        "declared_value": round(declared_value or 100.0, 2),
+    }
 
 
 def register_routes(app):
+    # ================================================================
+    # PUBLIC PAGES
+    # ================================================================
     @app.get("/")
     def index():
         featured = (
@@ -181,11 +276,7 @@ def register_routes(app):
             products = products.filter(Game.genre.ilike(f"%{category}%"))
 
         catalogue_total = products.count()
-        total_pages = max(
-            1,
-            (catalogue_total + CATALOGUE_PAGE_SIZE - 1)
-            // CATALOGUE_PAGE_SIZE,
-        )
+        total_pages = max(1, (catalogue_total + CATALOGUE_PAGE_SIZE - 1) // CATALOGUE_PAGE_SIZE)
         page = min(page, total_pages)
         catalogue = (
             products.order_by(Game.price.asc(), Game.id.asc())
@@ -261,13 +352,28 @@ def register_routes(app):
                 form.country.data = current_user.country
         if form.validate_on_submit():
             game = Game.query.filter_by(id=form.product_id.data, is_active=True).first_or_404()
-            inquiry_record = GameInquiry(reference=make_reference("INQ"), game_id=game.id, user_id=current_user.id if current_user.is_authenticated else None, full_name=form.full_name.data, company=form.company.data, email=form.email.data.lower(), phone=form.phone.data, country=form.country.data, quantity=form.quantity.data, destination=form.destination.data, requirements=form.requirements.data)
+            inquiry_record = GameInquiry(
+                reference=make_reference("INQ"),
+                game_id=game.id,
+                user_id=current_user.id if current_user.is_authenticated else None,
+                full_name=form.full_name.data,
+                company=form.company.data,
+                email=form.email.data.lower(),
+                phone=form.phone.data,
+                country=form.country.data,
+                quantity=form.quantity.data,
+                destination=form.destination.data,
+                requirements=form.requirements.data,
+            )
             db.session.add(inquiry_record)
             audit("game_inquiry_submitted", "game_inquiry", detail=inquiry_record.reference)
             db.session.commit()
             return render_template("inquiry_success.html", inquiry=inquiry_record, game=game)
         return render_template("game_inquiry.html", form=form, game=None)
 
+    # ================================================================
+    # CART
+    # ================================================================
     @app.post("/cart/add/<int:game_id>")
     def add_to_cart(game_id):
         Game.query.filter_by(id=game_id, is_active=True).first_or_404()
@@ -277,7 +383,6 @@ def register_routes(app):
         session["cart"] = cart
         session.modified = True
 
-        # AJAX callers (from the games page basket) get JSON; form submissions get a redirect.
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify({"status": "ok", "cart_count": len(cart)})
 
@@ -303,6 +408,9 @@ def register_routes(app):
         total = sum((item.price for item in items), Decimal("0.00"))
         return render_template("cart.html", items=items, total=total)
 
+    # ================================================================
+    # CHECKOUT
+    # ================================================================
     @app.route("/checkout", methods=["GET", "POST"])
     def checkout():
         items = (
@@ -316,25 +424,60 @@ def register_routes(app):
         if not items:
             flash("Your cart is empty.", "warning")
             return redirect(url_for("games"))
-        total = sum((item.price for item in items), Decimal("0.00"))
+
+        subtotal = sum((item.price for item in items), Decimal("0.00"))
+
         form = CheckoutForm()
         if current_user.is_authenticated and request.method == "GET":
             form.full_name.data = current_user.full_name
             form.email.data = current_user.email
-            form.country.data = current_user.country
+            form.country.data = (current_user.country or "").strip()
+            form.company.data = current_user.company
+            form.phone.data = current_user.phone
+
         if form.validate_on_submit():
+            # ------------------------------------------------------------------
+            # Parse the DHL shipping quote posted from the checkout page
+            # ------------------------------------------------------------------
+            shipping_cost = Decimal("0.00")
+            shipping_currency = "USD"
+            raw_quote = (form.shipping_quote.data or "").strip()
+            if raw_quote:
+                try:
+                    parsed = json.loads(raw_quote)
+                    shipping_cost = Decimal(str(parsed.get("cost_usd") or 0)).quantize(Decimal("0.01"))
+                    shipping_currency = "USD"
+                except (json.JSONDecodeError, InvalidOperation, TypeError, ValueError):
+                    app.logger.warning("Invalid shipping_quote payload: %r", raw_quote)
+                    shipping_cost = Decimal("0.00")
+
+            grand_total = (subtotal + shipping_cost).quantize(Decimal("0.01"))
+
+            # ------------------------------------------------------------------
+            # Create the order
+            # ------------------------------------------------------------------
             order = Order(
                 reference=make_reference("GM"),
                 user_id=current_user.id if current_user.is_authenticated else None,
                 email=form.email.data.lower(),
                 full_name=form.full_name.data,
-                country=form.country.data,
+                country=(form.country.data or "").upper(),
                 currency=app.config.get("BASE_CURRENCY", "USD"),
-                subtotal=total,
-                total=total,
+                subtotal=subtotal,
+                total=grand_total,
+                company=(form.company.data or None),
+                phone=(form.phone.data or None),
+                address_line1=(form.address_line1.data or None),
+                address_line2=(form.address_line2.data or None),
+                city=(form.city.data or None),
+                postal_code=(form.postal_code.data or None),
+                shipping_cost=shipping_cost if shipping_cost > 0 else None,
+                shipping_currency=shipping_currency if shipping_cost > 0 else None,
+                shipping_status="pending",
             )
             db.session.add(order)
             db.session.flush()
+
             for item in items:
                 order.items.append(
                     OrderItem(
@@ -345,13 +488,210 @@ def register_routes(app):
                         quantity=1,
                     )
                 )
+
             audit("order_created", "order", order.id, order.reference)
             db.session.commit()
+
             session.pop("cart", None)
             session["last_order_reference"] = order.reference
             return redirect(url_for("start_payment", order_id=order.id))
-        return render_template("checkout.html", form=form, items=items, total=total)
 
+        return render_template(
+            "checkout.html",
+            form=form,
+            items=items,
+            total=subtotal,
+        )
+
+    # ================================================================
+    # DHL SHIPPING — RATE QUOTES
+    # ================================================================
+    @app.post("/api/shipping/rates")
+    def api_shipping_rates():
+        data = request.get_json(silent=True) or {}
+        country = (data.get("country") or "").strip().upper()
+        if not country:
+            return jsonify({"error": "country is required"}), 400
+
+        try:
+            service = DHLService()
+        except DHLConfigurationError as exc:
+            app.logger.error("DHL configuration: %s", exc)
+            return jsonify({"error": "Shipping rates are temporarily unavailable."}), 503
+
+        try:
+            result = service.get_rates(
+                origin_country=DEFAULT_SHIP_ORIGIN_COUNTRY,
+                origin_city=DEFAULT_SHIP_ORIGIN_CITY,
+                origin_postal_code=DEFAULT_SHIP_ORIGIN_POSTAL,
+                destination_country=country,
+                destination_city=(data.get("city") or "").strip() or None,
+                destination_postal_code=(data.get("postal_code") or "").strip() or None,
+                weight_kg=float(data.get("weight_kg") or 1.0),
+                length_cm=float(data.get("length_cm") or 30.0),
+                width_cm=float(data.get("width_cm") or 20.0),
+                height_cm=float(data.get("height_cm") or 10.0),
+                declared_value=float(data.get("declared_value") or 100.0),
+                currency=(data.get("currency") or "USD").upper(),
+            )
+        except Exception as exc:
+            app.logger.exception("DHL rate lookup failed: %s", exc)
+            return jsonify({"error": "Could not fetch shipping rates."}), 502
+
+        if not result:
+            return jsonify({"error": "No rates returned by DHL."}), 502
+
+        return jsonify(result)
+
+    @app.get("/api/shipping/rates/cart")
+    def api_shipping_rates_for_cart():
+        country = (request.args.get("country") or "").strip().upper()
+        if not country:
+            return jsonify({"error": "country is required"}), 400
+
+        items = (
+            Game.query.filter(
+                Game.id.in_(session.get("cart", []) or [-1]),
+                Game.is_active.is_(True),
+            )
+            .all()
+        )
+        if not items:
+            return jsonify({"error": "Cart is empty."}), 400
+
+        dims = _compute_cart_shipping_dims(items)
+
+        try:
+            service = DHLService()
+            result = service.get_rates(
+                origin_country=DEFAULT_SHIP_ORIGIN_COUNTRY,
+                origin_city=DEFAULT_SHIP_ORIGIN_CITY,
+                origin_postal_code=DEFAULT_SHIP_ORIGIN_POSTAL,
+                destination_country=country,
+                weight_kg=dims["weight_kg"],
+                length_cm=dims["length_cm"],
+                width_cm=dims["width_cm"],
+                height_cm=dims["height_cm"],
+                declared_value=dims["declared_value"],
+                currency="USD",
+            )
+        except DHLConfigurationError as exc:
+            app.logger.error("DHL configuration: %s", exc)
+            return jsonify({"error": "Shipping rates are temporarily unavailable."}), 503
+        except Exception as exc:
+            app.logger.exception("DHL cart rates failed: %s", exc)
+            return jsonify({"error": "Could not fetch shipping rates."}), 502
+
+        if not result:
+            return jsonify({"error": "No rates returned by DHL."}), 502
+
+        return jsonify(result)
+
+    # ================================================================
+    # DHL SHIPPING — ADMIN: CREATE SHIPMENT + TRACKING
+    # ================================================================
+    @app.post("/admin/orders/<int:order_id>/create-shipment")
+    @admin_required
+    def admin_create_shipment(order_id):
+        order = Order.query.get_or_404(order_id)
+
+        if getattr(order, "dhl_tracking_number", None):
+            flash("A shipment already exists for this order.", "warning")
+            return redirect(url_for("admin_orders"))
+
+        address_line1 = getattr(order, "address_line1", None)
+        city = getattr(order, "city", None)
+        postal_code = getattr(order, "postal_code", None)
+
+        if not (address_line1 and city and postal_code):
+            flash("Order is missing shipping address details. Add them before creating a shipment.", "danger")
+            return redirect(url_for("admin_orders"))
+
+        dims = _compute_order_shipping_dims(order)
+
+        order_data = {
+            "order_reference": order.reference,
+            "receiver_full_name": order.full_name,
+            "receiver_email": order.email,
+            "receiver_phone": getattr(order, "phone", None) or "+254700000000",
+            "receiver_company": getattr(order, "company", None) or "",
+            "receiver_address_line1": address_line1,
+            "receiver_address_line2": getattr(order, "address_line2", None) or "",
+            "receiver_city": city,
+            "receiver_postal_code": postal_code,
+            "receiver_country": (order.country or "").upper(),
+            "package_weight_kg": dims["weight_kg"],
+            "package_length_cm": dims["length_cm"],
+            "package_width_cm": dims["width_cm"],
+            "package_height_cm": dims["height_cm"],
+            "declared_value": float(order.total or 0),
+            "currency": order.currency or "USD",
+            "package_description": "Gaming products",
+        }
+
+        try:
+            service = DHLService()
+            result = service.create_shipment(order_data)
+        except DHLConfigurationError as exc:
+            app.logger.error("DHL configuration: %s", exc)
+            flash("DHL is not configured. Contact support.", "danger")
+            return redirect(url_for("admin_orders"))
+        except Exception as exc:
+            app.logger.exception("DHL create shipment failed: %s", exc)
+            flash("Could not create DHL shipment. Check the logs for details.", "danger")
+            return redirect(url_for("admin_orders"))
+
+        tracking_number = None
+        label_url = None
+
+        if result:
+            tracking_number = result.get("shipmentTrackingNumber") or result.get("trackingNumber")
+            documents = result.get("documents") or []
+            if documents:
+                label_url = documents[0].get("url") or documents[0].get("content")
+
+        if tracking_number:
+            order.dhl_tracking_number = tracking_number
+            order.dhl_label_url = label_url
+            order.shipping_status = "created"
+            order.shipped_at = datetime.now(timezone.utc)
+            order.package_weight_kg = dims["weight_kg"]
+            order.package_length_cm = dims["length_cm"]
+            order.package_width_cm = dims["width_cm"]
+            order.package_height_cm = dims["height_cm"]
+
+            audit("dhl_shipment_created", "order", order.id, tracking_number)
+            db.session.commit()
+            flash(f"DHL shipment created. Tracking: {tracking_number}", "success")
+        else:
+            flash("DHL did not return a tracking number. Check the API response.", "danger")
+
+        return redirect(url_for("admin_orders"))
+
+    @app.get("/admin/orders/<int:order_id>/tracking")
+    @admin_required
+    def admin_order_tracking(order_id):
+        order = Order.query.get_or_404(order_id)
+        tracking_number = getattr(order, "dhl_tracking_number", None)
+
+        if not tracking_number:
+            return jsonify({"error": "No tracking number for this order."}), 404
+
+        try:
+            service = DHLService()
+            result = service.track_shipment(tracking_number)
+        except Exception as exc:
+            app.logger.exception("DHL tracking failed: %s", exc)
+            return jsonify({"error": "Could not fetch tracking info."}), 502
+
+        if not result:
+            return jsonify({"error": "No tracking data."}), 502
+
+        return jsonify(result)
+
+    # ================================================================
+    # PAYMENTS (DPO)
+    # ================================================================
     @app.get("/payments/start/<int:order_id>")
     def start_payment(order_id):
         order = Order.query.get_or_404(order_id)
@@ -473,22 +813,14 @@ def register_routes(app):
     @app.post("/webhooks/dpo")
     @csrf.exempt
     def dpo_webhook():
-        """
-        Optional DPO server-to-server notification endpoint.
-        DPO posts the same fields as the redirect: TransID, TransactionToken,
-        CompanyRef, CCDapproval, PnrID. Configure this URL in your DPO account
-        to receive payment confirmations even if the customer closes the browser.
-        """
         raw = request.get_data()
         payload = request.form.to_dict() or (request.get_json(silent=True) or {})
         trans_token = payload.get("TransactionToken") or payload.get("TransToken")
-        company_ref = payload.get("CompanyRef")
         approval = payload.get("CCDapproval") or payload.get("TransactionApproval")
 
         if not trans_token:
             return jsonify({"status": "ignored", "reason": "no token"}), 400
 
-        # Deduplicate by token
         existing_event = WebhookEvent.query.filter_by(event_id=trans_token).first()
         if existing_event:
             return jsonify({"status": "duplicate"})
@@ -523,6 +855,9 @@ def register_routes(app):
         db.session.commit()
         return jsonify({"status": "ok"})
 
+    # ================================================================
+    # ORDERS
+    # ================================================================
     @app.get("/orders/<reference>")
     def order_detail(reference):
         order = Order.query.filter_by(reference=reference).first_or_404()
@@ -535,6 +870,9 @@ def register_routes(app):
             abort(403)
         return render_template("order_detail.html", order=order)
 
+    # ================================================================
+    # LEGACY REDIRECTS
+    # ================================================================
     @app.get("/commodities")
     def commodities():
         return redirect(url_for("games"), code=301)
@@ -545,63 +883,98 @@ def register_routes(app):
 
     @app.route("/request-quote", methods=["GET", "POST"])
     def request_quote():
-        # Preserve old bookmarks while ensuring every quotation starts from the
-        # gaming-only inquiry workflow.
         return redirect(url_for("inquiry"), code=303 if request.method == "POST" else 302)
 
+    # ================================================================
+    # CONTACT / AUTH / ACCOUNT
+    # ================================================================
     @app.route("/contact", methods=["GET", "POST"])
     def contact():
         form = ContactForm()
         if form.validate_on_submit():
-            message = ContactMessage(reference=make_reference("CS"), full_name=form.full_name.data, email=form.email.data.lower(), company=form.company.data, subject=form.subject.data, message=form.message.data)
-            db.session.add(message); db.session.commit()
+            message = ContactMessage(
+                reference=make_reference("CS"),
+                full_name=form.full_name.data,
+                email=form.email.data.lower(),
+                company=form.company.data,
+                subject=form.subject.data,
+                message=form.message.data,
+            )
+            db.session.add(message)
+            db.session.commit()
             flash(f"Message received. Your reference is {message.reference}.", "success")
             return redirect(url_for("contact"))
         return render_template("contact.html", form=form)
 
     @app.route("/login", methods=["GET", "POST"])
     def login():
-        if current_user.is_authenticated: return redirect(url_for("account"))
+        if current_user.is_authenticated:
+            return redirect(url_for("account"))
         form = LoginForm()
         if form.validate_on_submit():
             user = User.query.filter(db.func.lower(User.email) == form.email.data.lower()).first()
             if user and user.is_active_account and user.check_password(form.password.data):
-                login_user(user, remember=form.remember.data); audit("login", "user", user.id); db.session.commit()
+                login_user(user, remember=form.remember.data)
+                audit("login", "user", user.id)
+                db.session.commit()
                 return redirect(url_for("admin_dashboard" if user.is_admin else "account"))
             flash("Invalid email or password.", "danger")
         return render_template("login.html", form=form)
 
     @app.route("/register", methods=["GET", "POST"])
     def register():
-        if current_user.is_authenticated: return redirect(url_for("account"))
+        if current_user.is_authenticated:
+            return redirect(url_for("account"))
         form = RegisterForm()
         if form.validate_on_submit():
             if User.query.filter(db.func.lower(User.email) == form.email.data.lower()).first():
                 flash("An account already exists for that email.", "danger")
             else:
-                user = User(full_name=form.full_name.data, email=form.email.data.lower(), company=form.company.data, phone=form.phone.data, country=form.country.data)
-                user.set_password(form.password.data); db.session.add(user); db.session.commit(); login_user(user)
+                user = User(
+                    full_name=form.full_name.data,
+                    email=form.email.data.lower(),
+                    company=form.company.data,
+                    phone=form.phone.data,
+                    country=form.country.data,
+                )
+                user.set_password(form.password.data)
+                db.session.add(user)
+                db.session.commit()
+                login_user(user)
                 return redirect(url_for("account"))
         return render_template("register.html", form=form)
 
     @app.post("/logout")
     @login_required
     def logout():
-        logout_user(); flash("You have signed out.", "info"); return redirect(url_for("index"))
+        logout_user()
+        flash("You have signed out.", "info")
+        return redirect(url_for("index"))
 
     @app.get("/account")
     @login_required
     def account():
-        return render_template("account.html", orders=Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all(), quotes=[], inquiries=GameInquiry.query.filter_by(user_id=current_user.id).order_by(GameInquiry.created_at.desc()).all())
+        return render_template(
+            "account.html",
+            orders=Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all(),
+            quotes=[],
+            inquiries=GameInquiry.query.filter_by(user_id=current_user.id).order_by(GameInquiry.created_at.desc()).all(),
+        )
 
+    # ================================================================
+    # STATIC CONTENT PAGES
+    # ================================================================
     @app.get("/about")
-    def about(): return render_template("content.html", eyebrow="Company", title="A focused global gaming-commerce company.", lead="FABS Trading connects customers, retailers and entertainment operators with gaming products through a structured digital marketplace.", sections=[("Gaming product marketplace","Explore tabletop, arcade, redemption, racing, sports and immersive gaming products across practical price and MOQ ranges."),("Commercial procurement","Submit a documented enquiry for product configuration, quantity, delivery, installation and after-sales requirements."),("One governance standard","Finance, risk, technology, payment security and customer protection are managed as shared controls across the business.")])
+    def about():
+        return render_template("content.html", eyebrow="Company", title="A focused global gaming-commerce company.", lead="FABS Trading connects customers, retailers and entertainment operators with gaming products through a structured digital marketplace.", sections=[("Gaming product marketplace","Explore tabletop, arcade, redemption, racing, sports and immersive gaming products across practical price and MOQ ranges."),("Commercial procurement","Submit a documented enquiry for product configuration, quantity, delivery, installation and after-sales requirements."),("One governance standard","Finance, risk, technology, payment security and customer protection are managed as shared controls across the business.")])
 
     @app.get("/how-it-works")
-    def how_it_works(): return render_template("content.html", eyebrow="Customer journey", title="A structured gaming procurement workflow.", lead="Browse verified gaming products, request commercial terms and complete secure payment through the approved checkout flow.", sections=[("Discover","Compare active gaming products, platforms, specifications, prices and minimum order quantities."),("Request a quotation","Select a game, confirm the required quantity and provide your delivery and configuration requirements."),("Review and fulfilment","Approve the final quotation, complete secure payment and track fulfilment with the FABS Trading team.")])
+    def how_it_works():
+        return render_template("content.html", eyebrow="Customer journey", title="A structured gaming procurement workflow.", lead="Browse verified gaming products, request commercial terms and complete secure payment through the approved checkout flow.", sections=[("Discover","Compare active gaming products, platforms, specifications, prices and minimum order quantities."),("Request a quotation","Select a game, confirm the required quantity and provide your delivery and configuration requirements."),("Review and fulfilment","Approve the final quotation, complete secure payment and track fulfilment with the FABS Trading team.")])
 
     @app.get("/compliance")
-    def compliance(): return render_template("content.html", eyebrow="Governance", title="Controls proportionate to every gaming transaction.", lead="Risk-based customer controls, KYB, sanctions review, payment security and documented commercial approvals.", sections=[("Cardholder data boundary","FABS uses hosted or tokenised checkout and does not store raw card numbers or CVV data."),("Gaming commerce controls","Product, customer, authority, destination, payment and fulfilment information may be reviewed before approval.")])
+    def compliance():
+        return render_template("content.html", eyebrow="Governance", title="Controls proportionate to every gaming transaction.", lead="Risk-based customer controls, KYB, sanctions review, payment security and documented commercial approvals.", sections=[("Cardholder data boundary","FABS uses hosted or tokenised checkout and does not store raw card numbers or CVV data."),("Gaming commerce controls","Product, customer, authority, destination, payment and fulfilment information may be reviewed before approval.")])
 
     @app.get("/<page_name>")
     def media_page(page_name):
@@ -616,37 +989,92 @@ def register_routes(app):
     @app.get("/news/<slug>")
     def news_article(slug):
         article = NEWS_ARTICLES.get(slug)
-        if not article: abort(404)
+        if not article:
+            abort(404)
         return render_template("news_article.html", slug=slug, article=article)
 
     @app.get("/support")
-    def support(): return render_template("support.html")
+    def support():
+        return render_template("support.html")
 
     @app.get("/terms")
-    def terms(): return render_template("policy.html", title="Terms of use", policy="terms")
+    def terms():
+        return render_template("policy.html", title="Terms of use", policy="terms")
 
     @app.get("/privacy")
-    def privacy(): return render_template("policy.html", title="Privacy notice", policy="privacy")
+    def privacy():
+        return render_template("policy.html", title="Privacy notice", policy="privacy")
 
     @app.get("/refunds")
-    def refunds(): return render_template("policy.html", title="Refund and cancellation policy", policy="refunds")
+    def refunds():
+        return render_template("policy.html", title="Refund and cancellation policy", policy="refunds")
 
+    # ================================================================
+    # ADMIN
+    # ================================================================
     @app.get("/admin")
     @admin_required
     def admin_dashboard():
-        return render_template("admin/dashboard.html", stats={"orders":Order.query.count(),"paid":Order.query.filter_by(payment_status="paid").count(),"quotes":0,"inquiries":GameInquiry.query.count(),"users":User.query.filter_by(role="customer").count()}, orders=Order.query.order_by(Order.created_at.desc()).limit(8).all(), quotes=[])
+        week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+
+        pending_shipment = Order.query.filter(
+            Order.payment_status == "paid",
+            Order.shipping_status.in_([None, "pending"]),
+        ).count()
+
+        shipped_week = Order.query.filter(
+            Order.shipped_at.isnot(None),
+            Order.shipped_at >= week_ago,
+        ).count()
+
+        recent_shipments = (
+            Order.query
+            .filter(Order.dhl_tracking_number.isnot(None))
+            .order_by(Order.created_at.desc())
+            .limit(6)
+            .all()
+        )
+
+        recent_inquiries = (
+            GameInquiry.query
+            .order_by(GameInquiry.created_at.desc())
+            .limit(6)
+            .all()
+        )
+
+        stats = {
+            "orders":           Order.query.count(),
+            "paid":             Order.query.filter_by(payment_status="paid").count(),
+            "pending_shipment": pending_shipment,
+            "shipped_week":     shipped_week,
+            "inquiries":        GameInquiry.query.count(),
+            "quotes":           Quote.query.count() if Quote else 0,
+            "users":            User.query.filter_by(role="customer").count(),
+        }
+
+        return render_template(
+            "admin/dashboard.html",
+            stats=stats,
+            orders=Order.query.order_by(Order.created_at.desc()).limit(8).all(),
+            quotes=Quote.query.order_by(Quote.created_at.desc()).limit(6).all() if Quote else [],
+            shipments=recent_shipments,
+            inquiries=recent_inquiries,
+        )
 
     @app.get("/admin/orders")
     @admin_required
-    def admin_orders(): return render_template("admin/orders.html", orders=Order.query.order_by(Order.created_at.desc()).all())
+    def admin_orders():
+        return render_template("admin/orders.html", orders=Order.query.order_by(Order.created_at.desc()).all())
 
     @app.get("/admin/quotes")
     @admin_required
-    def admin_quotes(): return redirect(url_for("admin_inquiries"), code=302)
+    def admin_quotes():
+        return redirect(url_for("admin_inquiries"), code=302)
 
     @app.get("/admin/inquiries")
     @admin_required
-    def admin_inquiries(): return render_template("admin/inquiries.html", inquiries=GameInquiry.query.order_by(GameInquiry.created_at.desc()).all())
+    def admin_inquiries():
+        return render_template("admin/inquiries.html", inquiries=GameInquiry.query.order_by(GameInquiry.created_at.desc()).all())
 
     @app.post("/admin/inquiries/<int:inquiry_id>/status")
     @admin_required
@@ -654,7 +1082,8 @@ def register_routes(app):
         inquiry = GameInquiry.query.get_or_404(inquiry_id)
         allowed = {"submitted", "reviewing", "quoted", "negotiating", "won", "closed"}
         status = request.form.get("status")
-        if status not in allowed: abort(400)
+        if status not in allowed:
+            abort(400)
         inquiry.status = status
         audit("game_inquiry_status_changed", "game_inquiry", inquiry.id, status)
         db.session.commit()
@@ -669,13 +1098,20 @@ def register_routes(app):
     @app.route("/admin/games/new", methods=["GET", "POST"])
     @admin_required
     def admin_game_new():
-        form=GameForm()
+        form = GameForm()
         if form.validate_on_submit():
-            game=Game(); form.populate_obj(game); db.session.add(game); audit("game_created","game",detail=game.slug); db.session.commit(); flash("Game created.","success"); return redirect(url_for("admin_dashboard"))
-        return render_template("admin/game_form.html",form=form,title="Add game")
+            game = Game()
+            form.populate_obj(game)
+            db.session.add(game)
+            audit("game_created", "game", detail=game.slug)
+            db.session.commit()
+            flash("Game created.", "success")
+            return redirect(url_for("admin_dashboard"))
+        return render_template("admin/game_form.html", form=form, title="Add game")
 
     @app.get("/health")
-    def health(): return jsonify({"status":"ok","service":"fabs-trading"})
+    def health():
+        return jsonify({"status": "ok", "service": "fabs-trading"})
 
 
 def register_cli(app):
@@ -705,11 +1141,17 @@ def register_cli(app):
 
 def register_errors(app):
     @app.errorhandler(404)
-    def not_found(_): return render_template("error.html",code=404,title="Page not found",message="The page you requested is not available."),404
+    def not_found(_):
+        return render_template("error.html", code=404, title="Page not found", message="The page you requested is not available."), 404
+
     @app.errorhandler(403)
-    def forbidden(_): return render_template("error.html",code=403,title="Access restricted",message="You do not have permission to view this area."),403
+    def forbidden(_):
+        return render_template("error.html", code=403, title="Access restricted", message="You do not have permission to view this area."), 403
+
     @app.errorhandler(500)
-    def server_error(_): db.session.rollback(); return render_template("error.html",code=500,title="We could not complete that request",message="Please try again or contact support."),500
+    def server_error(_):
+        db.session.rollback()
+        return render_template("error.html", code=500, title="We could not complete that request", message="Please try again or contact support."), 500
 
 
 app = create_app()
