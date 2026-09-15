@@ -6,8 +6,8 @@
 {% block head %}
 <style>
     .checkout-page {
-        --checkout-red: #ed3138;
-        --checkout-red-dark: #c91f28;
+        --checkout-red: #ff0000;
+        --checkout-red-dark: #cc0000;
         --checkout-green: #21842a;
         --checkout-ink: #161a1f;
         --checkout-muted: #68717a;
@@ -107,6 +107,10 @@
         border-bottom: 1px solid var(--checkout-line);
     }
 
+    .checkout-card-header + .checkout-card-header {
+        margin-top: 42px;
+    }
+
     .checkout-card-header h2 {
         margin: 0;
         font-size: clamp(1.7rem, 3vw, 2.35rem);
@@ -127,7 +131,11 @@
         gap: 18px;
     }
 
-    .checkout-form-grid > :last-child {
+    .checkout-form-grid .checkout-span-2 {
+        grid-column: 1 / -1;
+    }
+
+    .checkout-form-grid > :last-child:not(.checkout-span-2) {
         grid-column: 1 / -1;
     }
 
@@ -137,7 +145,7 @@
         font-weight: 850;
     }
 
-    .checkout-card input:not([type="checkbox"]),
+    .checkout-card input:not([type="checkbox"]):not([type="radio"]),
     .checkout-card select,
     .checkout-card textarea {
         width: 100%;
@@ -152,12 +160,147 @@
         transition: border-color 160ms ease, box-shadow 160ms ease;
     }
 
-    .checkout-card input:not([type="checkbox"]):focus,
+    .checkout-card input:not([type="checkbox"]):not([type="radio"]):focus,
     .checkout-card select:focus,
     .checkout-card textarea:focus {
         border-color: var(--checkout-red);
-        box-shadow: 0 0 0 3px rgba(237, 49, 56, 0.12);
+        box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.12);
         outline: none;
+    }
+
+    /* ---------- DHL shipping method picker ---------- */
+    .checkout-shipping-toolbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    .checkout-shipping-toolbar input {
+        min-height: 48px;
+        padding: 10px 14px;
+        border: 1px solid #cfd4d8;
+        background: #fff;
+        color: var(--checkout-ink);
+        font: inherit;
+        font-size: 0.88rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .checkout-shipping-toolbar input:focus {
+        border-color: var(--checkout-red);
+        box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.12);
+        outline: none;
+    }
+
+    .checkout-shipping-toolbar button {
+        min-height: 48px;
+        padding: 0 20px;
+        border: 1px solid var(--checkout-ink);
+        background: var(--checkout-ink);
+        color: #fff;
+        font: inherit;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: background-color 160ms ease, border-color 160ms ease;
+    }
+
+    .checkout-shipping-toolbar button:hover {
+        background: #000;
+        border-color: #000;
+    }
+
+    .checkout-shipping-toolbar button:disabled {
+        opacity: 0.6;
+        cursor: wait;
+    }
+
+    .checkout-shipping-options {
+        display: none;
+        grid-gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .checkout-shipping-options.is-visible {
+        display: grid;
+    }
+
+    .checkout-shipping-option {
+        display: block;
+        cursor: pointer;
+    }
+
+    .checkout-shipping-option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .checkout-shipping-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 18px;
+        background: #fff;
+        border: 1px solid var(--checkout-line);
+        transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .checkout-shipping-option input:checked + .checkout-shipping-card {
+        border-color: var(--checkout-red);
+        background: #fff7f7;
+        box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.12);
+    }
+
+    .checkout-shipping-card strong {
+        display: block;
+        font-size: 0.88rem;
+        line-height: 1.25;
+        color: var(--checkout-ink);
+    }
+
+    .checkout-shipping-card small {
+        display: block;
+        margin-top: 4px;
+        color: var(--checkout-muted);
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .checkout-shipping-price {
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .checkout-shipping-price strong {
+        font-size: 0.92rem;
+    }
+
+    .checkout-shipping-price span {
+        display: block;
+        margin-top: 3px;
+        color: var(--checkout-green);
+        font-size: 0.72rem;
+        font-weight: 800;
+    }
+
+    .checkout-shipping-status {
+        margin: 0 0 18px;
+        color: var(--checkout-muted);
+        font-size: 0.74rem;
+        line-height: 1.55;
+    }
+
+    .checkout-shipping-status.is-error {
+        color: #b91c1c;
     }
 
     /* ---------- DPO payment explanation box ---------- */
@@ -532,11 +675,12 @@
         }
 
         .checkout-form-grid,
-        .checkout-notice-grid {
+        .checkout-notice-grid,
+        .checkout-shipping-toolbar {
             grid-template-columns: 1fr;
         }
 
-        .checkout-form-grid > :last-child {
+        .checkout-form-grid > :last-child:not(.checkout-span-2) {
             grid-column: auto;
         }
 
@@ -580,18 +724,19 @@
             <span class="checkout-kicker">Secure checkout</span>
             <h1>Review and pay.</h1>
             <p>
-                Confirm your customer information and order summary. You will then be
-                redirected to the approved DPO (3G Direct Pay) hosted payment page to
-                complete your card payment securely.
+                Confirm your customer and delivery details, choose a DHL shipping method,
+                then continue to DPO's hosted payment page to complete your card payment securely.
             </p>
         </div>
     </section>
 
     <section class="checkout-section" aria-label="Checkout information">
         <div class="checkout-shell checkout-layout">
-            <form method="post" class="checkout-card">
+            <form method="post" class="checkout-card" id="checkout-form">
                 {{ form.hidden_tag() }}
+                <input type="hidden" name="shipping_quote" id="checkout-shipping-quote" value="">
 
+                <!-- ================== CUSTOMER DETAILS ================== -->
                 <header class="checkout-card-header">
                     <span class="checkout-kicker">Customer details</span>
                     <h2>Complete your order information.</h2>
@@ -604,9 +749,54 @@
                 <div class="checkout-form-grid">
                     {{ field(form.full_name) }}
                     {{ field(form.email) }}
-                    {{ field(form.country) }}
+                    {{ field(form.country, extra_class='checkout-span-2') }}
                 </div>
 
+                <!-- ================== DELIVERY ADDRESS ================== -->
+                <header class="checkout-card-header">
+                    <span class="checkout-kicker">Delivery address</span>
+                    <h2>Where should we ship?</h2>
+                    <p>
+                        We use DHL Express for international shipping. These details are sent to
+                        DHL when the shipment is created after payment.
+                    </p>
+                </header>
+
+                <div class="checkout-form-grid">
+                    {{ field(form.company) if form.company is defined else '' }}
+                    {{ field(form.phone) if form.phone is defined else '' }}
+                    {{ field(form.address_line1, extra_class='checkout-span-2') if form.address_line1 is defined else '' }}
+                    {{ field(form.address_line2, extra_class='checkout-span-2') if form.address_line2 is defined else '' }}
+                    {{ field(form.city) if form.city is defined else '' }}
+                    {{ field(form.postal_code) if form.postal_code is defined else '' }}
+                </div>
+
+                <!-- ================== DHL SHIPPING METHOD ================== -->
+                <header class="checkout-card-header">
+                    <span class="checkout-kicker">Shipping method</span>
+                    <h2>Choose a DHL Express service.</h2>
+                    <p>
+                        We'll fetch live rates from DHL Express for your destination. The price
+                        is confirmed when the shipment is created.
+                    </p>
+                </header>
+
+                <div class="checkout-shipping-toolbar">
+                    <input
+                        id="checkout-shipping-country"
+                        type="text"
+                        maxlength="2"
+                        placeholder="Destination country code (e.g. US)"
+                        aria-label="Destination country code"
+                        autocomplete="country"
+                    >
+                    <button id="checkout-shipping-quote-btn" type="button">Get rates</button>
+                </div>
+
+                <p id="checkout-shipping-status" class="checkout-shipping-status" hidden></p>
+                <div id="checkout-shipping-options" class="checkout-shipping-options" aria-live="polite"></div>
+
+                <!-- ================== DPO PAYMENT ================== -->
                 <div class="checkout-payment-box">
                     <span class="checkout-payment-icon" aria-hidden="true">✓</span>
                     <div class="checkout-payment-copy">
@@ -655,6 +845,7 @@
                 </p>
             </form>
 
+            <!-- ================== ORDER SUMMARY ================== -->
             <aside class="checkout-summary" aria-labelledby="checkout-summary-title">
                 <span class="checkout-kicker">Order summary</span>
                 <h2 id="checkout-summary-title">Your order</h2>
@@ -684,18 +875,18 @@
                     </div>
 
                     <div class="checkout-total-row">
-                        <dt>Delivery</dt>
+                        <dt>Shipping (DHL)</dt>
                         <dd>
-                            <strong class="checkout-money-kes">KES 0.00</strong>
-                            <span class="checkout-money-usd">USD 0.00</span>
+                            <strong id="summary-shipping-kes" class="checkout-money-kes">KES 0.00</strong>
+                            <span id="summary-shipping-usd" class="checkout-money-usd">USD 0.00</span>
                         </dd>
                     </div>
 
                     <div class="checkout-total-row grand-total">
                         <dt>Total</dt>
                         <dd>
-                            <strong class="checkout-money-kes">{{ total|money_kes }}</strong>
-                            <span class="checkout-money-usd">{{ total|money_usd }}</span>
+                            <strong id="summary-total-kes" class="checkout-money-kes">{{ total|money_kes }}</strong>
+                            <span id="summary-total-usd" class="checkout-money-usd">{{ total|money_usd }}</span>
                         </dd>
                     </div>
                 </dl>
@@ -724,4 +915,166 @@
         </div>
     </section>
 </main>
+
+<script>
+(function () {
+    const USD_KES      = Number({{ usd_kes_rate|float }});
+    const SUBTOTAL_USD = Number({{ total }});
+
+    const $countryInput = document.querySelector('input[name="country"], select[name="country"]');
+    const $toolbarInput = document.getElementById('checkout-shipping-country');
+    const $btn          = document.getElementById('checkout-shipping-quote-btn');
+    const $options      = document.getElementById('checkout-shipping-options');
+    const $status       = document.getElementById('checkout-shipping-status');
+    const $quoteHidden  = document.getElementById('checkout-shipping-quote');
+
+    const $sumShipK = document.getElementById('summary-shipping-kes');
+    const $sumShipU = document.getElementById('summary-shipping-usd');
+    const $sumTotK  = document.getElementById('summary-total-kes');
+    const $sumTotU  = document.getElementById('summary-total-usd');
+
+    if (!$btn) return;
+
+    const fmtUsd = v => 'US$ ' + Number(v).toLocaleString('en-US', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+    const fmtKes = v => 'KES ' + Math.round(Number(v) * USD_KES).toLocaleString('en-KE');
+
+    const setStatus = (msg, isError) => {
+        if (!msg) { $status.hidden = true; $status.textContent = ''; return; }
+        $status.hidden = false;
+        $status.textContent = msg;
+        $status.classList.toggle('is-error', Boolean(isError));
+    };
+
+    const applyShipping = (costUsd, country, product) => {
+        const cost = Number(costUsd) || 0;
+        $sumShipK.textContent = fmtKes(cost);
+        $sumShipU.textContent = fmtUsd(cost);
+        $sumTotK.textContent  = fmtKes(SUBTOTAL_USD + cost);
+        $sumTotU.textContent  = fmtUsd(SUBTOTAL_USD + cost);
+
+        if ($quoteHidden) {
+            $quoteHidden.value = JSON.stringify({
+                country:      country || '',
+                cost_usd:     cost,
+                product_code: product?.productCode || null,
+                product_name: product?.productName || null,
+                transit_days: product?.deliveryCapabilities?.totalTransitDays || null
+            });
+        }
+    };
+
+    // Pre-fill country from the form field (if the user typed it above)
+    if ($countryInput && $toolbarInput) {
+        $countryInput.addEventListener('input', () => {
+            const v = ($countryInput.value || '').trim().toUpperCase();
+            if (v.length === 2 && !$toolbarInput.value) {
+                $toolbarInput.value = v;
+            }
+        });
+    }
+
+    // Auto-restore previously selected rate if user returns
+    try {
+        const saved = JSON.parse(sessionStorage.getItem('fabs_cart_shipping') || '{}');
+        if (saved && saved.country && $toolbarInput && !$toolbarInput.value) {
+            $toolbarInput.value = saved.country;
+        }
+    } catch (e) { /* ignore */ }
+
+    $btn.addEventListener('click', async () => {
+        const country = (($toolbarInput.value || '').trim() ||
+                         ($countryInput && $countryInput.value || '').trim()).toUpperCase();
+
+        if (country.length !== 2) {
+            setStatus('Please enter your 2-letter country code (e.g. US, KE, GB).', true);
+            $options.classList.remove('is-visible');
+            $options.innerHTML = '';
+            applyShipping(0, '', null);
+            return;
+        }
+
+        $btn.disabled = true;
+        $btn.textContent = 'Loading…';
+        setStatus('Fetching DHL Express rates…');
+        $options.classList.remove('is-visible');
+        $options.innerHTML = '';
+
+        try {
+            const res = await fetch(`/api/shipping/rates/cart?country=${encodeURIComponent(country)}`, {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || 'Could not fetch shipping rates.');
+
+            const products = Array.isArray(data.products) ? data.products : [];
+            if (!products.length) {
+                setStatus('No DHL rates returned for that destination.');
+                applyShipping(0, country, null);
+                return;
+            }
+
+            setStatus('');
+            renderRates(products, country);
+        } catch (err) {
+            console.error(err);
+            setStatus(err.message || 'Could not fetch shipping rates.', true);
+            applyShipping(0, country, null);
+        } finally {
+            $btn.disabled = false;
+            $btn.textContent = 'Get rates';
+        }
+    });
+
+    function renderRates(products, country) {
+        const top = products.slice(0, 5);
+        $options.innerHTML = '';
+
+        top.forEach((p, idx) => {
+            const price = p.totalPrice && p.totalPrice[0] ? Number(p.totalPrice[0].price) : null;
+            const days  = (p.deliveryCapabilities && p.deliveryCapabilities.totalTransitDays) || null;
+            const name  = p.productName || p.productCode || 'DHL Express';
+            const id    = 'checkout-ship-' + idx;
+
+            const label = document.createElement('label');
+            label.className = 'checkout-shipping-option';
+            label.innerHTML = `
+                <input type="radio" name="checkout_shipping_rate" id="${id}"
+                       value="${price !== null ? price : ''}" ${idx === 0 ? 'checked' : ''}>
+                <div class="checkout-shipping-card">
+                    <div>
+                        <strong>${name}</strong>
+                        <small>${days ? days + ' day(s) transit' : 'Transit time on request'}</small>
+                    </div>
+                    <div class="checkout-shipping-price">
+                        <strong>${price !== null ? fmtKes(price) : '—'}</strong>
+                        <span>${price !== null ? fmtUsd(price) : ''}</span>
+                    </div>
+                </div>
+            `;
+            $options.appendChild(label);
+        });
+
+        $options.classList.add('is-visible');
+
+        $options.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const cost = Number(radio.value || 0);
+                const prod = top.find(p =>
+                    Number(p.totalPrice?.[0]?.price || 0) === cost
+                ) || null;
+                applyShipping(cost, country, prod);
+            });
+        });
+
+        const first = top[0];
+        const firstPrice = first.totalPrice && first.totalPrice[0]
+            ? Number(first.totalPrice[0].price) : 0;
+        applyShipping(firstPrice, country, first);
+    }
+})();
+</script>
 {% endblock %}

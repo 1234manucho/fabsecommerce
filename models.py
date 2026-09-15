@@ -53,6 +53,13 @@ class Game(TimestampMixin, db.Model):
     is_featured = db.Column(db.Boolean, default=False, nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
 
+    # --- Shipping dimensions (used for DHL rate quotes & shipments) ---
+    weight_kg = db.Column(db.Float, default=1.0, nullable=True)
+    length_cm = db.Column(db.Float, default=30.0, nullable=True)
+    width_cm = db.Column(db.Float, default=20.0, nullable=True)
+    height_cm = db.Column(db.Float, default=10.0, nullable=True)
+    hs_code = db.Column(db.String(20), nullable=True)  # customs harmonised code
+
     @property
     def discount_percent(self):
         if not self.compare_price or self.compare_price <= self.price: return 0
@@ -87,6 +94,31 @@ class Order(TimestampMixin, db.Model):
     status = db.Column(db.String(30), default="pending", index=True, nullable=False)
     payment_status = db.Column(db.String(30), default="unpaid", index=True, nullable=False)
     payment_reference = db.Column(db.String(180))
+
+    # --- Shipping / recipient details (collected at checkout) ---
+    company = db.Column(db.String(180), nullable=True)
+    phone = db.Column(db.String(40), nullable=True)
+    address_line1 = db.Column(db.String(200), nullable=True)
+    address_line2 = db.Column(db.String(200), nullable=True)
+    city = db.Column(db.String(100), nullable=True)
+    postal_code = db.Column(db.String(20), nullable=True)
+
+    # --- DHL shipping state ---
+    shipping_status = db.Column(db.String(50), default="pending", nullable=True, index=True)
+    dhl_tracking_number = db.Column(db.String(100), nullable=True, index=True)
+    dhl_label_url = db.Column(db.String(500), nullable=True)
+    dhl_shipment_id = db.Column(db.String(100), nullable=True)
+    shipping_cost = db.Column(db.Numeric(12, 2), nullable=True)
+    shipping_currency = db.Column(db.String(3), nullable=True)
+    shipped_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    delivered_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    # --- Package dimensions snapshot (frozen at shipment time) ---
+    package_weight_kg = db.Column(db.Float, nullable=True)
+    package_length_cm = db.Column(db.Float, nullable=True)
+    package_width_cm = db.Column(db.Float, nullable=True)
+    package_height_cm = db.Column(db.Float, nullable=True)
+
     user = db.relationship("User", backref="orders")
     items = db.relationship("OrderItem", backref="order", cascade="all, delete-orphan")
 

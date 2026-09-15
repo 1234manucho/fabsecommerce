@@ -1,1 +1,255 @@
-{% extends 'base.html' %}{% from 'macros.html' import status %}{% block title %}Operations Dashboard | FABS Trading{% endblock %}{% block content %}<main class="light-page"><section class="admin-hero"><div class="shell"><div><span class="kicker">Operations centre</span><h1>FABS control dashboard.</h1><p>Gaming inquiries, retail orders, payments, commodity RFQs and catalogue operations.</p></div><div class="actions"><a class="button secondary" href="{{ url_for('admin_inquiries') }}">Gaming inquiries</a><a class="button primary" href="{{ url_for('admin_game_new') }}">Add game</a></div></div></section><section class="section light"><div class="shell"><div class="stat-grid">{% for label,value in [('Total orders',stats.orders),('Paid orders',stats.paid),('Game inquiries',stats.inquiries),('Trade RFQs',stats.quotes),('Customers',stats.users)] %}<div><span>{{ label }}</span><strong>{{ value }}</strong></div>{% endfor %}</div><div class="admin-grid"><section><div class="admin-title"><h2>Recent orders</h2><a href="{{ url_for('admin_orders') }}">View all</a></div>{% for order in orders %}<div class="admin-row"><span><strong>{{ order.reference }}</strong><small>{{ order.email }}</small></span>{{ status(order.payment_status) }}<b>${{ '%.2f'|format(order.total) }}</b></div>{% else %}<div class="empty">No orders.</div>{% endfor %}</section><section><div class="admin-title"><h2>Recent RFQs</h2><a href="{{ url_for('admin_quotes') }}">View all</a></div>{% for quote in quotes %}<div class="admin-row"><span><strong>{{ quote.reference }}</strong><small>{{ quote.company_name }} · {{ quote.commodity.name }}</small></span>{{ status(quote.status) }}</div>{% else %}<div class="empty">No RFQs.</div>{% endfor %}</section></div></div></section></main>{% endblock %}
+{% extends 'base.html' %}
+{% from 'macros.html' import status %}
+
+{% block title %}Operations Dashboard | FABS Trading{% endblock %}
+
+{% block head %}
+<style>
+  .admin-hero-bg {
+    background:
+      radial-gradient(circle at 88% 20%, rgba(255, 0, 0, 0.14), transparent 28%),
+      linear-gradient(135deg, #11161b 0%, #1d242b 100%);
+  }
+  .admin-hero-bg::after {
+    content: "";
+    position: absolute;
+    right: -80px;
+    bottom: -140px;
+    width: 340px;
+    height: 340px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+  }
+  .admin-btn-primary {
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  }
+  .admin-btn-primary:hover {
+    background: #cc0000;
+    border-color: #cc0000;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(255, 0, 0, 0.28);
+  }
+  .admin-btn-primary:focus-visible {
+    outline: 3px solid rgba(255, 0, 0, 0.35);
+    outline-offset: 3px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="min-h-[70vh] bg-[#f4f5f6] text-[#161a1f]">
+
+  <!-- ================== HERO ================== -->
+  <section class="relative overflow-hidden admin-hero-bg text-white py-[clamp(48px,7vw,80px)]">
+    <div class="w-[min(1280px,calc(100%-40px))] mx-auto relative z-10 flex flex-wrap items-end justify-between gap-8">
+      <div class="min-w-0">
+        <span class="inline-flex items-center gap-2 mb-3.5 text-[#ff7479] text-[0.7rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-6 before:h-[2px] before:bg-current">
+          Operations centre
+        </span>
+        <h1 class="m-0 text-[clamp(2rem,4.5vw,3.4rem)] tracking-[-0.055em] leading-[1] max-w-[820px]">
+          FABS control dashboard.
+        </h1>
+        <p class="mt-4 max-w-[680px] text-[#bdc5cc] text-[0.95rem] leading-[1.7]">
+          Gaming inquiries, retail orders, payments, DHL shipments, commodity RFQs and
+          catalogue operations — all from one place.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-2.5">
+        <a href="{{ url_for('admin_inquiries') }}"
+           class="inline-flex items-center justify-center min-h-[44px] px-4 bg-white text-[#11161b] text-[0.72rem] font-black tracking-[0.05em] uppercase border border-white no-underline hover:bg-[#f4f5f6]">
+          Gaming inquiries
+        </a>
+        <a href="{{ url_for('admin_orders') }}"
+           class="inline-flex items-center justify-center min-h-[44px] px-4 bg-white text-[#11161b] text-[0.72rem] font-black tracking-[0.05em] uppercase border border-white no-underline hover:bg-[#f4f5f6]">
+          Orders
+        </a>
+        <a href="{{ url_for('admin_game_new') }}"
+           class="admin-btn-primary inline-flex items-center justify-center min-h-[44px] px-4 bg-[#ff0000] text-white text-[0.72rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] no-underline">
+          Add game
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================== BODY ================== -->
+  <section class="py-[clamp(38px,6vw,72px)] pb-[88px]">
+    <div class="w-[min(1280px,calc(100%-40px))] mx-auto">
+
+      <!-- STATS -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 mb-8">
+        {% for label, value in [
+          ('Total orders', stats.orders),
+          ('Paid orders', stats.paid),
+          ('Awaiting shipment', stats.pending_shipment if stats.pending_shipment is defined else 0),
+          ('Shipped this week', stats.shipped_week if stats.shipped_week is defined else 0),
+          ('Game inquiries', stats.inquiries),
+          ('Trade RFQs', stats.quotes)
+        ] %}
+        <div class="p-5 bg-white border border-[#e0e3e6] shadow-[0_10px_30px_rgba(17,24,39,0.04)]">
+          <span class="block mb-2 text-[0.68rem] font-black tracking-[0.07em] uppercase text-[#68717a]">
+            {{ label }}
+          </span>
+          <strong class="block text-[2rem] leading-none tracking-[-0.035em]">{{ value }}</strong>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- TWO-COLUMN PANELS -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- ============ RECENT ORDERS ============ -->
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+          <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
+            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Recent orders</h2>
+            <a href="{{ url_for('admin_orders') }}"
+               class="text-[0.7rem] font-black tracking-[0.05em] uppercase text-[#ff0000] no-underline hover:underline">
+              View all
+            </a>
+          </div>
+
+          {% for order in orders %}
+          <div class="flex items-center justify-between gap-4 px-5 py-3.5 border-b border-[#e0e3e6] last:border-b-0 hover:bg-[#fafbfc]">
+            <div class="min-w-0">
+              <strong class="block text-[0.85rem]">
+                <a href="{{ url_for('order_detail', reference=order.reference) }}"
+                   class="text-[#161a1f] no-underline border-b border-transparent hover:border-[#ff0000] hover:text-[#ff0000]">
+                  {{ order.reference }}
+                </a>
+              </strong>
+              <small class="block mt-0.5 text-[0.72rem] text-[#68717a] truncate">{{ order.email }}</small>
+            </div>
+            <div class="flex items-center gap-3 whitespace-nowrap">
+              {{ status(order.payment_status) }}
+              <b class="text-[0.85rem]">${{ '%.2f'|format(order.total) }}</b>
+            </div>
+          </div>
+          {% else %}
+          <div class="p-6 text-center text-[#68717a] text-sm">No orders yet.</div>
+          {% endfor %}
+        </section>
+
+        <!-- ============ DHL SHIPMENTS ============ -->
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+          <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
+            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Recent DHL shipments</h2>
+            <a href="{{ url_for('admin_orders') }}"
+               class="text-[0.7rem] font-black tracking-[0.05em] uppercase text-[#ff0000] no-underline hover:underline">
+              Manage orders
+            </a>
+          </div>
+
+          {% for order in shipments if shipments is defined %}
+          <div class="flex items-center justify-between gap-4 px-5 py-3.5 border-b border-[#e0e3e6] last:border-b-0 hover:bg-[#fafbfc]">
+            <div class="min-w-0">
+              <strong class="block text-[0.85rem]">
+                <a href="{{ url_for('order_detail', reference=order.reference) }}"
+                   class="text-[#161a1f] no-underline border-b border-transparent hover:border-[#ff0000] hover:text-[#ff0000]">
+                  {{ order.reference }}
+                </a>
+              </strong>
+              <small class="block mt-0.5 text-[0.72rem] text-[#68717a] truncate">
+                {% if order.dhl_tracking_number %}
+                  Tracking: <span class="font-mono">{{ order.dhl_tracking_number }}</span>
+                {% else %}
+                  Awaiting shipment
+                {% endif %}
+              </small>
+            </div>
+            <div class="flex items-center gap-3 whitespace-nowrap">
+              {{ status(order.shipping_status or 'pending') }}
+              {% if order.dhl_label_url %}
+              <a href="{{ order.dhl_label_url }}" target="_blank" rel="noopener"
+                 class="inline-flex items-center gap-1 min-h-[30px] px-2.5 bg-white text-[#ff0000] text-[0.62rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] no-underline hover:bg-[#fff7f7]">
+                Label
+              </a>
+              {% endif %}
+            </div>
+          </div>
+          {% else %}
+          <div class="p-6 text-center text-[#68717a] text-sm">
+            No shipments created yet. Create one from the
+            <a href="{{ url_for('admin_orders') }}" class="text-[#ff0000] hover:underline">orders page</a>.
+          </div>
+          {% endfor %}
+        </section>
+
+        <!-- ============ RECENT RFQs ============ -->
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+          <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
+            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Recent RFQs</h2>
+            <a href="{{ url_for('admin_quotes') }}"
+               class="text-[0.7rem] font-black tracking-[0.05em] uppercase text-[#ff0000] no-underline hover:underline">
+              View all
+            </a>
+          </div>
+
+          {% for quote in quotes %}
+          <div class="flex items-center justify-between gap-4 px-5 py-3.5 border-b border-[#e0e3e6] last:border-b-0 hover:bg-[#fafbfc]">
+            <div class="min-w-0">
+              <strong class="block text-[0.85rem]">{{ quote.reference }}</strong>
+              <small class="block mt-0.5 text-[0.72rem] text-[#68717a] truncate">
+                {{ quote.company_name }} · {{ quote.commodity.name }}
+              </small>
+            </div>
+            {{ status(quote.status) }}
+          </div>
+          {% else %}
+          <div class="p-6 text-center text-[#68717a] text-sm">No RFQs yet.</div>
+          {% endfor %}
+        </section>
+
+        <!-- ============ RECENT INQUIRIES ============ -->
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+          <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
+            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Recent gaming inquiries</h2>
+            <a href="{{ url_for('admin_inquiries') }}"
+               class="text-[0.7rem] font-black tracking-[0.05em] uppercase text-[#ff0000] no-underline hover:underline">
+              View all
+            </a>
+          </div>
+
+          {% for inquiry in inquiries if inquiries is defined %}
+          <div class="flex items-center justify-between gap-4 px-5 py-3.5 border-b border-[#e0e3e6] last:border-b-0 hover:bg-[#fafbfc]">
+            <div class="min-w-0">
+              <strong class="block text-[0.85rem]">{{ inquiry.reference }}</strong>
+              <small class="block mt-0.5 text-[0.72rem] text-[#68717a] truncate">
+                {{ inquiry.company }} · {{ inquiry.game.title if inquiry.game else 'Gaming product' }}
+              </small>
+            </div>
+            {{ status(inquiry.status) }}
+          </div>
+          {% else %}
+          <div class="p-6 text-center text-[#68717a] text-sm">No inquiries yet.</div>
+          {% endfor %}
+        </section>
+      </div>
+
+      <!-- ============ QUICK ACTIONS ============ -->
+      <div class="mt-8 p-6 bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+        <span class="inline-flex items-center gap-2 mb-4 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">
+          Quick actions
+        </span>
+        <div class="flex flex-wrap gap-2.5">
+          <a href="{{ url_for('admin_orders') }}"
+             class="admin-btn-primary inline-flex items-center gap-2 min-h-[44px] px-4 bg-[#ff0000] text-white text-[0.7rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] no-underline">
+            Create DHL shipment
+          </a>
+          <a href="{{ url_for('admin_orders') }}"
+             class="inline-flex items-center gap-2 min-h-[44px] px-4 bg-white text-[#161a1f] text-[0.7rem] font-black tracking-[0.05em] uppercase border border-[#161a1f] no-underline hover:bg-[#f4f5f6]">
+            Track a shipment
+          </a>
+          <a href="{{ url_for('admin_game_new') }}"
+             class="inline-flex items-center gap-2 min-h-[44px] px-4 bg-white text-[#161a1f] text-[0.7rem] font-black tracking-[0.05em] uppercase border border-[#161a1f] no-underline hover:bg-[#f4f5f6]">
+            Add new game
+          </a>
+          <a href="{{ url_for('admin_inquiries') }}"
+             class="inline-flex items-center gap-2 min-h-[44px] px-4 bg-white text-[#161a1f] text-[0.7rem] font-black tracking-[0.05em] uppercase border border-[#161a1f] no-underline hover:bg-[#f4f5f6]">
+            Review inquiries
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}

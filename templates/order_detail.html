@@ -1,1 +1,373 @@
-{% extends 'base.html' %}{% from 'macros.html' import status %}{% block title %}{{ order.reference }} | FABS Trading{% endblock %}{% block content %}<main class="light-page"><section class="small-hero"><div class="shell"><span class="kicker">Order {{ order.reference }}</span><h1>{{ status(order.status) }}</h1><p>Payment: {{ order.payment_status|replace('_',' ')|title }}</p></div></section><section class="section light"><div class="shell order-card"><div><h2>Order details</h2>{% for item in order.items %}<div class="order-line"><span><strong>{{ item.title }}</strong><small>{{ item.platform }}</small></span><b>${{ '%.2f'|format(item.unit_price) }}</b></div>{% endfor %}</div><aside><span>Total</span><strong>${{ '%.2f'|format(order.total) }} {{ order.currency }}</strong><p>Transaction reference: {{ order.payment_reference or 'Not created' }}</p></aside></div></section></main>{% endblock %}
+{% extends 'base.html' %}
+{% from 'macros.html' import status %}
+
+{% block title %}{{ order.reference }} | FABS Trading{% endblock %}
+
+{% block head %}
+<style>
+  .order-hero-bg {
+    background:
+      radial-gradient(circle at 88% 20%, rgba(255, 0, 0, 0.14), transparent 28%),
+      linear-gradient(135deg, #11161b 0%, #1d242b 100%);
+  }
+  .order-hero-bg::after {
+    content: "";
+    position: absolute;
+    right: -80px;
+    bottom: -140px;
+    width: 340px;
+    height: 340px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+  }
+  .order-btn-primary {
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  }
+  .order-btn-primary:hover {
+    background: #cc0000;
+    border-color: #cc0000;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(255, 0, 0, 0.28);
+  }
+  .order-btn-primary:focus-visible {
+    outline: 3px solid rgba(255, 0, 0, 0.35);
+    outline-offset: 3px;
+  }
+  .order-step::before {
+    content: "";
+    position: absolute;
+    left: 13px;
+    top: 32px;
+    bottom: -16px;
+    width: 2px;
+    background: #e0e3e6;
+  }
+  .order-step:last-child::before { display: none; }
+  .order-step.is-done::before { background: #21842a; }
+  .order-step.is-done .order-step-dot {
+    background: #21842a;
+    border-color: #21842a;
+    color: #fff;
+  }
+  .order-step.is-active .order-step-dot {
+    background: #ff0000;
+    border-color: #ff0000;
+    color: #fff;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="min-h-[70vh] bg-[#f4f5f6] text-[#161a1f]">
+
+  <!-- ================== HERO ================== -->
+  <section class="relative overflow-hidden order-hero-bg text-white py-[clamp(48px,7vw,88px)]">
+    <div class="w-[min(1100px,calc(100%-40px))] mx-auto relative z-10">
+
+      <a href="{{ url_for('account') }}"
+         class="inline-flex items-center gap-1.5 mb-5 text-[#bdc5cc] text-[0.7rem] font-black tracking-[0.05em] uppercase no-underline hover:text-white">
+        ← Back to account
+      </a>
+
+      <span class="inline-flex items-center gap-2 mb-4 text-[#ff7479] text-[0.72rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-6 before:h-[2px] before:bg-current">
+        Order {{ order.reference }}
+      </span>
+      <h1 class="m-0 text-[clamp(2rem,5vw,3.6rem)] tracking-[-0.055em] leading-[0.99] max-w-[820px]">
+        {{ order.status|replace('_',' ')|title }}
+      </h1>
+
+      <div class="flex flex-wrap items-center gap-3 mt-5">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 border border-white/20 text-[0.72rem] font-black tracking-[0.04em] uppercase">
+          Payment: {{ order.payment_status|replace('_',' ')|title }}
+        </div>
+        {% if order.shipping_status %}
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 border border-white/20 text-[0.72rem] font-black tracking-[0.04em] uppercase">
+          Shipping: {{ order.shipping_status|replace('_',' ')|title }}
+        </div>
+        {% endif %}
+        {% if order.dhl_tracking_number %}
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-[#ff0000] border border-[#ff0000] text-[0.72rem] font-black tracking-[0.04em] uppercase text-white">
+          DHL · {{ order.dhl_tracking_number }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ================== BODY ================== -->
+  <section class="py-[clamp(38px,6vw,72px)] pb-[88px]">
+    <div class="w-[min(1100px,calc(100%-40px))] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] gap-6 items-start">
+
+      <!-- ================== LEFT COLUMN ================== -->
+      <div class="grid gap-6">
+
+        <!-- Order items -->
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+          <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
+            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Order details</h2>
+            <span class="text-[0.7rem] font-black tracking-[0.05em] uppercase text-[#68717a]">
+              {{ order.items|length }} item{{ '' if order.items|length == 1 else 's' }}
+            </span>
+          </div>
+
+          {% for item in order.items %}
+          <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-4 items-start px-5 py-4 border-b border-[#e0e3e6] last:border-b-0">
+            <div class="min-w-0">
+              <strong class="block text-[0.9rem] leading-tight">{{ item.title }}</strong>
+              <small class="block mt-1 text-[0.7rem] text-[#68717a] uppercase tracking-[0.04em] font-bold">
+                {{ item.platform }}{% if item.edition is defined and item.edition %} · {{ item.edition }}{% endif %}
+              </small>
+              <small class="block mt-1.5 text-[0.72rem] text-[#68717a]">
+                Quantity: <strong class="text-[#161a1f]">{{ item.quantity }}</strong>
+              </small>
+            </div>
+            <div class="text-right whitespace-nowrap">
+              <b class="block text-[0.9rem]">${{ '%.2f'|format(item.unit_price) }}</b>
+              <span class="block mt-1 text-[0.68rem] text-[#68717a]">
+                × {{ item.quantity }}
+              </span>
+            </div>
+          </div>
+          {% else %}
+          <div class="p-6 text-center text-[#68717a] text-sm">No items recorded on this order.</div>
+          {% endfor %}
+        </section>
+
+        <!-- Delivery address -->
+        {% if order.address_line1 or order.city or order.postal_code %}
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+          <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
+            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Delivery address</h2>
+            <span class="inline-flex items-center gap-2 text-[0.68rem] font-black tracking-[0.05em] uppercase text-[#21842a]">
+              ✓ Ready for DHL
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 p-5 text-[0.85rem] leading-[1.6] text-[#4f5860]">
+
+            <div>
+              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
+                Recipient
+              </span>
+              <strong class="block text-[#161a1f]">{{ order.full_name }}</strong>
+              {% if order.company %}<div>{{ order.company }}</div>{% endif %}
+              <div>{{ order.email }}</div>
+              {% if order.phone %}<div class="mt-1">Phone: {{ order.phone }}</div>{% endif %}
+            </div>
+
+            <div>
+              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
+                Address
+              </span>
+              <div>{{ order.address_line1 or '' }}</div>
+              {% if order.address_line2 %}<div>{{ order.address_line2 }}</div>{% endif %}
+              <div>
+                {{ order.city or '' }}{% if order.postal_code %} · {{ order.postal_code }}{% endif %}
+              </div>
+              <div class="font-bold text-[#161a1f]">{{ order.country }}</div>
+            </div>
+
+          </div>
+        </section>
+        {% endif %}
+
+        <!-- DHL shipment -->
+        {% if order.dhl_tracking_number or order.shipping_status %}
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+          <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
+            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">DHL shipment</h2>
+            {% if order.shipping_status %}
+              {{ status(order.shipping_status) }}
+            {% endif %}
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-5">
+
+            <div class="md:col-span-3">
+              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
+                Tracking number
+              </span>
+              {% if order.dhl_tracking_number %}
+                <a href="https://www.dhl.com/global-en/home/tracking.html?tracking-id={{ order.dhl_tracking_number }}"
+                   target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-1.5 font-mono text-[0.95rem] text-[#ff0000] hover:underline">
+                  {{ order.dhl_tracking_number }} ↗
+                </a>
+              {% else %}
+                <span class="text-[#68717a] text-[0.85rem]">Not yet created</span>
+              {% endif %}
+            </div>
+
+            {% if order.shipping_cost %}
+            <div>
+              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
+                Shipping cost
+              </span>
+              <strong class="text-[0.9rem]">
+                {{ order.shipping_currency or 'USD' }} {{ '%.2f'|format(order.shipping_cost) }}
+              </strong>
+            </div>
+            {% endif %}
+
+            {% if order.shipped_at %}
+            <div>
+              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
+                Shipped
+              </span>
+              <strong class="text-[0.9rem]">{{ order.shipped_at.strftime('%d %b %Y') }}</strong>
+            </div>
+            {% endif %}
+
+            {% if order.delivered_at %}
+            <div>
+              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
+                Delivered
+              </span>
+              <strong class="text-[0.9rem] text-[#21842a]">{{ order.delivered_at.strftime('%d %b %Y') }}</strong>
+            </div>
+            {% endif %}
+
+            {% if order.dhl_label_url %}
+            <div class="md:col-span-3 mt-1">
+              <a href="{{ order.dhl_label_url }}" target="_blank" rel="noopener"
+                 class="order-btn-primary inline-flex items-center gap-2 min-h-[44px] px-4 bg-[#ff0000] text-white text-[0.72rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] no-underline">
+                Download shipping label
+              </a>
+            </div>
+            {% endif %}
+
+          </div>
+        </section>
+        {% endif %}
+
+        <!-- Progress timeline -->
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+          <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
+            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Order progress</h2>
+          </div>
+
+          {% set steps = [
+            ('Order created', order.created_at, True),
+            ('Payment approved', order.payment_status == 'paid', order.payment_status == 'paid'),
+            ('DHL shipment created', order.dhl_tracking_number, order.dhl_tracking_number),
+            ('In transit', order.shipping_status == 'in_transit', order.shipping_status == 'in_transit'),
+            ('Delivered', order.shipping_status == 'delivered', order.shipping_status == 'delivered'),
+          ] %}
+
+          <ol class="relative p-5 pt-6 m-0 list-none">
+            {% for label, when, done in steps %}
+            <li class="order-step relative pl-10 pb-5 {% if done %}is-done{% endif %} {% if loop.index == 1 or (not done and loop.index == 2 and order.payment_status == 'paid') %}is-active{% endif %}">
+              <span class="order-step-dot absolute left-0 top-0 grid place-items-center w-7 h-7 rounded-full border-2 border-[#e0e3e6] bg-white text-[#8a9198] text-[0.65rem] font-black">
+                {% if done %}✓{% else %}{{ loop.index }}{% endif %}
+              </span>
+              <div class="pt-0.5">
+                <strong class="block text-[0.85rem]">{{ label }}</strong>
+                {% if when is string %}
+                  <small class="block mt-1 text-[0.7rem] text-[#68717a]">{{ when }}</small>
+                {% elif when %}
+                  <small class="block mt-1 text-[0.7rem] text-[#68717a]">{{ when.strftime('%d %b %Y, %H:%M') }}</small>
+                {% else %}
+                  <small class="block mt-1 text-[0.7rem] text-[#8a9198]">Pending</small>
+                {% endif %}
+              </div>
+            </li>
+            {% endfor %}
+          </ol>
+        </section>
+
+      </div>
+
+      <!-- ================== RIGHT COLUMN ================== -->
+      <aside class="lg:sticky lg:top-[120px] grid gap-6">
+
+        <!-- Totals -->
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)] p-6">
+          <span class="inline-flex items-center gap-2 mb-3 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">
+            Summary
+          </span>
+
+          <dl class="m-0 mt-2">
+            <div class="flex items-center justify-between gap-4 py-2.5 text-[0.82rem]">
+              <dt class="text-[#68717a] font-bold">Subtotal</dt>
+              <dd class="m-0 font-black">${{ '%.2f'|format(order.subtotal) }}</dd>
+            </div>
+
+            {% if order.shipping_cost %}
+            <div class="flex items-center justify-between gap-4 py-2.5 text-[0.82rem]">
+              <dt class="text-[#68717a] font-bold">Shipping (DHL)</dt>
+              <dd class="m-0 font-black">${{ '%.2f'|format(order.shipping_cost) }}</dd>
+            </div>
+            {% endif %}
+
+            <div class="flex items-center justify-between gap-4 pt-4 mt-2 border-t border-[#e0e3e6]">
+              <dt class="text-[0.9rem] font-black uppercase">Total</dt>
+              <dd class="m-0 text-right">
+                <strong class="block text-[1.5rem] tracking-[-0.035em] leading-none">
+                  ${{ '%.2f'|format(order.total) }}
+                </strong>
+                <span class="block mt-1 text-[0.7rem] font-black text-[#68717a] uppercase tracking-[0.05em]">
+                  {{ order.currency }}
+                </span>
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- Payment details -->
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)] p-6">
+          <span class="inline-flex items-center gap-2 mb-3 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">
+            Payment
+          </span>
+
+          <div class="mt-3 grid gap-3.5 text-[0.78rem] leading-[1.55] text-[#4f5860]">
+            <div>
+              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
+                Method
+              </span>
+              <strong class="text-[#161a1f]">Card · DPO (3G Direct Pay)</strong>
+            </div>
+            <div>
+              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
+                Status
+              </span>
+              {{ status(order.payment_status) }}
+            </div>
+            <div>
+              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
+                Transaction reference
+              </span>
+              <span class="font-mono text-[0.78rem] text-[#161a1f] break-all">
+                {{ order.payment_reference or 'Not created' }}
+              </span>
+            </div>
+            <div>
+              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
+                Order date
+              </span>
+              <strong class="text-[#161a1f]">{{ order.created_at.strftime('%d %b %Y, %H:%M') }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <!-- Support -->
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)] p-6">
+          <span class="inline-flex items-center gap-2 mb-3 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">
+            Need help?
+          </span>
+
+          <p class="m-0 text-[0.78rem] leading-[1.65] text-[#68717a]">
+            Contact our fulfilment team with this order reference and we'll respond as soon as
+            possible.
+          </p>
+
+          <a href="mailto:{{ support_email if support_email else 'e-trades@fabstrading.com' }}?subject=Order%20{{ order.reference }}"
+             class="mt-4 inline-flex items-center justify-center w-full min-h-[44px] px-4 bg-white text-[#ff0000] text-[0.72rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] no-underline hover:bg-[#fff7f7]">
+            Email support
+          </a>
+        </section>
+
+      </aside>
+    </div>
+  </section>
+</main>
+{% endblock %}

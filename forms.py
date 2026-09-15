@@ -1,6 +1,25 @@
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, DecimalField, EmailField, IntegerField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, URL
+from wtforms import (
+    BooleanField,
+    DecimalField,
+    EmailField,
+    HiddenField,
+    IntegerField,
+    PasswordField,
+    SelectField,
+    StringField,
+    SubmitField,
+    TextAreaField,
+)
+from wtforms.validators import (
+    DataRequired,
+    Email,
+    EqualTo,
+    Length,
+    NumberRange,
+    Optional,
+    URL,
+)
 
 
 class LoginForm(FlaskForm):
@@ -22,10 +41,30 @@ class RegisterForm(FlaskForm):
 
 
 class CheckoutForm(FlaskForm):
+    # ---- Customer details ----
     full_name = StringField("Full name", validators=[DataRequired(), Length(max=140)])
-    email = EmailField("Email address", validators=[DataRequired(), Email(), Length(max=255)])
-    country = StringField("Country", validators=[DataRequired(), Length(max=90)])
-    accept_terms = BooleanField("I accept the terms and fulfilment conditions", validators=[DataRequired()])
+    email     = EmailField("Email address", validators=[DataRequired(), Email(), Length(max=255)])
+    country   = StringField(
+        "Country code (ISO-2)",
+        validators=[DataRequired(), Length(min=2, max=2)],
+    )
+
+    # ---- Delivery address ----
+    company       = StringField("Company (optional)", validators=[Optional(), Length(max=180)])
+    phone         = StringField("Phone / WhatsApp", validators=[Optional(), Length(max=40)])
+    address_line1 = StringField("Address line 1", validators=[DataRequired(), Length(max=200)])
+    address_line2 = StringField("Address line 2 (optional)", validators=[Optional(), Length(max=200)])
+    city          = StringField("City", validators=[DataRequired(), Length(max=100)])
+    postal_code   = StringField("Postal code", validators=[DataRequired(), Length(max=20)])
+
+    # ---- Shipping (DHL) ----
+    shipping_quote = HiddenField()   # JSON string posted from the frontend
+
+    # ---- Terms + submit ----
+    accept_terms = BooleanField(
+        "I accept the terms and fulfilment conditions",
+        validators=[DataRequired()],
+    )
     submit = SubmitField("Continue to secure payment")
 
 
@@ -57,8 +96,14 @@ class GameInquiryForm(FlaskForm):
     country = StringField("Country", validators=[DataRequired(), Length(max=90)])
     quantity = StringField("Required quantity", validators=[DataRequired(), Length(max=80)])
     destination = StringField("Delivery destination", validators=[DataRequired(), Length(max=160)])
-    requirements = TextAreaField("Game model, configuration and specifications", validators=[Optional(), Length(max=4000)])
-    confirm = BooleanField("I confirm that this is a genuine commercial gaming inquiry", validators=[DataRequired()])
+    requirements = TextAreaField(
+        "Game model, configuration and specifications",
+        validators=[Optional(), Length(max=4000)],
+    )
+    confirm = BooleanField(
+        "I confirm that this is a genuine commercial gaming inquiry",
+        validators=[DataRequired()],
+    )
     submit = SubmitField("Request gaming quotation")
 
 
@@ -74,6 +119,30 @@ class GameForm(FlaskForm):
     stock_count = IntegerField("Stock", validators=[DataRequired(), NumberRange(min=0)])
     image_url = StringField("Image URL", validators=[DataRequired(), URL(), Length(max=2000)])
     description = TextAreaField("Description", validators=[DataRequired(), Length(min=20)])
+
+    # ---- Shipping dimensions (used for DHL rate quotes) ----
+    weight_kg = DecimalField(
+        "Weight (kg)",
+        validators=[Optional(), NumberRange(min=0)],
+        places=2,
+    )
+    length_cm = DecimalField(
+        "Length (cm)",
+        validators=[Optional(), NumberRange(min=0)],
+        places=1,
+    )
+    width_cm = DecimalField(
+        "Width (cm)",
+        validators=[Optional(), NumberRange(min=0)],
+        places=1,
+    )
+    height_cm = DecimalField(
+        "Height (cm)",
+        validators=[Optional(), NumberRange(min=0)],
+        places=1,
+    )
+    hs_code = StringField("HS code (customs)", validators=[Optional(), Length(max=20)])
+
     is_featured = BooleanField("Featured")
     is_active = BooleanField("Active")
     submit = SubmitField("Save game")

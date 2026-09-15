@@ -1,3 +1,36 @@
-{% macro field(field,placeholder='') %}<label>{{ field.label.text }}{{ field(placeholder=placeholder) }}{% if field.errors %}<span class="field-error">{{ field.errors[0] }}</span>{% endif %}</label>{% endmacro %}
-{% macro game_card(game) %}<article class="fs-game-card"><button class="fs-preview-media" type="button" data-game-preview aria-label="Play video preview for {{ game.title }}" aria-pressed="false"><img src="{{ game.image_url }}" alt="{{ game.title }} game artwork" loading="lazy"><video muted loop playsinline preload="none" poster="{{ game.image_url }}" data-src="{{ game.trailer_url }}"></video><span class="fs-discount">-{{ game.discount_percent }}%</span><span class="fs-platform">{{ game.platform }}</span><span class="fs-preview-control"><i>▶</i><b>Touch to preview</b><small>Video · sound off</small></span></button><div class="fs-game-info"><div class="fs-eyebrow"><span>{{ game.genre }}</span><span>{{ game.region }}</span></div><h3><a href="{{ url_for('game_detail',slug=game.slug) }}">{{ game.title }}</a></h3><p>{{ game.edition }}</p><div class="fs-card-foot"><span><strong>${{ '%.2f'|format(game.price) }}</strong>{% if game.compare_price %}<del>${{ '%.2f'|format(game.compare_price) }}</del>{% endif %}</span><a href="{{ url_for('game_detail',slug=game.slug) }}">View deal ↗</a></div></div></article>{% endmacro %}
-{% macro status(value) %}<span class="status status-{{ value|replace('_','-') }}">{{ value|replace('_',' ')|title }}</span>{% endmacro %}
+{% macro field(field, placeholder='', extra_class='') -%}
+<label class="block">
+  <span class="block mb-2 text-[0.76rem] font-extrabold tracking-wide text-[#32383e]">
+    {{ field.label.text }}
+  </span>
+  {{ field(placeholder=placeholder, class_='w-full min-h-[52px] px-3.5 py-3 border border-[#cfd4d8] bg-white text-[#161a1f] text-sm rounded-none focus:outline-none focus:border-[#ff0000] focus:ring-4 focus:ring-red-500/10 transition ' ~ extra_class) }}
+  {% if field.errors %}
+    <span class="block mt-1.5 text-xs font-semibold text-red-600">{{ field.errors[0] }}</span>
+  {% endif %}
+</label>
+{%- endmacro %}
+
+{% macro game_card(game) -%}
+<article class="fs-game-card">
+  <button class="fs-preview-media" type="button" data-game-preview aria-label="Play video preview for {{ game.title }}" aria-pressed="false">
+    <img src="{{ game.image_url }}" alt="{{ game.title }} game artwork" loading="lazy">
+    <video muted loop playsinline preload="none" poster="{{ game.image_url }}" data-src="{{ game.trailer_url }}"></video>
+    <span class="fs-discount">-{{ game.discount_percent }}%</span>
+    <span class="fs-platform">{{ game.platform }}</span>
+    <span class="fs-preview-control"><i>▶</i><b>Touch to preview</b><small>Video · sound off</small></span>
+  </button>
+  <div class="fs-game-info">
+    <div class="fs-eyebrow"><span>{{ game.genre }}</span><span>{{ game.region }}</span></div>
+    <h3><a href="{{ url_for('game_detail', slug=game.slug) }}">{{ game.title }}</a></h3>
+    <p>{{ game.edition }}</p>
+    <div class="fs-card-foot">
+      <span><strong>${{ '%.2f'|format(game.price) }}</strong>{% if game.compare_price %}<del>${{ '%.2f'|format(game.compare_price) }}</del>{% endif %}</span>
+      <a href="{{ url_for('game_detail', slug=game.slug) }}">View deal ↗</a>
+    </div>
+  </div>
+</article>
+{%- endmacro %}
+
+{% macro status(value) -%}
+<span class="status status-{{ value|replace('_','-') }}">{{ value|replace('_',' ')|title }}</span>
+{%- endmacro %}
