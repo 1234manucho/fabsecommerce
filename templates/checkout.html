@@ -294,6 +294,9 @@
         accent-color: var(--checkout-red);
     }
 
+    /* ============================================================
+       Pure red checkout button
+       ============================================================ */
     .checkout-submit {
         display: flex;
         align-items: center;
@@ -301,9 +304,9 @@
         width: 100%;
         min-height: 56px;
         padding: 13px 18px;
-        border: 1px solid var(--checkout-red);
+        border: 1px solid #ff0000;
         border-radius: 0;
-        background: var(--checkout-red);
+        background: #ff0000;
         color: #fff;
         font: inherit;
         font-size: 0.76rem;
@@ -312,16 +315,23 @@
         text-align: center;
         text-transform: uppercase;
         cursor: pointer;
-        transition: background-color 160ms ease, transform 160ms ease;
+        transition: background-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
     }
 
     .checkout-submit:hover {
-        background: var(--checkout-red-dark);
+        background: #cc0000;
+        border-color: #cc0000;
         transform: translateY(-1px);
+        box-shadow: 0 10px 25px rgba(255, 0, 0, 0.28);
+    }
+
+    .checkout-submit:active {
+        transform: translateY(0);
+        box-shadow: none;
     }
 
     .checkout-submit:focus-visible {
-        outline: 3px solid rgba(237, 49, 56, 0.24);
+        outline: 3px solid rgba(255, 0, 0, 0.35);
         outline-offset: 3px;
     }
 
