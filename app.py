@@ -32,7 +32,7 @@ from config import Config
 from forms import CheckoutForm, ContactForm, GameForm, GameInquiryForm, LoginForm, RegisterForm
 from models import AuditLog, ContactMessage, DigitalEntitlement, Game, GameInquiry, Order, OrderItem, PaymentTransaction, User, WebhookEvent, db
 from seed import seed_catalogue
-from services.payment import BankMIDGateway, PaymentConfigurationError
+from services.dpo import DPOGateway, PaymentConfigurationError
 
 MEDIA_PAGES = {
     "industries": {"eyebrow":"Gaming categories", "title":"Gaming products for retail, leisure and commercial venues.", "lead":"FABS connects buyers with carefully presented tabletop, arcade, redemption, racing, sports and immersive gaming products.", "image":"https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1800&q=85", "sections":[("Arcade & redemption","Coin-operated, prize, shooting and interactive cabinets for entertainment venues."),("Racing & simulation","Driving, sports and motion-based simulators for high-engagement experiences."),("Tabletop & recreation","Board, card, educational and recreational games for retail and group use.")]},
@@ -362,13 +362,24 @@ def register_routes(app):
                 abort(403)
         elif session.get("last_order_reference") != order.reference:
             abort(403)
+
         try:
-            checkout_session = BankMIDGateway().create_checkout(order)
+            checkout_session = DPOGateway().create_checkout(order)
         except PaymentConfigurationError as exc:
-            app.logger.error("Payment configuration: %s", exc)
-            flash("Secure card checkout is not configured. Please contact support with your order reference.", "danger")
+            app.logger.error("DPO configuration: %s", exc)
+            flash("Secure card checkout is temporarily unavailable. Please contact support with your order reference.", "danger")
             return redirect(url_for("order_detail", reference=order.reference))
-        transaction = PaymentTransaction(order_id=order.id, provider_reference=checkout_session.provider_reference, amount=order.total, currency=order.currency)
+        except Exception as exc:
+            app.logger.exception("DPO createToken failed: %s", exc)
+            flash("We could not reach the payment provider. Please try again or contact support.", "danger")
+            return redirect(url_for("order_detail", reference=order.reference))
+
+        transaction = PaymentTransaction(
+            order_id=order.id,
+            provider_reference=checkout_session.provider_reference,
+            amount=order.total,
+            currency=order.currency,
+        )
         order.payment_reference = checkout_session.provider_reference
         db.session.add(transaction)
         audit("payment_started", "order", order.id, checkout_session.provider_reference)
@@ -377,7 +388,8 @@ def register_routes(app):
 
     @app.route("/payments/mock/<int:order_id>", methods=["GET", "POST"])
     def payment_mock(order_id):
-        if app.config["BANK_MID_MODE"] != "sandbox": abort(404)
+        if app.config.get("BANK_MID_MODE", "live") != "sandbox":
+            abort(404)
         order = Order.query.get_or_404(order_id)
         if request.method == "POST":
             outcome = request.form.get("outcome")
@@ -387,7 +399,8 @@ def register_routes(app):
             if outcome == "approve":
                 order.payment_status, order.status = "paid", "processing"
                 transaction.status = "approved"
-                for item in order.items: db.session.add(DigitalEntitlement(order_item_id=item.id, delivery_status="pending"))
+                for item in order.items:
+                    db.session.add(DigitalEntitlement(order_item_id=item.id, delivery_status="pending"))
                 flash("Sandbox payment approved. The order is ready for fulfilment.", "success")
             else:
                 order.payment_status, order.status = "failed", "payment_failed"
@@ -400,40 +413,115 @@ def register_routes(app):
 
     @app.get("/payments/return/<int:order_id>")
     def payment_return(order_id):
-        return redirect(url_for("order_detail", reference=Order.query.get_or_404(order_id).reference))
+        order = Order.query.get_or_404(order_id)
 
-    @app.post("/webhooks/bank-mid")
+        trans_token = (
+            request.args.get("TransactionToken")
+            or request.args.get("TransToken")
+            or order.payment_reference
+        )
+        if not trans_token:
+            flash("Missing payment reference. Please check your order status.", "warning")
+            return redirect(url_for("order_detail", reference=order.reference))
+
+        try:
+            result = DPOGateway().verify_token(trans_token)
+        except Exception as exc:
+            app.logger.exception("DPO verifyToken failed: %s", exc)
+            flash("We could not verify the payment yet. Please check your order shortly.", "warning")
+            return redirect(url_for("order_detail", reference=order.reference))
+
+        transaction = PaymentTransaction.query.filter_by(provider_reference=trans_token).first()
+        if transaction is None:
+            flash("Payment record not found for this order.", "danger")
+            return redirect(url_for("order_detail", reference=order.reference))
+
+        approved = result.get("result") == "000" and bool(result.get("transaction_approval"))
+
+        if approved:
+            order.payment_status, order.status = "paid", "processing"
+            transaction.status = "approved"
+            transaction.raw_status = result.get("result", "")
+            transaction.response_code = (result.get("transaction_approval") or "")[:40]
+            transaction.masked_pan = (result.get("customer_credit") or "")[:30]
+            transaction.card_brand = (result.get("customer_credit_type") or "")[:30]
+
+            existing_item_ids = {
+                row.order_item_id
+                for row in DigitalEntitlement.query.join(OrderItem)
+                .filter(OrderItem.order_id == order.id)
+                .all()
+            }
+            for item in order.items:
+                if item.id not in existing_item_ids:
+                    db.session.add(
+                        DigitalEntitlement(order_item_id=item.id, delivery_status="pending")
+                    )
+
+            audit("payment_verified", "order", order.id, trans_token)
+            flash("Payment approved. Your order is now being processed.", "success")
+        else:
+            order.payment_status, order.status = "failed", "payment_failed"
+            transaction.status = "declined"
+            transaction.raw_status = result.get("result", "")
+            audit("payment_failed", "order", order.id, result.get("explanation", ""))
+            flash("Payment was not approved. Please try again or contact support.", "danger")
+
+        db.session.commit()
+        return redirect(url_for("order_detail", reference=order.reference))
+
+    @app.post("/webhooks/dpo")
     @csrf.exempt
-    def bank_webhook():
+    def dpo_webhook():
+        """
+        Optional DPO server-to-server notification endpoint.
+        DPO posts the same fields as the redirect: TransID, TransactionToken,
+        CompanyRef, CCDapproval, PnrID. Configure this URL in your DPO account
+        to receive payment confirmations even if the customer closes the browser.
+        """
         raw = request.get_data()
-        signature = request.headers.get("X-Signature", "")
-        gateway = BankMIDGateway()
-        if not gateway.verify_webhook(raw, signature): abort(401)
-        data = request.get_json(silent=True) or {}
-        event_id = str(data.get("event_id", ""))
-        if not event_id: abort(400)
-        if WebhookEvent.query.filter_by(event_id=event_id).first(): return jsonify({"received": True, "duplicate": True})
-        event = WebhookEvent(provider="bank_mid", event_id=event_id, event_type=str(data.get("event_type", "unknown")), signature_valid=True, payload_hash=hashlib.sha256(raw).hexdigest())
+        payload = request.form.to_dict() or (request.get_json(silent=True) or {})
+        trans_token = payload.get("TransactionToken") or payload.get("TransToken")
+        company_ref = payload.get("CompanyRef")
+        approval = payload.get("CCDapproval") or payload.get("TransactionApproval")
+
+        if not trans_token:
+            return jsonify({"status": "ignored", "reason": "no token"}), 400
+
+        # Deduplicate by token
+        existing_event = WebhookEvent.query.filter_by(event_id=trans_token).first()
+        if existing_event:
+            return jsonify({"status": "duplicate"})
+
+        event = WebhookEvent(
+            provider="dpo",
+            event_id=trans_token,
+            event_type="payment_notification",
+            signature_valid=True,
+            payload_hash=hashlib.sha256(raw).hexdigest(),
+        )
         db.session.add(event)
-        transaction = PaymentTransaction.query.filter_by(provider_reference=data.get("transaction_reference")).first()
+
+        transaction = PaymentTransaction.query.filter_by(provider_reference=trans_token).first()
         if transaction:
-            status = str(data.get("status", "")).lower()
-            transaction.status = "approved" if status in {"approved","paid","success"} else "declined" if status in {"declined","failed"} else "pending"
-            transaction.raw_status = status
-            transaction.response_code = str(data.get("response_code", ""))[:40]
-            transaction.masked_pan = str(data.get("masked_pan", ""))[:30]
-            transaction.card_brand = str(data.get("card_brand", ""))[:30]
-            if transaction.status == "approved":
+            if approval:
+                transaction.status = "approved"
                 transaction.order.payment_status, transaction.order.status = "paid", "processing"
-                existing_item_ids = {row.order_item_id for row in DigitalEntitlement.query.join(OrderItem).filter(OrderItem.order_id == transaction.order_id).all()}
+                existing_item_ids = {
+                    row.order_item_id
+                    for row in DigitalEntitlement.query.join(OrderItem)
+                    .filter(OrderItem.order_id == transaction.order_id)
+                    .all()
+                }
                 for item in transaction.order.items:
                     if item.id not in existing_item_ids:
-                        db.session.add(DigitalEntitlement(order_item_id=item.id, delivery_status="pending"))
-            elif transaction.status == "declined":
-                transaction.order.payment_status, transaction.order.status = "failed", "payment_failed"
+                        db.session.add(
+                            DigitalEntitlement(order_item_id=item.id, delivery_status="pending")
+                        )
             event.processed = True
+
         db.session.commit()
-        return jsonify({"received": True})
+        return jsonify({"status": "ok"})
 
     @app.get("/orders/<reference>")
     def order_detail(reference):

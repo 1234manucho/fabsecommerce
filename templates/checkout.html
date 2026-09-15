@@ -160,6 +160,7 @@
         outline: none;
     }
 
+    /* ---------- DPO payment explanation box ---------- */
     .checkout-payment-box {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr);
@@ -206,6 +207,69 @@
         color: var(--checkout-muted);
         font-size: 0.78rem;
         line-height: 1.65;
+    }
+
+    /* ---------- DPO brand / trust strip ---------- */
+    .checkout-dpo-strip {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 22px;
+        padding: 14px 18px;
+        margin: 0 0 22px;
+        background: #fff;
+        border: 1px solid var(--checkout-line);
+        color: var(--checkout-muted);
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .checkout-dpo-strip span {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .checkout-dpo-strip span::before {
+        content: "✓";
+        color: var(--checkout-green);
+        font-weight: 900;
+    }
+
+    .checkout-dpo-strip .checkout-dpo-name {
+        margin-left: auto;
+        color: var(--checkout-ink);
+        font-size: 0.72rem;
+        font-weight: 900;
+    }
+
+    /* ---------- currency / service notice ---------- */
+    .checkout-notice-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin: 0 0 22px;
+    }
+
+    .checkout-notice {
+        padding: 12px 14px;
+        background: #fff;
+        border: 1px solid var(--checkout-line);
+        font-size: 0.72rem;
+        line-height: 1.55;
+        color: var(--checkout-muted);
+    }
+
+    .checkout-notice strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--checkout-ink);
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
     }
 
     .checkout-check-row {
@@ -259,6 +323,14 @@
     .checkout-submit:focus-visible {
         outline: 3px solid rgba(237, 49, 56, 0.24);
         outline-offset: 3px;
+    }
+
+    .checkout-submit-note {
+        margin: 12px 0 0;
+        color: #7a828a;
+        font-size: 0.68rem;
+        line-height: 1.55;
+        text-align: center;
     }
 
     .checkout-summary {
@@ -399,6 +471,40 @@
         font-weight: 900;
     }
 
+    /* ---------- what-happens-next steps ---------- */
+    .checkout-steps {
+        margin: 20px 0 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: step;
+        border-top: 1px solid var(--checkout-line);
+    }
+
+    .checkout-steps li {
+        position: relative;
+        padding: 12px 0 12px 34px;
+        border-bottom: 1px solid var(--checkout-line);
+        color: var(--checkout-muted);
+        font-size: 0.74rem;
+        line-height: 1.55;
+        counter-increment: step;
+    }
+
+    .checkout-steps li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 12px;
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border: 1px solid var(--checkout-line);
+        color: var(--checkout-red);
+        font-size: 0.62rem;
+        font-weight: 900;
+    }
+
     @media (max-width: 900px) {
         .checkout-layout {
             grid-template-columns: 1fr;
@@ -415,7 +521,8 @@
             width: min(100% - 24px, 1180px);
         }
 
-        .checkout-form-grid {
+        .checkout-form-grid,
+        .checkout-notice-grid {
             grid-template-columns: 1fr;
         }
 
@@ -448,6 +555,10 @@
         .checkout-money-usd {
             white-space: normal;
         }
+
+        .checkout-dpo-strip .checkout-dpo-name {
+            margin-left: 0;
+        }
     }
 </style>
 {% endblock %}
@@ -457,10 +568,11 @@
     <section class="checkout-hero">
         <div class="checkout-shell">
             <span class="checkout-kicker">Secure checkout</span>
-            <h1>Review and continue.</h1>
+            <h1>Review and pay.</h1>
             <p>
-                Confirm your customer information and order summary before proceeding to the
-                secure hosted payment page.
+                Confirm your customer information and order summary. You will then be
+                redirected to the approved DPO (3G Direct Pay) hosted payment page to
+                complete your card payment securely.
             </p>
         </div>
     </section>
@@ -475,6 +587,7 @@
                     <h2>Complete your order information.</h2>
                     <p>
                         Enter the details that should appear on your order and payment record.
+                        These details are sent to DPO when the payment token is created.
                     </p>
                 </header>
 
@@ -487,13 +600,34 @@
                 <div class="checkout-payment-box">
                     <span class="checkout-payment-icon" aria-hidden="true">✓</span>
                     <div class="checkout-payment-copy">
-                        <strong>Credit or debit card</strong>
-                        <small>Visa · Mastercard · Secure hosted checkout</small>
+                        <strong>Card payment via DPO (3G Direct Pay)</strong>
+                        <small>Visa · Mastercard · USD · KES · PCI-DSS Level 1</small>
                         <p>
-                            After you continue, the approved payment provider securely collects
-                            and authorises your card details on its PCI-compliant hosted page.
-                            FABS Trading does not store your full card number or security code.
+                            When you click <em>Continue to secure payment</em>, FABS Trading
+                            creates a payment token with DPO. You are then redirected to DPO's
+                            PCI-compliant hosted page to enter your card details. FABS Trading
+                            never sees or stores your full card number or security code.
                         </p>
+                    </div>
+                </div>
+
+                <div class="checkout-dpo-strip">
+                    <span>PCI-DSS Level 1</span>
+                    <span>3-D Secure</span>
+                    <span>Hosted checkout</span>
+                    <span class="checkout-dpo-name">Powered by DPO · 3G Direct Pay</span>
+                </div>
+
+                <div class="checkout-notice-grid">
+                    <div class="checkout-notice">
+                        <strong>Accepted currencies</strong>
+                        USD (United States Dollar) and KES (Kenyan Shilling) are supported by
+                        the DPO merchant account.
+                    </div>
+                    <div class="checkout-notice">
+                        <strong>Payment services</strong>
+                        113830 · Gaming<br>
+                        117036 · Commercial gaming equipment
                     </div>
                 </div>
 
@@ -503,6 +637,12 @@
                 </label>
 
                 {{ form.submit(class_='checkout-submit') }}
+
+                <p class="checkout-submit-note">
+                    By continuing you agree to be redirected to DPO's secure payment page to
+                    complete card authorisation. Your order is created first so its reference
+                    can be used to verify the payment result.
+                </p>
             </form>
 
             <aside class="checkout-summary" aria-labelledby="checkout-summary-title">
@@ -552,15 +692,24 @@
 
                 <p class="checkout-rate-note">
                     KES is displayed first for local convenience. USD is the catalogue base
-                    currency. Indicative conversion: 1 USD = KES
-                    {{ '{:,.2f}'.format(usd_kes_rate) }}. The hosted checkout confirms the final
-                    payable amount and applicable exchange rate.
+                    currency and the DPO merchant account currency. Indicative conversion:
+                    1 USD = KES {{ '{:,.2f}'.format(usd_kes_rate) }}. The hosted checkout
+                    confirms the final payable amount.
                 </p>
 
                 <p class="checkout-security-note">
-                    Your order is created before payment so its reference can be used for secure
-                    status verification and reconciliation.
+                    Your order is created before payment so its reference can be used for
+                    secure status verification and reconciliation through the DPO
+                    <code>verifyToken</code> call.
                 </p>
+
+                <ol class="checkout-steps" aria-label="What happens next">
+                    <li>Your order is created with reference <strong>FABS-GM-…</strong></li>
+                    <li>A DPO payment token is created for the total amount</li>
+                    <li>You are redirected to DPO's secure card page</li>
+                    <li>DPO returns you to FABS Trading with the payment result</li>
+                    <li>The order is verified and marked paid</li>
+                </ol>
             </aside>
         </div>
     </section>
