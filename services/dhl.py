@@ -13,6 +13,123 @@ DHL_API_BASE_URL = os.getenv("DHL_API_BASE_URL", "https://express.api.dhl.com/my
 DEFAULT_TIMEOUT = 30
 
 
+# ----------------------------------------------------------------------
+# Country defaults for rate estimation when only a country code is known.
+# DHL requires BOTH cityName and postalCode for the receiver, but the
+# cart page only asks for a country. We use the country's main commercial
+# hub as a stand-in destination — the returned rate is a valid estimate
+# for that zone.
+# ----------------------------------------------------------------------
+DEFAULT_CITY_BY_COUNTRY = {
+    # Africa
+    "KE": "Nairobi",       "NG": "Lagos",         "ZA": "Johannesburg",
+    "EG": "Cairo",         "TZ": "Dar es Salaam", "UG": "Kampala",
+    "GH": "Accra",         "ET": "Addis Ababa",   "MA": "Casablanca",
+    "DZ": "Algiers",       "TN": "Tunis",         "LY": "Tripoli",
+    "SD": "Khartoum",      "RW": "Kigali",        "ZM": "Lusaka",
+    "ZW": "Harare",        "MW": "Lilongwe",      "MZ": "Maputo",
+    "AO": "Luanda",        "CM": "Douala",        "CI": "Abidjan",
+    "SN": "Dakar",         "MU": "Port Louis",    "MG": "Antananarivo",
+    # Americas
+    "US": "New York",      "CA": "Toronto",       "MX": "Mexico City",
+    "BR": "Sao Paulo",     "AR": "Buenos Aires",  "CL": "Santiago",
+    "CO": "Bogota",        "PE": "Lima",          "VE": "Caracas",
+    "EC": "Quito",         "UY": "Montevideo",    "PY": "Asuncion",
+    "BO": "La Paz",        "CR": "San Jose",      "PA": "Panama City",
+    "CU": "Havana",        "DO": "Santo Domingo", "JM": "Kingston",
+    # Europe
+    "GB": "London",        "DE": "Berlin",        "FR": "Paris",
+    "IT": "Rome",          "ES": "Madrid",        "NL": "Amsterdam",
+    "BE": "Brussels",      "CH": "Zurich",        "AT": "Vienna",
+    "SE": "Stockholm",     "NO": "Oslo",          "DK": "Copenhagen",
+    "FI": "Helsinki",      "IE": "Dublin",        "PT": "Lisbon",
+    "GR": "Athens",        "PL": "Warsaw",        "CZ": "Prague",
+    "RO": "Bucharest",     "HU": "Budapest",      "RU": "Moscow",
+    "UA": "Kyiv",          "TR": "Istanbul",      "BG": "Sofia",
+    "HR": "Zagreb",        "SK": "Bratislava",    "SI": "Ljubljana",
+    "RS": "Belgrade",      "LT": "Vilnius",       "LV": "Riga",
+    "EE": "Tallinn",       "IS": "Reykjavik",     "LU": "Luxembourg",
+    # Asia
+    "CN": "Beijing",       "JP": "Tokyo",         "KR": "Seoul",
+    "IN": "Mumbai",        "SG": "Singapore",     "MY": "Kuala Lumpur",
+    "TH": "Bangkok",       "VN": "Hanoi",         "PH": "Manila",
+    "ID": "Jakarta",       "PK": "Karachi",       "BD": "Dhaka",
+    "HK": "Hong Kong",     "TW": "Taipei",        "AE": "Dubai",
+    "SA": "Riyadh",        "IL": "Tel Aviv",      "QA": "Doha",
+    "KW": "Kuwait City",   "BH": "Manama",        "OM": "Muscat",
+    "JO": "Amman",         "LB": "Beirut",        "IQ": "Baghdad",
+    "IR": "Tehran",        "AF": "Kabul",         "NP": "Kathmandu",
+    "LK": "Colombo",       "MM": "Yangon",        "KH": "Phnom Penh",
+    "MN": "Ulaanbaatar",   "KZ": "Almaty",        "UZ": "Tashkent",
+    # Oceania
+    "AU": "Sydney",        "NZ": "Auckland",      "FJ": "Suva",
+    "PG": "Port Moresby",
+}
+
+
+DEFAULT_POSTAL_BY_COUNTRY = {
+    # Africa
+    "KE": "00100",         "NG": "100001",        "ZA": "2000",
+    "EG": "11511",         "TZ": "11101",         "UG": "00100",
+    "GH": "GA-100",        "ET": "1000",          "MA": "20000",
+    "DZ": "16000",         "TN": "1000",          "LY": "82668",
+    "SD": "11111",         "RW": "00100",         "ZM": "10101",
+    "ZW": "00263",         "MW": "207201",        "MZ": "1100",
+    "AO": "1000",          "CM": "00237",         "CI": "00225",
+    "SN": "00221",         "MU": "11324",         "MG": "101",
+    # Americas
+    "US": "10001",         "CA": "M5V 2T6",       "MX": "06000",
+    "BR": "01310-100",     "AR": "C1001",         "CL": "8320000",
+    "CO": "110111",        "PE": "15001",         "VE": "1010",
+    "EC": "170150",        "UY": "11000",         "PY": "1209",
+    "BO": "0001",          "CR": "10101",         "PA": "0801",
+    "CU": "10400",         "DO": "10101",         "JM": "00000",
+    # Europe
+    "GB": "SW1A 1AA",      "DE": "10115",         "FR": "75001",
+    "IT": "00118",         "ES": "28001",         "NL": "1011",
+    "BE": "1000",          "CH": "8001",          "AT": "1010",
+    "SE": "111 22",        "NO": "0150",          "DK": "1050",
+    "FI": "00100",         "IE": "D02 X285",      "PT": "1100-148",
+    "GR": "105 58",        "PL": "00-001",        "CZ": "110 00",
+    "RO": "010011",        "HU": "1011",          "RU": "101000",
+    "UA": "01001",         "TR": "34000",         "BG": "1000",
+    "HR": "10000",         "SK": "811 01",        "SI": "1000",
+    "RS": "11000",         "LT": "01100",         "LV": "1010",
+    "EE": "10111",         "IS": "101",           "LU": "1111",
+    # Asia
+    "CN": "100000",        "JP": "100-0001",      "KR": "03043",
+    "IN": "110001",        "SG": "018956",        "MY": "50000",
+    "TH": "10110",         "VN": "100000",        "PH": "1000",
+    "ID": "10110",         "PK": "44000",         "BD": "1000",
+    "HK": "999077",        "TW": "100",           "AE": "00000",
+    "SA": "12211",         "IL": "6100001",       "QA": "00000",
+    "KW": "13001",         "BH": "00000",         "OM": "100",
+    "JO": "11118",         "LB": "1107 2020",     "IQ": "10001",
+    "IR": "11155",         "AF": "1001",          "NP": "44600",
+    "LK": "00100",         "MM": "11181",         "KH": "120101",
+    "MN": "15160",         "KZ": "050000",        "UZ": "100000",
+    # Oceania
+    "AU": "2000",          "NZ": "1010",          "FJ": "00000",
+    "PG": "121",           "NC": "98800",
+}
+
+
+def _resolve_destination(country_code, city, postal_code):
+    """
+    Return (city, postal_code) with defaults filled in from the country map.
+
+    DHL /rates requires both values. When the caller only has a country
+    code (e.g. from the cart page), we substitute the country's main
+    commercial hub so DHL returns a valid zone-based estimate.
+    """
+    cc = (country_code or "").upper()
+    if not city:
+        city = DEFAULT_CITY_BY_COUNTRY.get(cc) or cc
+    if not postal_code:
+        postal_code = DEFAULT_POSTAL_BY_COUNTRY.get(cc) or cc
+    return city, postal_code
+
+
 class DHLConfigurationError(Exception):
     pass
 
@@ -135,22 +252,26 @@ class DHLService:
         weight_kg=1.0, length_cm=30, width_cm=20, height_cm=10,
         declared_value=100.0, currency="USD",
     ):
-        # Build shipper block — only include city/postal when actually provided.
-        shipper = {"countryCode": origin_country.upper()}
-        if origin_city:
-            shipper["cityName"] = origin_city
-        if origin_postal_code:
-            shipper["postalCode"] = origin_postal_code
+        # Fill in missing destination details from the country lookup.
+        destination_city, destination_postal_code = _resolve_destination(
+            destination_country, destination_city, destination_postal_code
+        )
 
-        # Build receiver block — DHL rejects placeholder values like
-        # "Unknown" and "00000", so only include these keys when we truly have them.
-        receiver = {"countryCode": destination_country.upper()}
-        if destination_city:
-            receiver["cityName"] = destination_city
-        if destination_postal_code:
-            receiver["postalCode"] = destination_postal_code
+        # Shipper block — origin defaults.
+        shipper = {
+            "countryCode": origin_country.upper(),
+            "cityName": origin_city or os.getenv("DHL_ORIGIN_CITY", "Nairobi"),
+            "postalCode": origin_postal_code or os.getenv("DHL_ORIGIN_POSTAL", "00100"),
+        }
 
-        # Customs declarations only apply to cross-border shipments.
+        # Receiver block — always has city + postal now.
+        receiver = {
+            "countryCode": destination_country.upper(),
+            "cityName": destination_city,
+            "postalCode": destination_postal_code,
+        }
+
+        # Customs only for cross-border shipments.
         is_international = origin_country.upper() != destination_country.upper()
 
         payload = {
@@ -372,6 +493,11 @@ class DHLService:
         declared_value=100.0, currency="USD",
         is_customs_declarable=True,
     ):
+        # Same default-fill treatment as get_rates.
+        destination_city, destination_postal_code = _resolve_destination(
+            destination_country, None, None
+        )
+
         payload = {
             "customerDetails": {
                 "shipperDetails": {
@@ -380,8 +506,8 @@ class DHLService:
                     "countryCode": origin_country.upper(),
                 },
                 "receiverDetails": {
-                    "postalCode": "00000",
-                    "cityName": "Unknown",
+                    "postalCode": destination_postal_code,
+                    "cityName": destination_city,
                     "countryCode": destination_country.upper(),
                 },
             },
@@ -440,12 +566,7 @@ class DHLService:
     # 13. COUNTRY REFERENCE LIST
     # ==================================================================
     def list_countries(self):
-        """Return DHL's country reference list as flat dicts.
-
-        DHL returns a nested attribute/value structure. This method
-        flattens it into:
-            [{"countryCode": "AL", "countryName": "ALBANIA", ...}, ...]
-        """
+        """Return DHL's country reference list as flat dicts."""
         raw = self._get("/reference-data", params={"datasetName": "country"})
 
         entries = []
