@@ -25,7 +25,7 @@ from flask_login import (
     login_user,
     logout_user,
 )
-from flask_migrate import Migrate  # NEW
+from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -54,7 +54,7 @@ from models import (
 )
 from seed import seed_catalogue
 from services.dpo import DPOGateway, PaymentConfigurationError
-from services.dhl import DHLService, DHLConfigurationError
+from services.dhl import DHLService, DHLConfigurationError, DHLAPIError
 
 MEDIA_PAGES = {
     "industries": {"eyebrow":"Gaming categories", "title":"Gaming products for retail, leisure and commercial venues.", "lead":"FABS connects buyers with carefully presented tabletop, arcade, redemption, racing, sports and immersive gaming products.", "image":"https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1800&q=85", "sections":[("Arcade & redemption","Coin-operated, prize, shooting and interactive cabinets for entertainment venues."),("Racing & simulation","Driving, sports and motion-based simulators for high-engagement experiences."),("Tabletop & recreation","Board, card, educational and recreational games for retail and group use.")]},
@@ -77,7 +77,7 @@ NEWS_ARTICLES = {
 load_dotenv()
 login_manager = LoginManager()
 csrf = CSRFProtect()
-migrate = Migrate()  # NEW
+migrate = Migrate()
 DEFAULT_USD_KES_RATE = Decimal("130.00")
 CATALOGUE_PAGE_SIZE = 8
 
@@ -102,7 +102,7 @@ def create_app(config_class=Config):
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     os.makedirs(os.path.join(app.root_path, "instance"), exist_ok=True)
     db.init_app(app)
-    migrate.init_app(app, db)  # NEW
+    migrate.init_app(app, db)
     csrf.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = "login"
@@ -588,7 +588,179 @@ def register_routes(app):
         return jsonify(result)
 
     # ================================================================
-    # DHL SHIPPING — ADMIN: CREATE SHIPMENT + TRACKING
+    # DHL SHIPPING — EXTENDED APIs
+    # ================================================================
+
+    # -------- 4. Electronic Proof of Delivery --------
+    @app.get("/api/shipping/<tracking_number>/pod")
+    def api_proof_of_delivery(tracking_number):
+        try:
+            result = DHLService().get_proof_of_delivery(tracking_number)
+        except DHLConfigurationError:
+            return jsonify({"error": "DHL not configured."}), 503
+        except DHLAPIError as exc:
+            return jsonify({"error": str(exc), "detail": exc.response_body}), exc.status_code or 502
+        except Exception as exc:
+            app.logger.exception("DHL ePOD failed: %s", exc)
+            return jsonify({"error": "Could not fetch proof of delivery."}), 502
+        return jsonify(result)
+
+    # -------- 7. Address Validation --------
+    @app.post("/api/shipping/validate-address")
+    def api_validate_address():
+        data = request.get_json(silent=True) or {}
+        country = (data.get("country") or "").strip().upper()
+        if not country:
+            return jsonify({"error": "country is required"}), 400
+        try:
+            result = DHLService().validate_address(
+                country_code=country,
+                city_name=(data.get("city") or "").strip() or None,
+                postal_code=(data.get("postal_code") or "").strip() or None,
+                address_line1=(data.get("address_line1") or "").strip() or None,
+            )
+        except DHLConfigurationError:
+            return jsonify({"error": "DHL not configured."}), 503
+        except DHLAPIError as exc:
+            return jsonify({"error": str(exc), "detail": exc.response_body}), exc.status_code or 502
+        except Exception as exc:
+            app.logger.exception("DHL address validation failed: %s", exc)
+            return jsonify({"error": "Could not validate address."}), 502
+        return jsonify(result)
+
+    # -------- 8. Landing Cost --------
+    @app.post("/api/shipping/landing-cost")
+    def api_landing_cost():
+        data = request.get_json(silent=True) or {}
+        country = (data.get("country") or "").strip().upper()
+        if not country:
+            return jsonify({"error": "country is required"}), 400
+        try:
+            result = DHLService().estimate_landing_cost(
+                origin_country=DEFAULT_SHIP_ORIGIN_COUNTRY,
+                destination_country=country,
+                weight_kg=float(data.get("weight_kg") or 1.0),
+                length_cm=float(data.get("length_cm") or 30.0),
+                width_cm=float(data.get("width_cm") or 20.0),
+                height_cm=float(data.get("height_cm") or 10.0),
+                declared_value=float(data.get("declared_value") or 100.0),
+                currency=(data.get("currency") or "USD").upper(),
+            )
+        except DHLConfigurationError:
+            return jsonify({"error": "DHL not configured."}), 503
+        except DHLAPIError as exc:
+            return jsonify({"error": str(exc), "detail": exc.response_body}), exc.status_code or 502
+        except Exception as exc:
+            app.logger.exception("DHL landing cost failed: %s", exc)
+            return jsonify({"error": "Could not estimate landing cost."}), 502
+        return jsonify(result)
+
+    @app.get("/api/shipping/landing-cost/cart")
+    def api_landing_cost_for_cart():
+        country = (request.args.get("country") or "").strip().upper()
+        if not country:
+            return jsonify({"error": "country is required"}), 400
+
+        items = (
+            Game.query.filter(
+                Game.id.in_(session.get("cart", []) or [-1]),
+                Game.is_active.is_(True),
+            )
+            .all()
+        )
+        if not items:
+            return jsonify({"error": "Cart is empty."}), 400
+
+        dims = _compute_cart_shipping_dims(items)
+
+        try:
+            result = DHLService().estimate_landing_cost(
+                origin_country=DEFAULT_SHIP_ORIGIN_COUNTRY,
+                destination_country=country,
+                weight_kg=dims["weight_kg"],
+                length_cm=dims["length_cm"],
+                width_cm=dims["width_cm"],
+                height_cm=dims["height_cm"],
+                declared_value=dims["declared_value"],
+                currency="USD",
+            )
+        except DHLConfigurationError:
+            return jsonify({"error": "DHL not configured."}), 503
+        except DHLAPIError as exc:
+            return jsonify({"error": str(exc), "detail": exc.response_body}), exc.status_code or 502
+        except Exception as exc:
+            app.logger.exception("DHL cart landing cost failed: %s", exc)
+            return jsonify({"error": "Could not estimate landing cost."}), 502
+        return jsonify(result)
+
+    # -------- 9. Product List --------
+    @app.get("/api/shipping/products")
+    def api_shipping_products():
+        country = (request.args.get("country") or DEFAULT_SHIP_ORIGIN_COUNTRY).strip().upper()
+        try:
+            result = DHLService().list_products(country_code=country)
+        except DHLConfigurationError:
+            return jsonify({"error": "DHL not configured."}), 503
+        except DHLAPIError as exc:
+            return jsonify({"error": str(exc), "detail": exc.response_body}), exc.status_code or 502
+        except Exception as exc:
+            app.logger.exception("DHL product list failed: %s", exc)
+            return jsonify({"error": "Could not fetch products."}), 502
+        return jsonify(result)
+
+    # -------- 11. Download Shipment Documents --------
+    @app.get("/api/shipping/<tracking_number>/documents")
+    def api_shipping_documents(tracking_number):
+        doc_type = (request.args.get("type") or "label").strip()
+        try:
+            result = DHLService().get_shipment_documents(tracking_number, doc_type=doc_type)
+        except DHLConfigurationError:
+            return jsonify({"error": "DHL not configured."}), 503
+        except DHLAPIError as exc:
+            return jsonify({"error": str(exc), "detail": exc.response_body}), exc.status_code or 502
+        except Exception as exc:
+            app.logger.exception("DHL document download failed: %s", exc)
+            return jsonify({"error": "Could not fetch documents."}), 502
+        return jsonify(result)
+
+    # -------- 13. Country Reference List --------
+    @app.get("/api/shipping/countries")
+    def api_shipping_countries():
+        try:
+            result = DHLService().list_countries()
+        except DHLConfigurationError:
+            return jsonify({"error": "DHL not configured."}), 503
+        except DHLAPIError as exc:
+            return jsonify({"error": str(exc), "detail": exc.response_body}), exc.status_code or 502
+        except Exception as exc:
+            app.logger.exception("DHL countries list failed: %s", exc)
+            return jsonify({"error": "Could not fetch countries."}), 502
+        return jsonify(result)
+
+    # -------- 14. Service Points Finder --------
+    @app.get("/api/shipping/service-points")
+    def api_service_points():
+        country = (request.args.get("country") or "").strip().upper()
+        if not country:
+            return jsonify({"error": "country is required"}), 400
+        try:
+            result = DHLService().find_service_points(
+                country_code=country,
+                city=request.args.get("city"),
+                postal_code=request.args.get("postal_code"),
+                radius_km=int(request.args.get("radius") or 10),
+            )
+        except DHLConfigurationError:
+            return jsonify({"error": "DHL not configured."}), 503
+        except DHLAPIError as exc:
+            return jsonify({"error": str(exc), "detail": exc.response_body}), exc.status_code or 502
+        except Exception as exc:
+            app.logger.exception("DHL service point search failed: %s", exc)
+            return jsonify({"error": "Could not search service points."}), 502
+        return jsonify(result)
+
+    # ================================================================
+    # DHL SHIPPING — ADMIN: CREATE SHIPMENT + TRACKING + PICKUP
     # ================================================================
     @app.post("/admin/orders/<int:order_id>/create-shipment")
     @admin_required
@@ -636,6 +808,10 @@ def register_routes(app):
             app.logger.error("DHL configuration: %s", exc)
             flash("DHL is not configured. Contact support.", "danger")
             return redirect(url_for("admin_orders"))
+        except DHLAPIError as exc:
+            app.logger.exception("DHL create shipment failed: %s", exc)
+            flash(f"DHL error: {exc}", "danger")
+            return redirect(url_for("admin_orders"))
         except Exception as exc:
             app.logger.exception("DHL create shipment failed: %s", exc)
             flash("Could not create DHL shipment. Check the logs for details.", "danger")
@@ -680,6 +856,8 @@ def register_routes(app):
         try:
             service = DHLService()
             result = service.track_shipment(tracking_number)
+        except DHLAPIError as exc:
+            return jsonify({"error": str(exc), "detail": exc.response_body}), exc.status_code or 502
         except Exception as exc:
             app.logger.exception("DHL tracking failed: %s", exc)
             return jsonify({"error": "Could not fetch tracking info."}), 502
@@ -687,6 +865,80 @@ def register_routes(app):
         if not result:
             return jsonify({"error": "No tracking data."}), 502
 
+        return jsonify(result)
+
+    # -------- 5. Create Pickup (Admin) --------
+    @app.post("/admin/orders/<int:order_id>/request-pickup")
+    @admin_required
+    def admin_request_pickup(order_id):
+        order = Order.query.get_or_404(order_id)
+        if not getattr(order, "dhl_tracking_number", None):
+            flash("Create the DHL shipment first.", "warning")
+            return redirect(url_for("admin_orders"))
+
+        dims = _compute_order_shipping_dims(order)
+        try:
+            result = DHLService().create_pickup({
+                "planned_pickup_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S GMT%z"),
+                "close_time": "18:00",
+                "weight_kg": dims["weight_kg"],
+                "length_cm": dims["length_cm"],
+                "width_cm": dims["width_cm"],
+                "height_cm": dims["height_cm"],
+                "pieces": 1,
+            })
+            pickup_id = None
+            if isinstance(result, dict):
+                nums = result.get("dispatchConfirmationNumbers") or []
+                pickup_id = nums[0] if nums else result.get("dispatchConfirmationNumber")
+            if pickup_id:
+                audit("dhl_pickup_requested", "order", order.id, pickup_id)
+                db.session.commit()
+                flash(f"DHL pickup requested. Confirmation: {pickup_id}", "success")
+            else:
+                flash("Pickup created but no confirmation ID returned.", "warning")
+        except DHLAPIError as exc:
+            app.logger.exception("DHL pickup failed")
+            flash(f"Pickup failed: {exc}", "danger")
+        except Exception as exc:
+            app.logger.exception("DHL pickup failed: %s", exc)
+            flash("Could not request pickup. See logs.", "danger")
+        return redirect(url_for("admin_orders"))
+
+    # -------- 6. Cancel Pickup (Admin) --------
+    @app.post("/admin/pickups/<pickup_id>/cancel")
+    @admin_required
+    def admin_cancel_pickup(pickup_id):
+        try:
+            DHLService().cancel_pickup(pickup_id)
+            audit("dhl_pickup_cancelled", "pickup", pickup_id)
+            db.session.commit()
+            flash(f"Pickup {pickup_id} cancelled.", "success")
+        except DHLAPIError as exc:
+            app.logger.exception("DHL cancel pickup failed")
+            flash(f"Cancel failed: {exc}", "danger")
+        except Exception as exc:
+            app.logger.exception("DHL cancel pickup failed: %s", exc)
+            flash("Could not cancel pickup. See logs.", "danger")
+        return redirect(url_for("admin_orders"))
+
+    # -------- 10. Update Shipment (Admin) --------
+    @app.post("/admin/orders/<int:order_id>/update-shipment")
+    @admin_required
+    def admin_update_shipment(order_id):
+        order = Order.query.get_or_404(order_id)
+        if not getattr(order, "dhl_tracking_number", None):
+            return jsonify({"error": "No DHL tracking number."}), 400
+        update_data = request.get_json(silent=True) or {}
+        try:
+            result = DHLService().update_shipment(order.dhl_tracking_number, update_data)
+            audit("dhl_shipment_updated", "order", order.id, order.dhl_tracking_number)
+            db.session.commit()
+        except DHLAPIError as exc:
+            return jsonify({"error": str(exc), "detail": exc.response_body}), exc.status_code or 502
+        except Exception as exc:
+            app.logger.exception("DHL shipment update failed: %s", exc)
+            return jsonify({"error": "Could not update shipment."}), 502
         return jsonify(result)
 
     # ================================================================
