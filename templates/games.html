@@ -182,7 +182,7 @@
   .games-shipping-result[hidden] {
     display: none;
   }
-  /* NEW: info state (friendly non-error messages, e.g. domestic KE) */
+  /* info state (friendly non-error messages, e.g. domestic KE) */
   .games-shipping-result.is-info {
     background: var(--dhl-amber-bg);
     border-color: var(--dhl-amber-line);
@@ -190,7 +190,7 @@
     color: var(--dhl-amber);
     font-weight: 700;
   }
-  /* NEW: hard error state on the container itself (red left rail) */
+  /* hard error state on the container itself (red left rail) */
   .games-shipping-result.is-error {
     background: #fff5f5;
     border-color: #f3c4c4;
@@ -728,6 +728,8 @@
 
     const cleanText = value => String(value || '').replace(/[<>]/g, '');
     const safeImage = value => /^(https?:\/\/|\/)/i.test(String(value || '')) ? String(value) : '';
+    // Escape helper for plain-text values (matches game_detail.html)
+    const esc = s => String(s == null ? '' : s).replace(/[<>]/g, '');
     const saveCart = () => localStorage.setItem(storageKey, JSON.stringify(cart));
     const rows = () => Object.values(cart).filter(item => item && item.id && Number(item.quantity) > 0);
 
@@ -882,10 +884,10 @@
 
       if (kind === 'error') {
         shippingResult.classList.add('is-error');
-        shippingResult.innerHTML = `<span class="games-shipping-error">${html}</span>`;
+        shippingResult.innerHTML = `<span class="games-shipping-error">${esc(html)}</span>`;
       } else if (kind === 'info') {
         shippingResult.classList.add('is-info');
-        shippingResult.innerHTML = html;
+        shippingResult.innerHTML = esc(html);
       } else {
         shippingResult.innerHTML = html;
       }
@@ -958,8 +960,8 @@
         }
 
         setShippingResult(
-          `Indicative 1kg parcel to <strong>${country}</strong>: from <strong>${moneyKes(cheapest.price)}</strong> <span class="games-shipping-green">· ${moneyUsd(cheapest.price)}</span>` +
-          `${cheapest.days ? ' · ' + cheapest.days + ' day(s) transit' : ''} · ${cheapest.name}. Full rate confirmed at cart &amp; checkout.`
+          `Indicative 1kg parcel to <strong>${esc(country)}</strong>: from <strong>${moneyKes(cheapest.price)}</strong> <span class="games-shipping-green">· ${moneyUsd(cheapest.price)}</span>` +
+          `${cheapest.days ? ' · ' + cheapest.days + ' day(s) transit' : ''} · ${esc(cheapest.name)}. Full rate confirmed at cart &amp; checkout.`
         );
 
         // Persist for return visits

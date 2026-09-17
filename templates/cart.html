@@ -73,6 +73,7 @@
         letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
         transition: background-color 160ms ease, border-color 160ms ease; }
     .cart-shipping-row button:hover { background: #000; border-color: #000; }
+    .cart-shipping-row button:disabled { opacity: 0.6; cursor: wait; }
     .cart-shipping-rates { display: none; grid-gap: 8px; margin-top: 12px; }
     .cart-shipping-rates.is-visible { display: grid; }
     .cart-shipping-option { display: block; cursor: pointer; }
@@ -159,6 +160,11 @@
         .cart-summary { padding: 22px 18px; }
         .cart-summary-row { gap: 10px; }
         .cart-duties-head { grid-template-columns: 1fr; gap: 6px; }
+        /* NEW: stack shipping input above a full-width button on very narrow screens */
+        .cart-shipping-row { grid-template-columns: 1fr; gap: 8px; }
+        .cart-shipping-row input,
+        .cart-shipping-row button { min-height: 48px; }
+        .cart-shipping-row button { width: 100%; font-size: 0.74rem; }
     }
 </style>
 {% endblock %}
@@ -228,7 +234,10 @@
                         <dd>
                             <div class="cart-shipping-row">
                                 <input id="cart-shipping-country" type="text" maxlength="2"
+                                       inputmode="latin"
                                        placeholder="Country code (e.g. US)" autocomplete="country"
+                                       autocapitalize="characters" autocorrect="off"
+                                       spellcheck="false" enterkeyhint="go"
                                        list="cart-country-datalist" aria-label="Destination country code">
                                 <button id="cart-shipping-quote-btn" type="button">Get rates</button>
                             </div>
@@ -317,6 +326,7 @@
     const fmtKes = v => 'KES ' + Math.round(Number(v) * USD_KES).toLocaleString('en-KE');
     const esc = s => String(s == null ? '' : s).replace(/[<>]/g, '');
 
+    // Uses textContent — safe against any HTML in `msg`, no escaping needed here.
     const setStatus = (msg, kind) => {
         if (!msg) { $status.hidden = true; $status.textContent = ''; return; }
         $status.hidden = false;
@@ -473,7 +483,7 @@
     }
 
     // ============ MAIN FLOW ============
-    $btn.addEventListener('click', async () => {
+    const runRateLookup = async () => {
         const country = ($input.value || '').trim().toUpperCase();
 
         if (country.length !== 2) {
@@ -505,11 +515,11 @@
             const products = Array.isArray(data.products) ? data.products : [];
             if (!products.length) {
                 // Backend sends a friendly `message` for unmapped countries
-                // or domestic KE. Show it if present.
+                // or domestic KE. Show it as amber info if present.
                 if (data.message) {
                     setStatus(data.message, 'info');
                 } else {
-                    setStatus('No DHL rates returned for that destination.');
+                    setStatus('No DHL rates returned for that destination.', 'error');
                 }
                 state.shipping = 0; state.duties = 0;
                 updateTotals();
@@ -526,6 +536,15 @@
         } finally {
             $btn.disabled = false;
             $btn.textContent = 'Get rates';
+        }
+    };
+
+    $btn.addEventListener('click', runRateLookup);
+    // Enter key inside the input triggers the lookup on mobile keyboards
+    $input?.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            runRateLookup();
         }
     });
 
