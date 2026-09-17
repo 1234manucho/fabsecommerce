@@ -430,12 +430,42 @@ class DHLService:
     # 13. COUNTRY REFERENCE LIST
     # ==================================================================
     def list_countries(self):
-        """Return DHL's country reference list.
+        """Return DHL's country reference list as flat dicts.
 
-        DHL's current endpoint is:
-            GET /reference-data?datasetName=country
+        DHL returns:
+            {
+              "referenceData": [{
+                "datasetName": "country",
+                "data": [
+                  [ {"attribute": "countryCode", "value": "AL"},
+                    {"attribute": "countryName", "value": "ALBANIA"},
+                    ... ],
+                  ...
+                ]
+              }]
+            }
+
+        This method flattens it to:
+            [{"countryCode": "AL", "countryName": "ALBANIA", ...}, ...]
         """
-        return self._get("/reference-data", params={"datasetName": "country"})
+        raw = self._get("/reference-data", params={"datasetName": "country"})
+
+        entries = []
+        for block in raw.get("referenceData", []):
+            for item in block.get("data", []):
+                row = {}
+                if isinstance(item, list):
+                    for pair in item:
+                        attr = pair.get("attribute")
+                        val = pair.get("value")
+                        if attr:
+                            row[attr] = val
+                elif isinstance(item, dict):
+                    row = item
+                if row.get("countryCode"):
+                    entries.append(row)
+
+        return entries
 
     # ==================================================================
     # 14. SERVICE POINT FINDER
