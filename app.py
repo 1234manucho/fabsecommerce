@@ -214,7 +214,17 @@ def _compute_cart_shipping_dims(items) -> dict:
 # server errors, so we surface a friendly message with a 200 response. This
 # pairs with the amber "is-info" styling added to the shipping widgets in
 # cart.html, games.html and game_detail.html.
-_DHL_UNQUOTABLE_MARKERS = ("420505", "destination location is invalid")
+#
+# Markers broadened to catch the wider set of DHL rejection messages:
+#   - "420505: The destination location is invalid"
+#   - "no products available"
+#   - "no services available"
+_DHL_UNQUOTABLE_MARKERS = (
+    "420505",
+    "destination location is invalid",
+    "no products available",
+    "no services available",
+)
 
 
 def _is_dhl_unquotable(exc) -> bool:
@@ -496,6 +506,21 @@ def register_routes(app):
         if not country:
             return jsonify({"error": "country is required"}), 400
 
+        # ============ FIX: short-circuit domestic origin ============
+        # DHL does not quote domestic Kenya delivery through the
+        # international rates API. Return the friendly message before
+        # calling DHL so we avoid a guaranteed-to-fail API request and
+        # a false-positive error log entry.
+        if country == DEFAULT_SHIP_ORIGIN_COUNTRY:
+            app.logger.info(
+                "Domestic origin destination %s — returning friendly message", country
+            )
+            return jsonify({
+                "products": [],
+                "message": _friendly_shipping_fallback(country),
+            }), 200
+        # =============================================================
+
         try:
             service = DHLService()
         except DHLConfigurationError as exc:
@@ -544,6 +569,19 @@ def register_routes(app):
         country = (request.args.get("country") or "").strip().upper()
         if not country:
             return jsonify({"error": "country is required"}), 400
+
+        # ============ FIX: short-circuit domestic origin ============
+        # Same reasoning as the POST endpoint: KE→KE is not quotable
+        # through DHL's international rates API.
+        if country == DEFAULT_SHIP_ORIGIN_COUNTRY:
+            app.logger.info(
+                "Domestic origin cart destination %s — returning friendly message", country
+            )
+            return jsonify({
+                "products": [],
+                "message": _friendly_shipping_fallback(country),
+            }), 200
+        # =============================================================
 
         items = (
             Game.query.filter(

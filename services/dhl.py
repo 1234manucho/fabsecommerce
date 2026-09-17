@@ -473,15 +473,38 @@ class DHLService:
     # 7. ADDRESS VALIDATION
     # ==================================================================
     def validate_address(self, country_code, city_name=None, postal_code=None, address_line1=None):
-        payload = {
-            "type": "pickup",
-            "countryCode": country_code.upper(),
-            "cityName": city_name,
-            "postalCode": postal_code,
-            "addressLine1": address_line1,
-            "strictValidation": False,
+        """
+        DHL Address Validation API — GET /address-validate with query params.
+
+        DHL uses this endpoint to check serviceability (can DHL pick up or
+        deliver at this address) and to suggest corrections for city or
+        postal code. It is not a full postal-address verification service.
+
+        Required query params:
+          type        : "pickup" or "delivery"
+          countryCode : ISO 3166-1 alpha-2
+
+        Optional: cityName, postalCode, countyName, addressLine1..3,
+        strictValidation.
+        """
+        cc = (country_code or "").upper()
+        if not cc:
+            raise DHLConfigurationError("country_code is required for address validation")
+
+        # Fill city/postal from the country lookup when only a code is given.
+        city, postal = _resolve_destination(cc, city_name, postal_code)
+
+        params = {
+            "type": "delivery",
+            "countryCode": cc,
+            "cityName": city,
+            "postalCode": postal,
+            "strictValidation": "false",
         }
-        return self._post("/address-validate", payload)
+        if address_line1:
+            params["addressLine1"] = address_line1
+
+        return self._get("/address-validate", params=params)
 
     # ==================================================================
     # 8. LANDING COST (Duties & Taxes estimate)
