@@ -487,7 +487,26 @@ class DHLService:
     # 3. TRACK SHIPMENT (normalised)
     # ==================================================================
     def track_shipment(self, tracking_number):
-        raw = self.track_shipment_raw(tracking_number)
+        """
+        Fetch DHL tracking for a shipment and return a NORMALISED dict.
+
+        If DHL has no events yet (which is normal for a label that was just
+        created and hasn't been picked up), returns an 'unknown' status with
+        an empty event list instead of raising.
+
+        This is important because DHL returns 404 "No data found" for any
+        tracking number that exists in their system but has no physical scan.
+        """
+        try:
+            raw = self.track_shipment_raw(tracking_number)
+        except DHLAPIError as exc:
+            # DHL returns 404 "No data found" until the first scan happens.
+            if exc.status_code == 404:
+                return self._empty_tracking(tracking_number, raw={
+                    "info": "No tracking events yet — shipment has not been scanned by DHL.",
+                })
+            raise
+
         return self._normalise_tracking(tracking_number, raw)
 
     def track_shipment_raw(self, tracking_number):
