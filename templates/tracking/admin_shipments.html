@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% block title %}Shipments · Admin | {{ brand_name }}{% endblock %}
+
+{% block head %}
+<style>
+  .as-shell{width:min(1440px,calc(100% - 48px));margin:48px auto 100px}
+
+  /* ---------------- Header ---------------- */
+  .as-header{display:flex;justify-content:space-between;align-items:flex-end;gap:26px;flex-wrap:wrap;margin-bottom:34px}
+  .as-header .as-eyebrow{display:inline-flex;align-items:center;gap:10px;color:#ed3138;font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
+  .as-header .as-eyebrow:before{content:"";width:23px;height:2px;background:#ed3138}
+  .as-header h1{font-size:clamp(30px,4vw,46px);letter-spacing:-.04em;margin:10px 0 6px;line-height:1.05}
+  .as-header p{color:#68717a;font-size:13px;line-height:1.7;max-width:660px;margin:0}
+  .as-header-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .as-btn{
+    height:46px;padding:0 20px;display:inline-flex;align-items:center;gap:10px;
+    font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;
+    border:1px solid #d9dde0;background:#fff;color:#11151a;cursor:pointer;
+    transition:all .18s ease;text-decoration:none;
+  }
+  .as-btn:hover{border-color:#11151a;background:#f5f6f7}
+  .as-btn.primary{background:#ed3138;border-color:#ed3138;color:#fff}
+  .as-btn.primary:hover{background:#c71924;border-color:#c71924}
+  .as-btn svg{width:14px;height:14px}
+
+  /* ---------------- KPI strip ---------------- */
+  .as-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:28px}
+  .as-kpi{background:#fff;border:1px solid #e0e3e5;padding:22px 24px;display:grid;gap:6px}
+  .as-kpi small{font-size:9px;color:#7a828a;letter-spacing:.16em;text-transform:uppercase;font-weight:900}
+  .as-kpi b{font-size:28px;letter-spacing:-.03em;line-height:1;color:#11151a}
+  .as-kpi span{font-size:11px;color:#7a828a}
+
+  /* ---------------- Table ---------------- */
+  .as-table-wrap{background:#fff;border:1px solid #e0e3e5;overflow:auto}
+  .as-table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
+  .as-table thead{background:#f5f6f7;text-align:left}
+  .as-table thead th{
+    padding:14px 18px;font-size:9px;font-weight:900;color:#4f5860;
+    letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid #e0e3e5;
+  }
+  .as-table tbody tr{border-top:1px solid #eef0f2;transition:background .15s ease}
+  .as-table tbody tr:hover{background:#fbfbfc}
+  .as-table td{padding:16px 18px;vertical-align:middle}
+  .as-tracking{
+    font-family:ui-monospace,Menlo,monospace;font-size:12px;font-weight:800;
+    color:#ed3138;letter-spacing:.01em;
+  }
+  .as-tracking:hover{text-decoration:underline}
+  .as-order{font-size:12px;color:#11151a;font-weight:700}
+  .as-order:hover{color:#ed3138}
+  .as-route{font-size:11px;color:#4f5860;font-family:ui-monospace,Menlo,monospace;letter-spacing:.02em}
+  .as-route b{color:#11151a}
+  .as-pill{
+    display:inline-flex;align-items:center;gap:7px;padding:5px 11px;
+    font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;
+    border-radius:99px;background:#eef0f2;color:#11151a;
+  }
+  .as-pill:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .as-pill.is-transit{background:#fff7df;color:#8b6100}
+  .as-pill.is-delivered{background:#e6f7ec;color:#166b3a}
+  .as-pill.is-failure,.as-pill.is-cancelled{background:#fdecec;color:#a31216}
+  .as-desc{font-size:11px;color:#68717a;margin-top:5px;line-height:1.5;max-width:280px}
+  .as-sync{font-size:11px;color:#7a828a;line-height:1.55}
+  .as-sync small{display:block;color:#a4a9ae;font-size:10px;letter-spacing:.04em;text-transform:uppercase;font-weight:800;margin-top:3px}
+  .as-actions{display:flex;gap:6px;justify-content:flex-end}
+  .as-icon-btn{
+    width:34px;height:34px;display:inline-grid;place-items:center;
+    border:1px solid #d9dde0;background:#fff;cursor:pointer;
+    color:#11151a;transition:all .15s ease;
+  }
+  .as-icon-btn:hover{border-color:#11151a;background:#f5f6f7}
+  .as-icon-btn.is-label{background:#11151a;border-color:#11151a;color:#fff}
+  .as-icon-btn.is-label:hover{background:#000}
+  .as-icon-btn svg{width:15px;height:15px}
+  .as-icon-btn form{display:contents}
+
+  /* ---------------- Empty ---------------- */
+  .as-empty{
+    padding:66px 34px;background:#fff;border:1px dashed #d5d9dc;text-align:center;color:#4f5860;
+  }
+  .as-empty .as-empty-icon{
+    width:60px;height:60px;display:inline-grid;place-items:center;border-radius:50%;
+    background:#f4f5f6;color:#8a9096;margin-bottom:18px;
+  }
+  .as-empty .as-empty-icon svg{width:28px;height:28px}
+  .as-empty strong{display:block;font-size:17px;color:#11151a;margin-bottom:8px;letter-spacing:-.01em}
+  .as-empty a{color:#ed3138;font-weight:800}
+
+  /* ---------------- Responsive ---------------- */
+  @media (max-width:1100px){ .as-kpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:640px){
+    .as-shell{width:min(100% - 30px,1440px);margin:32px auto 80px}
+    .as-kpis{grid-template-columns:1fr}
+    .as-header-actions{width:100%}
+    .as-header-actions .as-btn{flex:1;justify-content:center}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="as-shell">
+
+  <header class="as-header">
+    <div>
+      <span class="as-eyebrow">DHL Express · Operations</span>
+      <h1>Shipments</h1>
+      <p>Every parcel dispatched from FABS. Tracking data is refreshed automatically via DHL push webhooks and on-demand polls.</p>
+    </div>
+    <div class="as-header-actions">
+      <a class="as-btn" href="{{ url_for('admin_orders') }}">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Orders
+      </a>
+      <a class="as-btn primary" href="{{ url_for('admin_dashboard') }}">
+        Admin dashboard
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M14 7l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </header>
+
+  {# ------------------ KPIs ------------------ #}
+  {% set total = shipments|length %}
+  {% set in_transit = shipments|selectattr('status_code','equalto','transit')|list|length %}
+  {% set delivered = shipments|selectattr('status_code','equalto','delivered')|list|length %}
+  {% set pending = shipments|selectattr('status_code','in',['pre-transit','created','unknown'])|list|length %}
+
+  <section class="as-kpis" aria-label="Shipment KPIs">
+    <article class="as-kpi"><small>Total tracked</small><b>{{ total }}</b><span>Active shipments in view</span></article>
+    <article class="as-kpi"><small>In transit</small><b>{{ in_transit }}</b><span>Currently moving with DHL</span></article>
+    <article class="as-kpi"><small>Delivered</small><b>{{ delivered }}</b><span>Successfully handed over</span></article>
+    <article class="as-kpi"><small>Awaiting pickup</small><b>{{ pending }}</b><span>Label created, not yet scanned</span></article>
+  </section>
+
+  {# ------------------ Table ------------------ #}
+  {% if shipments %}
+    <div class="as-table-wrap">
+      <table class="as-table" role="table">
+        <thead>
+          <tr>
+            <th>Tracking</th>
+            <th>Order</th>
+            <th>Route</th>
+            <th>Status</th>
+            <th>Last sync</th>
+            <th style="text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in shipments %}
+            {% set code = (s.status_code or s.status or 'unknown')|lower %}
+            {% set pill_class = 'is-transit' if code == 'transit'
+                              else 'is-delivered' if code == 'delivered'
+                              else 'is-failure' if code in ('failure','exception')
+                              else 'is-cancelled' if code == 'cancelled'
+                              else '' %}
+            <tr>
+              <td>
+                <a class="as-tracking" href="{{ url_for('track_shipment', tracking_number=s.tracking_number) }}" target="_blank" rel="noopener">
+                  {{ s.tracking_number }}
+                </a>
+              </td>
+              <td>
+                {% if s.order %}
+                  <a class="as-order" href="{{ url_for('order_detail', reference=s.order.reference) }}">
+                    {{ s.order.reference }}
+                  </a>
+                  <div style="font-size:11px;color:#8a9096;margin-top:3px">{{ s.order.full_name }}</div>
+                {% else %}
+                  <span style="color:#a4a9ae">—</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="as-route">
+                  <b>{{ s.origin_country or 'KE' }}</b> → <b>{{ s.destination_country or '—' }}</b>
+                </span>
+                {% if s.status_location %}
+                  <div style="font-size:10px;color:#8a9096;margin-top:3px">{{ s.status_location }}</div>
+                {% endif %}
+              </td>
+              <td>
+                <span class="as-pill {{ pill_class }}">{{ s.status_label }}</span>
+                {% if s.status_description %}
+                  <div class="as-desc">{{ s.status_description[:110] }}{% if s.status_description|length > 110 %}…{% endif %}</div>
+                {% endif %}
+              </td>
+              <td>
+                <div class="as-sync">
+                  {{ s.last_synced_at.strftime('%d %b · %H:%M') if s.last_synced_at else 'Never' }}
+                  <small>{{ s.last_sync_source or '—' }}</small>
+                </div>
+              </td>
+              <td>
+                <div class="as-actions">
+                  <form method="post" action="{{ url_for('admin_refresh_shipment', shipment_id=s.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="as-icon-btn" type="submit" title="Refresh from DHL" aria-label="Refresh tracking">
+                      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3L20 8m0 0V3m0 5h-5M20 12a8 8 0 0 1-14 5.3L4 16m0 0v5m0-5h5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                  </form>
+                  {% if s.label_url %}
+                    <a class="as-icon-btn is-label" href="{{ s.label_url }}" target="_blank" rel="noopener" title="Open DHL label" aria-label="Download label">
+                      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.8"/><path d="M14 3v5h5M9 13h6M9 17h6" stroke="currentColor" stroke-width="1.8"/></svg>
+                    </a>
+                  {% endif %}
+                  <form method="post" action="{{ url_for('admin_cancel_shipment', shipment_id=s.id) }}"
+                        onsubmit="return confirm('Mark shipment {{ s.tracking_number }} as cancelled? This does not cancel the DHL pickup.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="as-icon-btn" type="submit" title="Cancel shipment" aria-label="Cancel shipment">
+                      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="as-empty">
+      <div class="as-empty-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M21 8.5 12 3 3 8.5v7L12 21l9-5.5v-7Z" stroke="currentColor" stroke-width="1.7"/><path d="M3 8.5 12 14l9-5.5M12 14v7" stroke="currentColor" stroke-width="1.7"/></svg>
+      </div>
+      <strong>No shipments yet</strong>
+      Once you create a DHL shipment from an order, it will appear here.
+      <div style="margin-top:22px">
+        <a class="as-btn primary" href="{{ url_for('admin_orders') }}" style="display:inline-flex">Go to orders</a>
+      </div>
+    </div>
+  {% endif %}
+
+</main>
+{% endblock %}

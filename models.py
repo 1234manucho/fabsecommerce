@@ -16,6 +16,9 @@ class TimestampMixin:
     updated_at = db.Column(db.DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
 
+# ================================================================
+# USERS & ADDRESSES
+# ================================================================
 class User(UserMixin, TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(140), nullable=False)
@@ -66,6 +69,9 @@ class Address(TimestampMixin, db.Model):
         }
 
 
+# ================================================================
+# CATALOGUE
+# ================================================================
 class Game(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     slug = db.Column(db.String(160), unique=True, nullable=False, index=True)
@@ -114,6 +120,9 @@ class Commodity(TimestampMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True, nullable=False)
 
 
+# ================================================================
+# ORDERS
+# ================================================================
 class Order(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     reference = db.Column(db.String(40), unique=True, index=True, nullable=False)
@@ -136,7 +145,7 @@ class Order(TimestampMixin, db.Model):
     city = db.Column(db.String(100), nullable=True)
     postal_code = db.Column(db.String(20), nullable=True)
 
-    # --- DHL shipping state ---
+    # --- DHL shipping state (denormalised summary of the latest shipment) ---
     shipping_status = db.Column(db.String(50), default="pending", nullable=True, index=True)
     dhl_tracking_number = db.Column(db.String(100), nullable=True, index=True)
     dhl_label_url = db.Column(db.String(500), nullable=True)
@@ -154,6 +163,20 @@ class Order(TimestampMixin, db.Model):
 
     user = db.relationship("User", backref="orders")
     items = db.relationship("OrderItem", backref="order", cascade="all, delete-orphan")
+    shipments = db.relationship(
+        "Shipment",
+        backref="order",
+        cascade="all, delete-orphan",
+        order_by="Shipment.created_at.desc()",
+    )
+
+    @property
+    def primary_shipment(self):
+        """The most recent active shipment for this order, or None."""
+        for s in self.shipments:
+            if s.is_active:
+                return s
+        return self.shipments[0] if self.shipments else None
 
 
 class OrderItem(db.Model):
@@ -167,6 +190,143 @@ class OrderItem(db.Model):
     game = db.relationship("Game")
 
 
+# ================================================================
+# DHL SHIPMENTS & TRACKING
+# ================================================================
+class Shipment(TimestampMixin, db.Model):
+    """A physical parcel dispatched from an order via DHL Express."""
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(
+        db.Integer,
+        db.ForeignKey("order.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    provider = db.Column(db.String(40), default="dhl", nullable=False, index=True)
+
+    # --- DHL identifiers ---
+    tracking_number = db.Column(db.String(100), unique=True, index=True, nullable=False)
+    shipment_id = db.Column(db.String(100), nullable=True)          # DHL internal shipment id
+    label_url = db.Column(db.String(500), nullable=True)
+    label_format = db.Column(db.String(20), default="PDF", nullable=False)
+
+    # --- Current status (denormalised for fast list views) ---
+    status = db.Column(db.String(60), default="created", nullable=False, index=True)
+    status_code = db.Column(db.String(60), nullable=True)
+    status_description = db.Column(db.String(255), nullable=True)
+    status_location = db.Column(db.String(180), nullable=True)
+
+    # --- Route & ETA ---
+    origin_country = db.Column(db.String(2), nullable=True)
+    destination_country = db.Column(db.String(2), nullable=True)
+    estimated_delivery = db.Column(db.DateTime(timezone=True), nullable=True)
+    delivered_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    # --- Sync bookkeeping ---
+    last_synced_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    last_sync_source = db.Column(db.String(20), nullable=True)     # webhook | poll | admin | create
+    raw_payload = db.Column(db.Text, nullable=True)
+
+    is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
+
+    events = db.relationship(
+        "ShipmentEvent",
+        backref="shipment",
+        cascade="all, delete-orphan",
+        order_by="ShipmentEvent.occurred_at.desc()",
+    )
+
+    # ------------------------------------------------------------
+    # Convenience
+    # ------------------------------------------------------------
+    STATUS_LABELS = {
+        "created":      "Label created",
+        "pre-transit":  "Label created",
+        "transit":      "In transit",
+        "delivered":    "Delivered",
+        "failure":      "Delivery issue",
+        "exception":    "Delivery issue",
+        "cancelled":    "Cancelled",
+        "unknown":      "Unknown",
+    }
+
+    @property
+    def status_label(self):
+        key = (self.status_code or self.status or "").lower()
+        return self.STATUS_LABELS.get(key, self.status or "Unknown")
+
+    @property
+    def is_delivered(self):
+        return (self.status_code or "").lower() == "delivered" or bool(self.delivered_at)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "order_reference": self.order.reference if self.order else None,
+            "provider": self.provider,
+            "tracking_number": self.tracking_number,
+            "shipment_id": self.shipment_id,
+            "label_url": self.label_url,
+            "status": self.status,
+            "status_code": self.status_code,
+            "status_label": self.status_label,
+            "status_description": self.status_description,
+            "location": self.status_location,
+            "origin_country": self.origin_country,
+            "destination_country": self.destination_country,
+            "estimated_delivery": self.estimated_delivery.isoformat() if self.estimated_delivery else None,
+            "delivered_at": self.delivered_at.isoformat() if self.delivered_at else None,
+            "last_synced_at": self.last_synced_at.isoformat() if self.last_synced_at else None,
+            "last_sync_source": self.last_sync_source,
+            "is_active": bool(self.is_active),
+            "is_delivered": self.is_delivered,
+        }
+
+    def __repr__(self):
+        return f"<Shipment {self.tracking_number} ({self.status})>"
+
+
+class ShipmentEvent(TimestampMixin, db.Model):
+    """One tracking milestone received from DHL (webhook or API poll)."""
+    id = db.Column(db.Integer, primary_key=True)
+    shipment_id = db.Column(
+        db.Integer,
+        db.ForeignKey("shipment.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    # Deterministic idempotency key — hash(tracking|timestamp|status_code|description)
+    event_key = db.Column(db.String(180), unique=True, index=True, nullable=False)
+
+    occurred_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
+    status_code = db.Column(db.String(60), nullable=True)
+    status = db.Column(db.String(120), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    location = db.Column(db.String(180), nullable=True)
+    country = db.Column(db.String(2), nullable=True)
+    source = db.Column(db.String(20), default="poll", nullable=False)  # webhook | poll | admin
+    raw_payload = db.Column(db.Text, nullable=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "timestamp": self.occurred_at.isoformat() if self.occurred_at else None,
+            "status_code": self.status_code,
+            "status": self.status,
+            "description": self.description,
+            "location": self.location,
+            "country": self.country,
+            "source": self.source,
+        }
+
+    def __repr__(self):
+        return f"<ShipmentEvent {self.status_code or self.status} @ {self.occurred_at}>"
+
+
+# ================================================================
+# PAYMENTS & FULFILMENT
+# ================================================================
 class PaymentTransaction(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     order_id = db.Column(db.Integer, db.ForeignKey("order.id"), nullable=False, index=True)
@@ -191,6 +351,9 @@ class DigitalEntitlement(TimestampMixin, db.Model):
     order_item = db.relationship("OrderItem")
 
 
+# ================================================================
+# INQUIRIES / QUOTES / CONTACT
+# ================================================================
 class Quote(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     reference = db.Column(db.String(40), unique=True, index=True, nullable=False)
@@ -242,6 +405,9 @@ class GameInquiry(TimestampMixin, db.Model):
     user = db.relationship("User", backref="game_inquiries")
 
 
+# ================================================================
+# SYSTEM / AUDIT
+# ================================================================
 class WebhookEvent(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     provider = db.Column(db.String(80), nullable=False)

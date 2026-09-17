@@ -1,5 +1,6 @@
 # services/dhl.py
 import os
+import re
 import requests
 from requests.auth import HTTPBasicAuth
 from datetime import datetime, timezone
@@ -8,9 +9,31 @@ from datetime import datetime, timezone
 DHL_API_KEY = os.getenv("DHL_API_KEY")
 DHL_API_SECRET = os.getenv("DHL_API_SECRET")
 DHL_ACCOUNT_NUMBER = os.getenv("DHL_ACCOUNT_NUMBER")
-DHL_API_BASE_URL = os.getenv("DHL_API_BASE_URL", "https://express.api.dhl.com/mydhlapi/test")
+# Your Render env exposes DHL_API_BASE_URL (legacy alias DHL_API_BASE is also accepted)
+DHL_API_BASE_URL = (
+    os.getenv("DHL_API_BASE_URL")
+    or os.getenv("DHL_API_BASE")
+    or "https://express.api.dhl.com/mydhlapi/test"
+).rstrip("/")
 
 DEFAULT_TIMEOUT = 30
+
+
+# ======================================================================
+# TRACKING — status code mapping
+# ======================================================================
+# DHL returns status codes like "transit", "delivered", "failure",
+# "pre-transit", "unknown". We keep the raw code but also expose a short
+# canonical label so our Shipment.status can be one of a fixed set.
+TRACKING_STATUS_MAP = {
+    "pre-transit": "pre-transit",
+    "pretransit":  "pre-transit",
+    "transit":     "transit",
+    "delivered":   "delivered",
+    "failure":     "failure",
+    "exception":   "failure",
+    "unknown":     "unknown",
+}
 
 
 # ----------------------------------------------------------------------
@@ -138,6 +161,29 @@ def _resolve_destination(country_code, city, postal_code):
     return city, postal_code
 
 
+def _parse_dt(value):
+    """Best-effort ISO-8601 parse → aware datetime (UTC fallback). Returns None on failure."""
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+    text = str(value).strip()
+    # Normalise common variants: "2024-06-01T12:00:00 GMT+0000", "20240601120000"
+    text = text.replace(" GMT", "").replace("Z", "+00:00")
+    # Compact DHL form: YYYYMMDDHHMMSS
+    if re.fullmatch(r"\d{14}", text):
+        try:
+            return datetime.strptime(text, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+        except ValueError:
+            return None
+    try:
+        dt = datetime.fromisoformat(text)
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
 class DHLConfigurationError(Exception):
     pass
 
@@ -157,7 +203,7 @@ class DHLService:
     Covers:
       1. Rate quote
       2. Create shipment
-      3. Track shipment
+      3. Track shipment (normalised)
       4. Electronic proof of delivery (ePOD)
       5. Create pickup
       6. Cancel pickup
@@ -166,8 +212,8 @@ class DHLService:
       9. List products (services)
       10. Update shipment
       11. Download shipment documents
-      13. Country reference list
-      14. Service point finder
+      12. Country reference list
+      13. Service point finder
     """
 
     def __init__(self):
@@ -175,6 +221,14 @@ class DHLService:
             raise DHLConfigurationError(
                 "DHL_API_KEY, DHL_API_SECRET and DHL_ACCOUNT_NUMBER must be set"
             )
+
+    # ------------------------------------------------------------------
+    # Configuration helpers
+    # ------------------------------------------------------------------
+    @classmethod
+    def is_configured(cls):
+        """True if the minimum env vars are present (used at boot-time)."""
+        return all([DHL_API_KEY, DHL_API_SECRET, DHL_ACCOUNT_NUMBER])
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -337,8 +391,8 @@ class DHLService:
                     "contactInformation": {
                         "email": os.getenv("DHL_ORIGIN_EMAIL", "shipping@fabstrading.com"),
                         "phone": os.getenv("DHL_ORIGIN_PHONE", "+254700000000"),
-                        "companyName": "FABS Trading",
-                        "fullName": "FABS Shipping",
+                        "companyName": os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading"),
+                        "fullName": os.getenv("DHL_ORIGIN_CONTACT", "FABS Shipping"),
                     },
                 },
                 "receiverDetails": {
@@ -393,10 +447,126 @@ class DHLService:
         return self._post("/shipments", payload)
 
     # ==================================================================
-    # 3. TRACK SHIPMENT
+    # 3. TRACK SHIPMENT (normalised)
     # ==================================================================
     def track_shipment(self, tracking_number):
+        """
+        Fetch DHL tracking for a shipment and return a NORMALISED dict:
+
+            {
+              "tracking_number": str,
+              "status":          str,   # canonical: pre-transit|transit|delivered|failure|unknown
+              "status_code":     str,   # raw code from DHL
+              "description":     str,
+              "location":        str,
+              "country":         str,
+              "estimated_delivery": iso8601 | None,
+              "events": [
+                  {
+                    "timestamp": iso8601,
+                    "status_code": str,
+                    "status": str,
+                    "description": str,
+                    "location": str,
+                    "country": str,
+                    "raw": dict,
+                  },
+                  ...
+              ],
+              "raw": <original DHL JSON>,
+            }
+        """
+        raw = self.track_shipment_raw(tracking_number)
+        return self._normalise_tracking(tracking_number, raw)
+
+    def track_shipment_raw(self, tracking_number):
+        """Return DHL's raw tracking JSON — use only for debugging."""
         return self._get(f"/shipments/{tracking_number}/tracking")
+
+    def _normalise_tracking(self, tracking_number, raw):
+        """
+        Convert whatever DHL returned into our flat tracking shape.
+
+        Handles:
+          - GET /shipments/{n}/tracking response
+          - Push webhook payloads that embed a similar structure
+          - Empty or malformed responses
+        """
+        if not isinstance(raw, dict):
+            return self._empty_tracking(tracking_number, raw)
+
+        # DHL wraps shipments in a list; webhook payloads may pass a single one.
+        shipments = raw.get("shipments") or []
+        if isinstance(shipments, dict):
+            shipments = [shipments]
+        shipment = shipments[0] if shipments else {}
+
+        status_block = shipment.get("status") or {}
+        city, country = self._extract_location(status_block.get("location"))
+
+        raw_code = (status_block.get("statusCode") or status_block.get("status") or "").strip()
+        canonical = TRACKING_STATUS_MAP.get(raw_code.lower(), raw_code.lower() or "unknown")
+
+        normalised_events = []
+        for ev in shipment.get("events") or []:
+            if not isinstance(ev, dict):
+                continue
+            ev_city, ev_country = self._extract_location(ev.get("location"))
+            ev_code = (ev.get("statusCode") or ev.get("typeCode") or "").strip()
+            normalised_events.append({
+                "timestamp":      ev.get("timestamp") or ev.get("date"),
+                "status_code":    ev_code,
+                "status":         ev.get("status") or ev.get("typeCode") or ev_code,
+                "description":    ev.get("description") or ev.get("remark") or "",
+                "location":       ev_city,
+                "country":        ev_country,
+                "raw":            ev,
+            })
+
+        return {
+            "tracking_number":    shipment.get("id") or tracking_number,
+            "status":             canonical,
+            "status_code":        raw_code or canonical,
+            "description":        status_block.get("description") or status_block.get("status") or "",
+            "location":           city,
+            "country":            country,
+            "estimated_delivery": shipment.get("estimatedTimeOfDelivery") or shipment.get("estimatedDelivery"),
+            "events":             normalised_events,
+            "raw":                raw,
+        }
+
+    @staticmethod
+    def _extract_location(block):
+        """Return (city, ISO-country-code) from a DHL location block (or empty strings)."""
+        if not isinstance(block, dict):
+            return "", ""
+        addr = block.get("address") or {}
+        city = (
+            addr.get("addressLocality")
+            or addr.get("cityName")
+            or block.get("cityName")
+            or ""
+        )
+        country = (
+            addr.get("countryCode")
+            or block.get("countryCode")
+            or ""
+        )
+        return str(city).strip(), str(country).upper().strip()
+
+    @staticmethod
+    def _empty_tracking(tracking_number, raw=None):
+        return {
+            "tracking_number":    tracking_number,
+            "status":             "unknown",
+            "status_code":        "",
+            "description":        "",
+            "location":           "",
+            "country":            "",
+            "estimated_delivery": None,
+            "events":             [],
+            "raw":                raw or {},
+        }
 
     # ==================================================================
     # 4. ELECTRONIC PROOF OF DELIVERY (ePOD)
@@ -435,7 +605,7 @@ class DHLService:
                     "contactInformation": {
                         "email": os.getenv("DHL_ORIGIN_EMAIL", "shipping@fabstrading.com"),
                         "phone": os.getenv("DHL_ORIGIN_PHONE", "+254700000000"),
-                        "companyName": "FABS Trading",
+                        "companyName": os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading"),
                         "fullName": os.getenv("DHL_ORIGIN_CONTACT", "FABS Shipping"),
                     },
                 },
@@ -449,7 +619,7 @@ class DHLService:
                     "contactInformation": {
                         "email": os.getenv("DHL_ORIGIN_EMAIL", "shipping@fabstrading.com"),
                         "phone": os.getenv("DHL_ORIGIN_PHONE", "+254700000000"),
-                        "companyName": "FABS Trading",
+                        "companyName": os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading"),
                         "fullName": os.getenv("DHL_ORIGIN_CONTACT", "FABS Shipping"),
                     },
                 },
@@ -601,7 +771,7 @@ class DHLService:
         )
 
     # ==================================================================
-    # 13. COUNTRY REFERENCE LIST
+    # 12. COUNTRY REFERENCE LIST
     # ==================================================================
     def list_countries(self):
         """Return DHL's country reference list as flat dicts."""
@@ -625,7 +795,7 @@ class DHLService:
         return entries
 
     # ==================================================================
-    # 14. SERVICE POINT FINDER
+    # 13. SERVICE POINT FINDER
     # ==================================================================
     def find_service_points(self, country_code, city=None, postal_code=None, radius_km=10):
         params = {

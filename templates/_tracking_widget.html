@@ -1,0 +1,169 @@
+{# ============================================================== #}
+{# Tracking widget — self-contained. Requires `order` in context. #}
+{# Include with: {% include '_tracking_widget.html' %}          #}
+{# ============================================================== #}
+<section id="fabs-tracking"
+         data-order-ref="{{ order.reference }}"
+         data-tracking-endpoint="{{ url_for('order_tracking', reference=order.reference) }}"
+         class="fabs-tracking-widget">
+
+  <header class="ftw-head">
+    <span class="ftw-dhl-mark">DHL</span>
+    <div>
+      <strong class="ftw-title">Shipment tracking</strong>
+      <small class="ftw-status" data-ftw-status>Loading…</small>
+    </div>
+  </header>
+
+  <div class="ftw-body" data-ftw-body>
+    <div class="ftw-skeleton">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</section>
+
+<style>
+  .fabs-tracking-widget{
+    margin-top:34px;padding:26px;background:#fff;border:1px solid #e0e3e5;
+    border-left:6px solid #ffcc00;box-shadow:0 8px 24px rgba(15,25,35,.04);
+  }
+  .ftw-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+  .ftw-dhl-mark{
+    display:inline-grid;place-items:center;min-width:56px;height:30px;padding:0 10px;
+    background:#ffcc00;color:#d40511;font-weight:900;font-size:14px;letter-spacing:-.02em;
+    border-radius:4px;border:1px solid #e6b800;
+  }
+  .ftw-title{display:block;font-size:15px;font-weight:800;color:#11151a;letter-spacing:-.01em}
+  .ftw-status{display:block;font-size:11px;color:#68717a;margin-top:3px}
+  .ftw-status b{color:#11151a;font-family:ui-monospace,Menlo,monospace;letter-spacing:.01em}
+  .ftw-body{font-size:13px;color:#4f5860;line-height:1.65}
+  .ftw-summary{
+    display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;
+    padding-bottom:16px;margin-bottom:16px;border-bottom:1px dashed #eef0f2;
+  }
+  .ftw-pill{
+    display:inline-flex;align-items:center;gap:7px;padding:5px 11px;
+    background:#eef0f2;color:#11151a;font-size:9px;font-weight:900;
+    letter-spacing:.08em;text-transform:uppercase;border-radius:99px;
+  }
+  .ftw-pill:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .ftw-pill.is-transit{background:#fff7df;color:#8b6100}
+  .ftw-pill.is-delivered{background:#e6f7ec;color:#166b3a}
+  .ftw-pill.is-failure{background:#fdecec;color:#a31216}
+  .ftw-eta{font-size:11px;color:#7a828a;text-align:right}
+  .ftw-eta b{display:block;font-size:15px;color:#11151a;letter-spacing:-.01em;margin-top:3px}
+  .ftw-events{list-style:none;margin:0;padding:0}
+  .ftw-events li{
+    display:grid;grid-template-columns:140px 1fr;gap:16px;
+    padding:13px 0;border-top:1px dashed #eef0f2;
+  }
+  .ftw-events li:first-child{border-top:0;padding-top:0}
+  .ftw-events time{font-size:11px;color:#7a828a;font-family:ui-monospace,Menlo,monospace}
+  .ftw-events strong{display:block;color:#11151a;font-size:12px;font-weight:800;margin-bottom:3px}
+  .ftw-events p{margin:0;color:#4f5860;font-size:12px}
+  .ftw-events small{display:inline-block;margin-top:5px;font-size:10px;color:#8a9096;letter-spacing:.06em;text-transform:uppercase;font-weight:800}
+  .ftw-empty{color:#68717a}
+  .ftw-empty a{color:#ed3138;font-weight:800}
+  .ftw-skeleton{display:grid;gap:10px}
+  .ftw-skeleton span{
+    display:block;height:14px;background:linear-gradient(90deg,#eef0f2 0%,#f7f8f9 50%,#eef0f2 100%);
+    background-size:200% 100%;animation:ftw-shimmer 1.4s ease-in-out infinite;
+  }
+  .ftw-skeleton span:nth-child(1){width:60%}
+  .ftw-skeleton span:nth-child(2){width:90%}
+  .ftw-skeleton span:nth-child(3){width:75%}
+  @keyframes ftw-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  @media (max-width:560px){
+    .fabs-tracking-widget{padding:20px}
+    .ftw-events li{grid-template-columns:1fr;gap:4px}
+  }
+</style>
+
+<script>
+(() => {
+  const root = document.getElementById('fabs-tracking');
+  if (!root || root.dataset.ftwBound === '1') return;
+  root.dataset.ftwBound = '1';
+
+  const endpoint = root.dataset.trackingEndpoint;
+  const statusEl = root.querySelector('[data-ftw-status]');
+  const bodyEl   = root.querySelector('[data-ftw-body]');
+
+  const escapeHtml = (str) =>
+    String(str ?? '').replace(/[&<>"']/g, (c) => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+
+  const pillClass = (code) => {
+    const c = String(code || '').toLowerCase();
+    if (c === 'transit') return 'is-transit';
+    if (c === 'delivered') return 'is-delivered';
+    if (c === 'failure' || c === 'exception') return 'is-failure';
+    return '';
+  };
+
+  const renderNoShipment = (data) => {
+    statusEl.textContent = 'Shipment not created yet';
+    bodyEl.innerHTML = `
+      <div class="ftw-empty">
+        <p style="margin:0 0 6px">${escapeHtml(data.message || "We'll notify you as soon as your parcel leaves our Nairobi warehouse.")}</p>
+        <p style="margin:0;font-size:12px;color:#8a9096">
+          Questions? <a href="/support">Contact buyer support</a>.
+        </p>
+      </div>`;
+  };
+
+  const renderShipment = (data) => {
+    const statusText = data.status_label || data.status || 'In progress';
+    statusEl.innerHTML = `Tracking <b>${escapeHtml(data.tracking_number)}</b>`;
+
+    const eta = data.delivered_at
+      ? `<span style="color:#166b3a;font-weight:900">Delivered</span><b>${new Date(data.delivered_at).toLocaleDateString()}</b>`
+      : data.estimated_delivery
+        ? `<span>Estimated delivery</span><b>${new Date(data.estimated_delivery).toLocaleDateString()}</b>`
+        : `<span>Estimated delivery</span><b>—</b>`;
+
+    const events = (data.events || []).slice().reverse().map((e) => `
+      <li>
+        <time datetime="${escapeHtml(e.timestamp)}">${new Date(e.timestamp).toLocaleString()}</time>
+        <div>
+          <strong>${escapeHtml(e.status || 'Update')}</strong>
+          ${e.description ? `<p>${escapeHtml(e.description)}</p>` : ''}
+          ${(e.location || e.country) ? `<small>${escapeHtml(e.location || '')}${e.location && e.country ? ' · ' : ''}${escapeHtml(e.country || '')}</small>` : ''}
+        </div>
+      </li>`).join('');
+
+    bodyEl.innerHTML = `
+      <div class="ftw-summary">
+        <span class="ftw-pill ${pillClass(data.status_code)}">${escapeHtml(statusText)}</span>
+        <div class="ftw-eta">${eta}</div>
+      </div>
+      ${events ? `<ol class="ftw-events">${events}</ol>` : `<p class="ftw-empty" style="margin:0">No scans yet — DHL will publish updates shortly.</p>`}
+      <p style="margin:18px 0 0;font-size:11px;color:#8a9096">
+        Powered by <b style="color:#d40511">DHL Express</b> ·
+        <a href="/track/${encodeURIComponent(data.tracking_number)}" style="color:#ed3138;font-weight:800">Open full tracking page</a>
+      </p>`;
+  };
+
+  const renderError = () => {
+    statusEl.textContent = 'Tracking temporarily unavailable';
+    bodyEl.innerHTML = `
+      <div class="ftw-empty">
+        <p style="margin:0 0 6px">We couldn't refresh DHL right now — this is usually temporary.</p>
+        <p style="margin:0;font-size:12px;color:#8a9096">
+          Refresh in a moment, or use the
+          <a href="/track">public tracking page</a>.
+        </p>
+      </div>`;
+  };
+
+  fetch(endpoint, { headers: { 'Accept': 'application/json' } })
+    .then((r) => r.json().then((body) => ({ ok: r.ok, body })))
+    .then(({ ok, body }) => {
+      if (!ok) return renderError();
+      if (!body.tracking_number) return renderNoShipment(body);
+      renderShipment(body);
+    })
+    .catch(renderError);
+})();
+</script>

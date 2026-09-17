@@ -113,6 +113,12 @@
         <small>Official shipping partner</small>
       </span>
     </div>
+    <a class="fabs-partner-badge" href="{{ url_for('track_lookup') }}" title="Track a DHL shipment">
+      <span class="fabs-partner-text">
+        <strong>Track a shipment</strong>
+        <small>Enter your DHL tracking number</small>
+      </span>
+    </a>
   </div>
 
   <div class="fabs-footer-grid">
@@ -131,7 +137,7 @@
     </div>
     <div><h3>Marketplace</h3><a href="{{ url_for('games') }}">All games</a><a href="{{ url_for('games',category='VR Simulator') }}">VR systems</a><a href="{{ url_for('games',category='Arcade Game') }}">Arcade machines</a><a href="{{ url_for('games',category='Board Game') }}">Tabletop games</a></div>
     <div><h3>Buyer services</h3><a href="{{ url_for('inquiry') }}">Post an RFQ</a><a href="{{ url_for('how_it_works') }}">How it works</a><a href="{{ url_for('support') }}">Buyer support</a><a href="{{ url_for('contact') }}">Contact</a></div>
-    <div><h3>Shipping</h3><a href="{{ url_for('how_it_works') }}">DHL Express rates</a><a href="{{ url_for('how_it_works') }}">Track your order</a><a href="{{ url_for('refunds') }}">Returns &amp; refunds</a><a href="{{ url_for('contact') }}">Customs &amp; duties</a></div>
+    <div><h3>Shipping</h3><a href="{{ url_for('track_lookup') }}">Track a shipment</a><a href="{{ url_for('how_it_works') }}">DHL Express rates</a><a href="{{ url_for('refunds') }}">Returns &amp; refunds</a><a href="{{ url_for('contact') }}">Customs &amp; duties</a></div>
     <div><h3>Company</h3><a href="{{ url_for('about') }}">About FABS</a><a href="{{ url_for('media_page',page_name='partners') }}">Partners</a><a href="{{ url_for('compliance') }}">Compliance</a><a href="{{ url_for('news') }}">Newsroom</a></div>
   </div>
   <div class="fabs-footer-bottom">

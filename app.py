@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import json
 import os
 import secrets
@@ -24,7 +25,8 @@ from forms import (
 )
 from models import (
     Address, AuditLog, ContactMessage, DigitalEntitlement, Game, GameInquiry,
-    Order, OrderItem, PaymentTransaction, Quote, User, WebhookEvent, db,
+    Order, OrderItem, PaymentTransaction, Quote, Shipment, ShipmentEvent,
+    User, WebhookEvent, db,
 )
 from seed import seed_catalogue
 from services.dpo import DPOGateway, PaymentConfigurationError
@@ -208,17 +210,185 @@ def _compute_cart_shipping_dims(items) -> dict:
     }
 
 
+# ==================================================================
+# DHL TRACKING — helper functions
+# ==================================================================
+def _parse_dt(value):
+    """Best-effort ISO-8601 / DHL compact timestamp → aware datetime (UTC fallback)."""
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+    text = str(value).strip().replace(" GMT", "").replace("Z", "+00:00")
+
+    # Compact DHL form: YYYYMMDDHHMMSS
+    if len(text) == 14 and text.isdigit():
+        try:
+            return datetime.strptime(text, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+        except ValueError:
+            return None
+
+    try:
+        dt = datetime.fromisoformat(text)
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def _event_key(tracking_number, occurred_at, status_code, description):
+    """Deterministic idempotency key so webhook replays don't duplicate events."""
+    blob = f"{tracking_number}|{occurred_at}|{status_code or ''}|{description or ''}".encode("utf-8")
+    return hashlib.sha256(blob).hexdigest()[:64]
+
+
+def _persist_tracking(shipment, normalised, source="poll"):
+    """
+    Upsert Shipment status fields and insert new ShipmentEvent rows.
+    Returns True if anything changed. Never raises on malformed input.
+    """
+    if not normalised:
+        return False
+
+    changed = False
+
+    new_status_code = (normalised.get("status_code") or "").strip() or None
+    new_status      = (normalised.get("status")      or "").strip() or None
+    new_desc        = (normalised.get("description") or "").strip()[:255] or None
+    new_location    = (normalised.get("location")    or "").strip()[:180] or None
+    eta             = _parse_dt(normalised.get("estimated_delivery"))
+
+    if new_status_code and new_status_code != shipment.status_code:
+        shipment.status_code = new_status_code
+        changed = True
+    if new_status and new_status != shipment.status:
+        shipment.status = new_status
+        changed = True
+    if new_desc and new_desc != shipment.status_description:
+        shipment.status_description = new_desc
+        changed = True
+    if new_location and new_location != shipment.status_location:
+        shipment.status_location = new_location
+        changed = True
+    if eta and eta != shipment.estimated_delivery:
+        shipment.estimated_delivery = eta
+        changed = True
+
+    # Insert new events (dedup by event_key)
+    for ev in normalised.get("events") or []:
+        occurred = _parse_dt(ev.get("timestamp")) or datetime.now(timezone.utc)
+        key = _event_key(
+            shipment.tracking_number,
+            occurred.isoformat(),
+            ev.get("status_code") or "",
+            ev.get("description") or "",
+        )
+        if ShipmentEvent.query.filter_by(event_key=key).first():
+            continue
+        db.session.add(ShipmentEvent(
+            shipment_id=shipment.id,
+            event_key=key,
+            occurred_at=occurred,
+            status_code=(ev.get("status_code") or "")[:60] or None,
+            status=(ev.get("status") or "")[:120] or None,
+            description=ev.get("description") or None,
+            location=(ev.get("location") or "")[:180] or None,
+            country=(ev.get("country") or "")[:2] or None,
+            source=source,
+            raw_payload=json.dumps(ev.get("raw") or ev, default=str)[:8000],
+        ))
+        changed = True
+
+    # Mirror coarse status back to the order
+    if shipment.order:
+        if (shipment.status_code or "").lower() == "delivered":
+            if not shipment.delivered_at:
+                shipment.delivered_at = datetime.now(timezone.utc)
+            if not shipment.order.delivered_at:
+                shipment.order.delivered_at = datetime.now(timezone.utc)
+            shipment.order.shipping_status = "delivered"
+            changed = True
+        elif shipment.status_code:
+            shipment.order.shipping_status = shipment.status_code
+
+    shipment.last_synced_at = datetime.now(timezone.utc)
+    shipment.last_sync_source = source
+    shipment.raw_payload = json.dumps(normalised.get("raw") or {}, default=str)[:16000]
+    return changed
+
+
+def _refresh_shipment(shipment, source="poll", force=False):
+    """
+    Pull fresh tracking from DHL if stale (or force=True). Never raises —
+    public tracking pages must never 500 because DHL is slow.
+    """
+    try:
+        throttle = int(Config.DHL_TRACK_REFRESH_SECONDS or 300)
+    except Exception:
+        throttle = 300
+
+    if not force and shipment.last_synced_at:
+        age = (datetime.now(timezone.utc) - shipment.last_synced_at).total_seconds()
+        if age < throttle:
+            return False
+
+    try:
+        normalised = DHLService().track_shipment(shipment.tracking_number)
+    except DHLAPIError as exc:
+        print(f"[DHL track] {shipment.tracking_number}: {exc}")
+        return False
+    except DHLConfigurationError as exc:
+        print(f"[DHL track] configuration error: {exc}")
+        return False
+    except Exception as exc:
+        print(f"[DHL track] unexpected error for {shipment.tracking_number}: {exc}")
+        return False
+
+    changed = _persist_tracking(shipment, normalised, source=source)
+    try:
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        print(f"[DHL track] commit failed: {exc}")
+        return False
+    return changed
+
+
+def _find_shipment_or_404(tracking_number):
+    return Shipment.query.filter_by(
+        tracking_number=tracking_number, is_active=True
+    ).first_or_404()
+
+
+def _shipment_to_json(shipment, include_events=True):
+    """Shared JSON serialiser used by /api/track and /orders/<ref>/tracking."""
+    payload = {
+        "tracking_number":    shipment.tracking_number,
+        "provider":           shipment.provider,
+        "status":             shipment.status,
+        "status_code":        shipment.status_code,
+        "status_label":       shipment.status_label,
+        "status_description": shipment.status_description,
+        "location":           shipment.status_location,
+        "estimated_delivery": shipment.estimated_delivery.isoformat() if shipment.estimated_delivery else None,
+        "delivered_at":       shipment.delivered_at.isoformat() if shipment.delivered_at else None,
+        "last_synced_at":     shipment.last_synced_at.isoformat() if shipment.last_synced_at else None,
+        "label_url":          shipment.label_url,
+        "is_delivered":       shipment.is_delivered,
+    }
+    if include_events:
+        payload["events"] = [
+            e.to_dict()
+            for e in sorted(shipment.events, key=lambda r: r.occurred_at)
+        ]
+    return payload
+# ==================================================================
+
+
 # ============ Friendly handling for DHL "unquotable destination" ============
 # DHL returns 400 / 420505 for destinations it cannot quote from our origin
 # (e.g. unmapped codes like AG, or domestic KE). These are informational, not
-# server errors, so we surface a friendly message with a 200 response. This
-# pairs with the amber "is-info" styling added to the shipping widgets in
-# cart.html, games.html, game_detail.html and checkout.html.
-#
-# Markers broadened to catch the wider set of DHL rejection messages:
-#   - "420505: The destination location is invalid"
-#   - "no products available"
-#   - "no services available"
+# server errors, so we surface a friendly message with a 200 response.
 _DHL_UNQUOTABLE_MARKERS = (
     "420505",
     "destination location is invalid",
@@ -242,10 +412,7 @@ def _friendly_shipping_fallback(country_code: str) -> str:
 
 
 def _friendly_rates_response(country_code: str, logger=None, reason: str = "") -> tuple:
-    """
-    Build the standard 200 response for unquotable destinations. Also logs at
-    INFO so the log line is distinguishable from a real error.
-    """
+    """Standard 200 response for unquotable destinations."""
     if logger is not None:
         logger.info(
             "DHL cannot quote %s%s — returning friendly message",
@@ -523,8 +690,6 @@ def register_routes(app):
         if not country:
             return jsonify({"error": "country is required"}), 400
 
-        # DHL does not quote domestic Kenya delivery through the international
-        # rates API. Short-circuit before the API call.
         if country == DEFAULT_SHIP_ORIGIN_COUNTRY:
             return _friendly_rates_response(country, app.logger, reason="domestic origin")
 
@@ -558,9 +723,6 @@ def register_routes(app):
             app.logger.exception("DHL rate lookup failed: %s", exc)
             return jsonify({"error": "Could not fetch shipping rates."}), 502
 
-        # NEW: DHL sometimes returns 200 with an empty products list for
-        # unsupported destinations. Treat that the same way as the 420505 case
-        # so the frontend shows an amber info message rather than a red error.
         products = (result or {}).get("products") if isinstance(result, dict) else None
         if not products:
             return _friendly_rates_response(country, app.logger, reason="empty product list")
@@ -573,8 +735,6 @@ def register_routes(app):
         if not country:
             return jsonify({"error": "country is required"}), 400
 
-        # Same reasoning as the POST endpoint: KE→KE is not quotable through
-        # DHL's international rates API.
         if country == DEFAULT_SHIP_ORIGIN_COUNTRY:
             return _friendly_rates_response(country, app.logger, reason="domestic origin cart")
 
@@ -616,7 +776,6 @@ def register_routes(app):
             app.logger.exception("DHL cart rates failed: %s", exc)
             return jsonify({"error": "Could not fetch shipping rates."}), 502
 
-        # NEW: handle the empty-products-on-200 case the same way.
         products = (result or {}).get("products") if isinstance(result, dict) else None
         if not products:
             return _friendly_rates_response(country, app.logger, reason="empty cart product list")
@@ -650,9 +809,6 @@ def register_routes(app):
         postal     = (data.get("postal_code") or "").strip() or None
         line1      = (data.get("address_line1") or "").strip() or None
 
-        # DHL's GET /address-validate needs at least one of city/postal/line1
-        # alongside the country code. Reject the request early with a 400 so
-        # the frontend can show a specific warning instead of a generic error.
         if not (city or postal or line1):
             return jsonify({
                 "error": "Provide a city, postal code or address line to validate.",
@@ -668,9 +824,6 @@ def register_routes(app):
         except DHLConfigurationError:
             return jsonify({"error": "DHL not configured."}), 503
         except DHLAPIError as exc:
-            # If DHL rejects because of a bad city/postal (400), surface it as a
-            # validation warning rather than a hard error — the user can fix the
-            # field and try again.
             if exc.status_code == 400:
                 return jsonify({
                     "error": "DHL could not validate this address. Please check the city and postal code.",
@@ -809,6 +962,144 @@ def register_routes(app):
         return jsonify(result)
 
     # ================================================================
+    # PUBLIC TRACKING
+    # ================================================================
+    @app.route("/track", methods=["GET"])
+    def track_lookup():
+        number = (request.args.get("number") or "").strip()
+        if number:
+            return redirect(url_for("track_shipment", tracking_number=number))
+        return render_template("tracking/track.html", shipment=None, events=[], query="")
+
+    @app.get("/track/<tracking_number>")
+    def track_shipment(tracking_number):
+        shipment = Shipment.query.filter_by(
+            tracking_number=tracking_number, is_active=True
+        ).first()
+
+        if shipment:
+            _refresh_shipment(shipment, source="poll", force=False)
+            events = (
+                ShipmentEvent.query
+                .filter_by(shipment_id=shipment.id)
+                .order_by(ShipmentEvent.occurred_at.asc())
+                .all()
+            )
+        else:
+            events = []
+
+        return render_template(
+            "tracking/track.html",
+            shipment=shipment,
+            events=events,
+            query=tracking_number,
+        )
+
+    @app.get("/api/track/<tracking_number>")
+    def api_track_shipment(tracking_number):
+        shipment = Shipment.query.filter_by(
+            tracking_number=tracking_number, is_active=True
+        ).first()
+        if not shipment:
+            return jsonify({"error": "Tracking number not found."}), 404
+
+        _refresh_shipment(shipment, source="poll", force=False)
+        return jsonify(_shipment_to_json(shipment, include_events=True))
+
+    # ================================================================
+    # CUSTOMER TRACKING (auth-aware, tied to an order)
+    # ================================================================
+    @app.get("/orders/<reference>/tracking")
+    def order_tracking(reference):
+        order = Order.query.filter_by(reference=reference).first_or_404()
+
+        if order.user_id:
+            if not current_user.is_authenticated:
+                abort(403)
+            if order.user_id != current_user.id and not current_user.is_admin:
+                abort(403)
+        elif session.get("last_order_reference") != order.reference:
+            abort(403)
+
+        shipment = Shipment.query.filter_by(order_id=order.id, is_active=True).first()
+        if not shipment:
+            return jsonify({
+                "tracking_number": None,
+                "status": order.shipping_status or "pending",
+                "message": "Shipment not created yet. We'll notify you once it's on the way.",
+                "events": [],
+            })
+
+        _refresh_shipment(shipment, source="poll", force=False)
+        return jsonify(_shipment_to_json(shipment, include_events=True))
+
+    # ================================================================
+    # DHL PUSH WEBHOOK — real-time tracking updates
+    # ================================================================
+    @app.post("/webhooks/dhl/tracking")
+    @csrf.exempt
+    def dhl_tracking_webhook():
+        """
+        Register this URL in the DHL developer portal:
+            https://fabstrading.com/webhooks/dhl/tracking
+        Set DHL_WEBHOOK_SECRET in the Render env and DHL will sign each request.
+        """
+        raw = request.get_data()
+        payload = request.get_json(silent=True) or {}
+
+        # --- Optional signature verification ---
+        secret = app.config.get("DHL_WEBHOOK_SECRET") or ""
+        if secret:
+            signature = (
+                request.headers.get("X-DHL-Signature")
+                or request.headers.get("X-Hub-Signature-256")
+                or ""
+            )
+            expected = hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
+            provided = signature.replace("sha256=", "").strip()
+            if not hmac.compare_digest(expected, provided):
+                app.logger.warning("DHL webhook: signature mismatch")
+                return jsonify({"status": "invalid_signature"}), 401
+
+        tracking_number = (
+            payload.get("shipmentTrackingNumber")
+            or payload.get("trackingNumber")
+            or (payload.get("shipment") or {}).get("id")
+        )
+        if not tracking_number:
+            return jsonify({"status": "ignored", "reason": "no tracking number"}), 400
+
+        event_id = f"dhl:{tracking_number}:{payload.get('timestamp') or ''}"
+        if WebhookEvent.query.filter_by(event_id=event_id).first():
+            return jsonify({"status": "duplicate"})
+
+        db.session.add(WebhookEvent(
+            provider="dhl",
+            event_id=event_id,
+            event_type="tracking_update",
+            signature_valid=bool(secret),
+            payload_hash=hashlib.sha256(raw).hexdigest(),
+        ))
+
+        shipment = Shipment.query.filter_by(tracking_number=tracking_number).first()
+        if not shipment:
+            db.session.commit()
+            return jsonify({"status": "ok", "note": "unknown tracking number"})
+
+        # Normalise whatever shape DHL sent
+        normalised = DHLService()._normalise_tracking(tracking_number, {
+            "shipments": [payload.get("shipment") or {
+                "id": tracking_number,
+                "status": payload.get("status") or {},
+                "events": payload.get("events") or [],
+                "estimatedTimeOfDelivery": payload.get("estimatedTimeOfDelivery"),
+            }]
+        })
+        _persist_tracking(shipment, normalised, source="webhook")
+        db.session.commit()
+        return jsonify({"status": "ok"})
+
+    # ================================================================
     # DHL SHIPPING — ADMIN
     # ================================================================
     @app.post("/admin/orders/<int:order_id>/create-shipment")
@@ -876,17 +1167,46 @@ def register_routes(app):
                 label_url = documents[0].get("url") or documents[0].get("content")
 
         if tracking_number:
+            now = datetime.now(timezone.utc)
+
+            # --- 1. Update the order (kept for backward compatibility) ---
             order.dhl_tracking_number = tracking_number
             order.dhl_label_url = label_url
             order.shipping_status = "created"
-            order.shipped_at = datetime.now(timezone.utc)
+            order.shipped_at = now
             order.package_weight_kg = dims["weight_kg"]
             order.package_length_cm = dims["length_cm"]
-            order.package_width_cm = dims["width_cm"]
+            order.package_width_cm  = dims["width_cm"]
             order.package_height_cm = dims["height_cm"]
+
+            shipment_id = (result or {}).get("shipmentId")
+            if shipment_id:
+                order.dhl_shipment_id = shipment_id
+
+            # --- 2. Create the first-class Shipment row ---
+            shipment = Shipment(
+                order_id=order.id,
+                provider="dhl",
+                tracking_number=tracking_number,
+                shipment_id=shipment_id,
+                label_url=label_url,
+                status="created",
+                status_code="pre-transit",
+                status_description="Shipment created — awaiting pickup",
+                origin_country=DEFAULT_SHIP_ORIGIN_COUNTRY,
+                destination_country=(order.country or "").upper() or None,
+                last_synced_at=now,
+                last_sync_source="create",
+            )
+            db.session.add(shipment)
+            db.session.flush()
 
             audit("dhl_shipment_created", "order", order.id, tracking_number)
             db.session.commit()
+
+            # --- 3. Immediately pull tracking so events start populating ---
+            _refresh_shipment(shipment, source="poll", force=True)
+
             flash(f"DHL shipment created. Tracking: {tracking_number}", "success")
         else:
             flash("DHL did not return a tracking number. Check the API response.", "danger")
@@ -897,14 +1217,21 @@ def register_routes(app):
     @admin_required
     def admin_order_tracking(order_id):
         order = Order.query.get_or_404(order_id)
-        tracking_number = getattr(order, "dhl_tracking_number", None)
+
+        # Prefer a first-class Shipment row; fall back to legacy order field
+        shipment = Shipment.query.filter_by(order_id=order.id, is_active=True).first()
+        tracking_number = shipment.tracking_number if shipment else getattr(order, "dhl_tracking_number", None)
 
         if not tracking_number:
             return jsonify({"error": "No tracking number for this order."}), 404
 
+        if shipment:
+            _refresh_shipment(shipment, source="admin", force=False)
+            return jsonify(_shipment_to_json(shipment, include_events=True))
+
+        # Legacy fallback: fetch raw from DHL
         try:
-            service = DHLService()
-            result = service.track_shipment(tracking_number)
+            result = DHLService().track_shipment(tracking_number)
         except DHLAPIError as exc:
             return jsonify({"error": str(exc), "detail": exc.response_body}), exc.status_code or 502
         except Exception as exc:
@@ -986,6 +1313,42 @@ def register_routes(app):
             app.logger.exception("DHL shipment update failed: %s", exc)
             return jsonify({"error": "Could not update shipment."}), 502
         return jsonify(result)
+
+    # ================================================================
+    # ADMIN — SHIPMENTS LIST
+    # ================================================================
+    @app.get("/admin/shipments")
+    @admin_required
+    def admin_shipments():
+        shipments = (
+            Shipment.query
+            .order_by(Shipment.created_at.desc())
+            .limit(200)
+            .all()
+        )
+        return render_template("tracking/admin_shipments.html", shipments=shipments)
+
+    @app.post("/admin/shipments/<int:shipment_id>/refresh")
+    @admin_required
+    def admin_refresh_shipment(shipment_id):
+        shipment = Shipment.query.get_or_404(shipment_id)
+        changed = _refresh_shipment(shipment, source="admin", force=True)
+        flash(
+            "Tracking updated." if changed else "No new tracking events.",
+            "success" if changed else "info",
+        )
+        return redirect(url_for("admin_shipments"))
+
+    @app.post("/admin/shipments/<int:shipment_id>/cancel")
+    @admin_required
+    def admin_cancel_shipment(shipment_id):
+        shipment = Shipment.query.get_or_404(shipment_id)
+        shipment.is_active = False
+        shipment.status = "cancelled"
+        audit("dhl_shipment_cancelled", "shipment", shipment.id, shipment.tracking_number)
+        db.session.commit()
+        flash(f"Shipment {shipment.tracking_number} marked cancelled.", "info")
+        return redirect(url_for("admin_shipments"))
 
     # ================================================================
     # PAYMENTS (DPO)
@@ -1436,13 +1799,22 @@ def register_routes(app):
             Order.shipped_at >= week_ago,
         ).count()
 
+        # Prefer first-class Shipment rows; fall back to legacy order field
         recent_shipments = (
-            Order.query
-            .filter(Order.dhl_tracking_number.isnot(None))
-            .order_by(Order.created_at.desc())
+            Shipment.query
+            .filter_by(is_active=True)
+            .order_by(Shipment.created_at.desc())
             .limit(6)
             .all()
         )
+        if not recent_shipments:
+            recent_shipments = (
+                Order.query
+                .filter(Order.dhl_tracking_number.isnot(None))
+                .order_by(Order.created_at.desc())
+                .limit(6)
+                .all()
+            )
 
         recent_inquiries = (
             GameInquiry.query

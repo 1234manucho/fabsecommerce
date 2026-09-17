@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% block title %}Track your shipment{% if shipment %} · {{ shipment.tracking_number }}{% endif %} | {{ brand_name }}{% endblock %}
+
+{% block head %}
+<style>
+  .tk-shell{width:min(1140px,calc(100% - 48px));margin:56px auto 110px}
+
+  /* ---------------- Header ---------------- */
+  .tk-header{max-width:760px;margin-bottom:44px}
+  .tk-eyebrow{display:inline-flex;align-items:center;gap:10px;color:#ed3138;font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
+  .tk-eyebrow:before{content:"";width:23px;height:2px;background:#ed3138}
+  .tk-eyebrow .tk-dhl-mark{display:inline-grid;place-items:center;min-width:44px;height:22px;padding:0 7px;background:#ffcc00;color:#d40511;font-weight:900;font-size:11px;letter-spacing:-.02em;border-radius:2px;margin-left:4px}
+  .tk-header h1{font-size:clamp(38px,5vw,62px);line-height:1.02;letter-spacing:-.045em;margin:16px 0 18px}
+  .tk-header p{color:#68717a;font-size:15px;line-height:1.7;max-width:600px}
+
+  /* ---------------- Search form ---------------- */
+  .tk-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin:30px 0 50px;max-width:660px}
+  .tk-form input{
+    height:58px;padding:0 20px;border:1px solid #dfe3e6;background:#fff;
+    font-size:14px;font-family:ui-monospace,Menlo,monospace;letter-spacing:.02em;
+    transition:border-color .18s ease,box-shadow .18s ease;
+  }
+  .tk-form input:focus{outline:0;border-color:#ed3138;box-shadow:0 0 0 4px rgba(237,49,56,.08)}
+  .tk-form button{
+    height:58px;padding:0 30px;background:#ed3138;color:#fff;border:0;cursor:pointer;
+    font-weight:900;letter-spacing:.08em;text-transform:uppercase;font-size:11px;
+    transition:background .18s ease,transform .18s ease;
+  }
+  .tk-form button:hover{background:#c71924;transform:translateY(-1px)}
+
+  /* ---------------- Summary card ---------------- */
+  .tk-summary{
+    position:relative;background:#fff;border:1px solid #e0e3e5;
+    border-left:6px solid #ffcc00;padding:32px;
+    display:grid;grid-template-columns:minmax(0,1fr) auto;gap:26px;align-items:center;
+    box-shadow:0 8px 30px rgba(15,25,35,.04);
+  }
+  .tk-summary .tk-summary-label{font-size:9px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#7a828a}
+  .tk-summary .tk-summary-track{font-family:ui-monospace,Menlo,monospace;font-size:clamp(20px,2.4vw,28px);font-weight:800;letter-spacing:.01em;color:#11151a;margin:8px 0 12px;word-break:break-all}
+  .tk-summary .tk-dhl-chip{display:inline-flex;align-items:center;gap:10px;padding:7px 12px;background:#ffcc00;color:#d40511;font-weight:900;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-radius:4px;border:1px solid #e6b800}
+  .tk-summary .tk-dhl-chip b{font-size:12px}
+  .tk-summary .tk-summary-desc{margin-top:14px;font-size:13px;color:#4f5860;line-height:1.6;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .tk-summary .tk-status-pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;background:#eef0f2;color:#11151a;font-size:10px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;border-radius:99px}
+  .tk-summary .tk-status-pill.is-transit{background:#fff7df;color:#8b6100}
+  .tk-summary .tk-status-pill.is-delivered{background:#e6f7ec;color:#166b3a}
+  .tk-summary .tk-status-pill.is-failure{background:#fdecec;color:#a31216}
+  .tk-summary .tk-status-pill:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.9}
+  .tk-eta{text-align:right;border-left:1px solid #eef0f2;padding-left:26px}
+  .tk-eta small{display:block;font-size:9px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#7a828a;margin-bottom:6px}
+  .tk-eta b{display:block;font-size:clamp(20px,2.4vw,26px);letter-spacing:-.02em;color:#11151a;line-height:1.1}
+  .tk-eta span{display:block;font-size:11px;color:#7a828a;margin-top:6px}
+
+  /* ---------------- Timeline ---------------- */
+  .tk-timeline{margin-top:34px;background:#fff;border:1px solid #e0e3e5}
+  .tk-timeline-header{
+    display:flex;justify-content:space-between;align-items:center;gap:16px;
+    padding:22px 28px;border-bottom:1px solid #eef0f2;
+  }
+  .tk-timeline-header h2{margin:0;font-size:12px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#11151a}
+  .tk-timeline-header small{font-size:10px;color:#8a9096;letter-spacing:.04em}
+  .tk-events{list-style:none;margin:0;padding:10px 28px 30px}
+  .tk-event{
+    position:relative;
+    display:grid;grid-template-columns:180px minmax(0,1fr);gap:22px;
+    padding:22px 0 22px 26px;
+    border-bottom:1px dashed #eef0f2;
+  }
+  .tk-event:last-child{border-bottom:0;padding-bottom:8px}
+  .tk-event:before{
+    content:"";position:absolute;left:0;top:26px;width:12px;height:12px;
+    background:#fff;border:2px solid #d5d9dc;border-radius:50%;
+  }
+  .tk-event:after{
+    content:"";position:absolute;left:5px;top:40px;bottom:-6px;width:1px;background:#eef0f2;
+  }
+  .tk-event:last-child:after{display:none}
+  .tk-event.is-latest:before{background:#ed3138;border-color:#ed3138;box-shadow:0 0 0 4px rgba(237,49,56,.14)}
+  .tk-event.is-delivered:before{background:#20a65c;border-color:#20a65c;box-shadow:0 0 0 4px rgba(32,166,92,.14)}
+  .tk-event.is-failure:before{background:#ed3138;border-color:#ed3138}
+  .tk-event time{font-size:11px;color:#7a828a;font-family:ui-monospace,Menlo,monospace;line-height:1.6}
+  .tk-event time b{display:block;color:#11151a;font-family:inherit;font-size:12px;font-weight:800;margin-bottom:2px}
+  .tk-event strong{display:block;font-size:14px;font-weight:800;color:#11151a;margin-bottom:5px;letter-spacing:-.01em}
+  .tk-event p{margin:0;color:#4f5860;font-size:13px;line-height:1.65}
+  .tk-event .tk-loc{display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#8a9096;font-weight:800}
+  .tk-event .tk-loc svg{width:11px;height:11px;flex:0 0 auto}
+
+  /* ---------------- Empty / error states ---------------- */
+  .tk-empty{
+    padding:52px 34px;background:#fff;border:1px dashed #d5d9dc;text-align:center;
+    color:#4f5860;font-size:14px;line-height:1.7;
+  }
+  .tk-empty .tk-empty-icon{display:inline-grid;place-items:center;width:56px;height:56px;border-radius:50%;background:#f4f5f6;color:#8a9096;margin-bottom:16px}
+  .tk-empty .tk-empty-icon svg{width:26px;height:26px}
+  .tk-empty strong{display:block;color:#11151a;font-size:16px;margin-bottom:8px;letter-spacing:-.01em}
+  .tk-empty a{color:#ed3138;font-weight:800}
+  .tk-empty-hint{
+    margin-top:22px;padding-top:22px;border-top:1px dashed #eef0f2;
+    font-size:12px;color:#7a828a;
+  }
+  .tk-empty-hint code{
+    background:#f4f5f6;padding:3px 8px;border-radius:3px;
+    font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#11151a;
+  }
+
+  /* ---------------- Responsive ---------------- */
+  @media (max-width:760px){
+    .tk-form{grid-template-columns:1fr}
+    .tk-summary{grid-template-columns:1fr;padding:24px}
+    .tk-eta{text-align:left;border-left:0;border-top:1px solid #eef0f2;padding:20px 0 0;margin-top:8px}
+    .tk-timeline-header{flex-direction:column;align-items:flex-start;padding:18px 20px}
+    .tk-events{padding:8px 20px 24px}
+    .tk-event{grid-template-columns:1fr;gap:8px;padding-left:22px}
+    .tk-event time b{margin-bottom:0}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="tk-shell">
+
+  <header class="tk-header">
+    <span class="tk-eyebrow">
+      DHL Express · Tracking
+      <span class="tk-dhl-mark">DHL</span>
+    </span>
+    <h1>Track your FABS shipment.</h1>
+    <p>Enter your DHL Express tracking number below. Data is refreshed live from DHL, with a fully traceable timeline of every scan from our Nairobi warehouse to your door.</p>
+  </header>
+
+  <form class="tk-form" method="get" action="{{ url_for('track_lookup') }}" autocomplete="off">
+    <input type="text" name="number" inputmode="text" spellcheck="false"
+           placeholder="e.g. 1234567890" value="{{ query or '' }}" required>
+    <button type="submit">Track shipment</button>
+  </form>
+
+  {% if shipment %}
+
+    <section class="tk-summary" aria-label="Shipment summary">
+      <div>
+        <span class="tk-summary-label">Tracking number</span>
+        <div class="tk-summary-track">{{ shipment.tracking_number }}</div>
+        <span class="tk-dhl-chip">
+          <b>DHL</b> Express · {{ shipment.origin_country or 'KE' }} → {{ shipment.destination_country or '—' }}
+        </span>
+        <div class="tk-summary-desc">
+          {% set st = (shipment.status_code or shipment.status or 'unknown')|lower %}
+          <span class="tk-status-pill {% if st == 'transit' %}is-transit{% elif st == 'delivered' %}is-delivered{% elif st == 'failure' or st == 'exception' %}is-failure{% endif %}">
+            {{ shipment.status_label }}
+          </span>
+          {% if shipment.status_description %}<span>{{ shipment.status_description }}</span>{% endif %}
+          {% if shipment.status_location %}<span>· {{ shipment.status_location }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="tk-eta">
+        {% if shipment.delivered_at %}
+          <small>Delivered</small>
+          <b>{{ shipment.delivered_at.strftime('%d %b %Y') }}</b>
+          <span>{{ shipment.delivered_at.strftime('%H:%M UTC') }}</span>
+        {% elif shipment.estimated_delivery %}
+          <small>Estimated delivery</small>
+          <b>{{ shipment.estimated_delivery.strftime('%d %b %Y') }}</b>
+          <span>DHL estimate</span>
+        {% else %}
+          <small>Estimated delivery</small>
+          <b>—</b>
+          <span>Awaiting first scan</span>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="tk-timeline" aria-label="Tracking history">
+      <header class="tk-timeline-header">
+        <h2>Tracking history</h2>
+        <small>
+          {% if shipment.last_synced_at %}
+            Last synced {{ shipment.last_synced_at.strftime('%d %b %Y · %H:%M UTC') }}
+          {% else %}
+            Live from DHL Express
+          {% endif %}
+        </small>
+      </header>
+
+      {% if events %}
+        <ol class="tk-events">
+          {% for e in events|reverse %}
+            {% set is_first = loop.first %}
+            {% set code = (e.status_code or e.status or '')|lower %}
+            {% set cls = '' %}
+            {% if is_first %}
+              {% if code == 'delivered' %}{% set cls = 'is-delivered' %}
+              {% elif code == 'failure' or code == 'exception' %}{% set cls = 'is-failure' %}
+              {% else %}{% set cls = 'is-latest' %}{% endif %}
+            {% endif %}
+            <li class="tk-event {{ cls }}">
+              <time datetime="{{ e.occurred_at.isoformat() }}">
+                <b>{{ e.occurred_at.strftime('%d %b %Y') }}</b>
+                {{ e.occurred_at.strftime('%H:%M UTC') }}
+              </time>
+              <div>
+                <strong>{{ e.status or 'Update' }}</strong>
+                {% if e.description %}<p>{{ e.description }}</p>{% endif %}
+                {% if e.location or e.country %}
+                  <span class="tk-loc">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.7"/></svg>
+                    {{ e.location or '' }}{% if e.location and e.country %} · {% endif %}{{ e.country or '' }}
+                  </span>
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <div class="tk-empty">
+          <div class="tk-empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          </div>
+          <strong>No scans yet</strong>
+          DHL will publish tracking events the moment your parcel is picked up from our Nairobi warehouse.
+        </div>
+      {% endif %}
+    </section>
+
+  {% elif query %}
+
+    <div class="tk-empty" role="alert">
+      <div class="tk-empty-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </div>
+      <strong>We couldn't find a shipment for <code>{{ query }}</code></strong>
+      Please double-check the number and try again. Tracking numbers are 10 digits and usually appear in your order confirmation email.
+      <div class="tk-empty-hint">
+        Still stuck? <a href="{{ url_for('support') }}">Contact buyer support</a> with your FABS order reference, or
+        <a href="{{ url_for('contact') }}">send us a message</a>.
+      </div>
+    </div>
+
+  {% else %}
+
+    <div class="tk-empty">
+      <div class="tk-empty-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M21 8.5 12 3 3 8.5v7L12 21l9-5.5v-7Z" stroke="currentColor" stroke-width="1.7"/><path d="M3 8.5 12 14l9-5.5M12 14v7" stroke="currentColor" stroke-width="1.7"/></svg>
+      </div>
+      <strong>Enter a tracking number to begin</strong>
+      You'll find your DHL Express tracking number in your FABS order confirmation email, or on your order page.
+      <div class="tk-empty-hint">
+        Placed an order? Sign in to <a href="{{ url_for('account') }}">your account</a> to see live shipment status.
+      </div>
+    </div>
+
+  {% endif %}
+
+</main>
+{% endblock %}
