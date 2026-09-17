@@ -208,12 +208,12 @@ def _compute_cart_shipping_dims(items) -> dict:
     }
 
 
-# ============ FIX: Friendly handling for DHL "unquotable destination" ============
+# ============ Friendly handling for DHL "unquotable destination" ============
 # DHL returns 400 / 420505 for destinations it cannot quote from our origin
 # (e.g. unmapped codes like AG, or domestic KE). These are informational, not
 # server errors, so we surface a friendly message with a 200 response. This
 # pairs with the amber "is-info" styling added to the shipping widgets in
-# cart.html, games.html and game_detail.html.
+# cart.html, games.html, game_detail.html and checkout.html.
 #
 # Markers broadened to catch the wider set of DHL rejection messages:
 #   - "420505: The destination location is invalid"
@@ -239,7 +239,24 @@ def _friendly_shipping_fallback(country_code: str) -> str:
     if code == DEFAULT_SHIP_ORIGIN_COUNTRY:
         return "Domestic Kenya delivery — quoted separately."
     return "Shipping to this destination is quoted on request."
-# ===============================================================================
+
+
+def _friendly_rates_response(country_code: str, logger=None, reason: str = "") -> tuple:
+    """
+    Build the standard 200 response for unquotable destinations. Also logs at
+    INFO so the log line is distinguishable from a real error.
+    """
+    if logger is not None:
+        logger.info(
+            "DHL cannot quote %s%s — returning friendly message",
+            country_code,
+            f" ({reason})" if reason else "",
+        )
+    return jsonify({
+        "products": [],
+        "message": _friendly_shipping_fallback(country_code),
+    }), 200
+# ===========================================================================
 
 
 def register_routes(app):
@@ -506,20 +523,10 @@ def register_routes(app):
         if not country:
             return jsonify({"error": "country is required"}), 400
 
-        # ============ FIX: short-circuit domestic origin ============
-        # DHL does not quote domestic Kenya delivery through the
-        # international rates API. Return the friendly message before
-        # calling DHL so we avoid a guaranteed-to-fail API request and
-        # a false-positive error log entry.
+        # DHL does not quote domestic Kenya delivery through the international
+        # rates API. Short-circuit before the API call.
         if country == DEFAULT_SHIP_ORIGIN_COUNTRY:
-            app.logger.info(
-                "Domestic origin destination %s — returning friendly message", country
-            )
-            return jsonify({
-                "products": [],
-                "message": _friendly_shipping_fallback(country),
-            }), 200
-        # =============================================================
+            return _friendly_rates_response(country, app.logger, reason="domestic origin")
 
         try:
             service = DHLService()
@@ -542,25 +549,21 @@ def register_routes(app):
                 declared_value=float(data.get("declared_value") or 100.0),
                 currency=(data.get("currency") or "USD").upper(),
             )
-        # ============ FIX: DHLAPIError with friendly fallback ============
         except DHLAPIError as exc:
             if _is_dhl_unquotable(exc):
-                app.logger.info(
-                    "DHL cannot quote destination %s — returning friendly message", country
-                )
-                return jsonify({
-                    "products": [],
-                    "message": _friendly_shipping_fallback(country),
-                }), 200
+                return _friendly_rates_response(country, app.logger, reason="unquotable destination")
             app.logger.exception("DHL rate lookup failed: %s", exc)
             return jsonify({"error": "Could not fetch shipping rates."}), 502
-        # =================================================================
         except Exception as exc:
             app.logger.exception("DHL rate lookup failed: %s", exc)
             return jsonify({"error": "Could not fetch shipping rates."}), 502
 
-        if not result:
-            return jsonify({"error": "No rates returned by DHL."}), 502
+        # NEW: DHL sometimes returns 200 with an empty products list for
+        # unsupported destinations. Treat that the same way as the 420505 case
+        # so the frontend shows an amber info message rather than a red error.
+        products = (result or {}).get("products") if isinstance(result, dict) else None
+        if not products:
+            return _friendly_rates_response(country, app.logger, reason="empty product list")
 
         return jsonify(result)
 
@@ -570,18 +573,10 @@ def register_routes(app):
         if not country:
             return jsonify({"error": "country is required"}), 400
 
-        # ============ FIX: short-circuit domestic origin ============
-        # Same reasoning as the POST endpoint: KE→KE is not quotable
-        # through DHL's international rates API.
+        # Same reasoning as the POST endpoint: KE→KE is not quotable through
+        # DHL's international rates API.
         if country == DEFAULT_SHIP_ORIGIN_COUNTRY:
-            app.logger.info(
-                "Domestic origin cart destination %s — returning friendly message", country
-            )
-            return jsonify({
-                "products": [],
-                "message": _friendly_shipping_fallback(country),
-            }), 200
-        # =============================================================
+            return _friendly_rates_response(country, app.logger, reason="domestic origin cart")
 
         items = (
             Game.query.filter(
@@ -612,25 +607,19 @@ def register_routes(app):
         except DHLConfigurationError as exc:
             app.logger.error("DHL configuration: %s", exc)
             return jsonify({"error": "Shipping rates are temporarily unavailable."}), 503
-        # ============ FIX: DHLAPIError with friendly fallback ============
         except DHLAPIError as exc:
             if _is_dhl_unquotable(exc):
-                app.logger.info(
-                    "DHL cannot quote cart destination %s — returning friendly message", country
-                )
-                return jsonify({
-                    "products": [],
-                    "message": _friendly_shipping_fallback(country),
-                }), 200
+                return _friendly_rates_response(country, app.logger, reason="unquotable cart destination")
             app.logger.exception("DHL cart rates failed: %s", exc)
             return jsonify({"error": "Could not fetch shipping rates."}), 502
-        # =================================================================
         except Exception as exc:
             app.logger.exception("DHL cart rates failed: %s", exc)
             return jsonify({"error": "Could not fetch shipping rates."}), 502
 
-        if not result:
-            return jsonify({"error": "No rates returned by DHL."}), 502
+        # NEW: handle the empty-products-on-200 case the same way.
+        products = (result or {}).get("products") if isinstance(result, dict) else None
+        if not products:
+            return _friendly_rates_response(country, app.logger, reason="empty cart product list")
 
         return jsonify(result)
 
@@ -656,16 +645,37 @@ def register_routes(app):
         country = (data.get("country") or "").strip().upper()
         if not country:
             return jsonify({"error": "country is required"}), 400
+
+        city       = (data.get("city") or "").strip() or None
+        postal     = (data.get("postal_code") or "").strip() or None
+        line1      = (data.get("address_line1") or "").strip() or None
+
+        # DHL's GET /address-validate needs at least one of city/postal/line1
+        # alongside the country code. Reject the request early with a 400 so
+        # the frontend can show a specific warning instead of a generic error.
+        if not (city or postal or line1):
+            return jsonify({
+                "error": "Provide a city, postal code or address line to validate.",
+            }), 400
+
         try:
             result = DHLService().validate_address(
                 country_code=country,
-                city_name=(data.get("city") or "").strip() or None,
-                postal_code=(data.get("postal_code") or "").strip() or None,
-                address_line1=(data.get("address_line1") or "").strip() or None,
+                city_name=city,
+                postal_code=postal,
+                address_line1=line1,
             )
         except DHLConfigurationError:
             return jsonify({"error": "DHL not configured."}), 503
         except DHLAPIError as exc:
+            # If DHL rejects because of a bad city/postal (400), surface it as a
+            # validation warning rather than a hard error — the user can fix the
+            # field and try again.
+            if exc.status_code == 400:
+                return jsonify({
+                    "error": "DHL could not validate this address. Please check the city and postal code.",
+                    "detail": exc.response_body,
+                }), 400
             return jsonify({"error": str(exc), "detail": exc.response_body}), exc.status_code or 502
         except Exception as exc:
             app.logger.exception("DHL address validation failed: %s", exc)

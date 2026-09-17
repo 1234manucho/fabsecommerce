@@ -16,9 +16,13 @@ DEFAULT_TIMEOUT = 30
 # ----------------------------------------------------------------------
 # Country defaults for rate estimation when only a country code is known.
 # DHL requires BOTH cityName and postalCode for the receiver, but the
-# cart page only asks for a country. We use the country's main commercial
-# hub as a stand-in destination — the returned rate is a valid estimate
-# for that zone.
+# cart and checkout pages only ask for a country. We use the country's
+# main commercial hub as a stand-in destination — the returned rate is a
+# valid zone-based estimate.
+#
+# NOTE: these defaults are used ONLY by get_rates() and
+# estimate_landing_cost(). validate_address() intentionally does NOT use
+# them — see the docstring there for why.
 # ----------------------------------------------------------------------
 DEFAULT_CITY_BY_COUNTRY = {
     # Africa
@@ -118,9 +122,13 @@ def _resolve_destination(country_code, city, postal_code):
     """
     Return (city, postal_code) with defaults filled in from the country map.
 
-    DHL /rates requires both values. When the caller only has a country
-    code (e.g. from the cart page), we substitute the country's main
-    commercial hub so DHL returns a valid zone-based estimate.
+    Used by get_rates() and estimate_landing_cost() — DHL /rates requires
+    both values, so when the caller only has a country code (e.g. from the
+    cart page) we substitute the country's main commercial hub to obtain
+    a valid zone-based estimate.
+
+    Do NOT use this for address validation — the whole point there is to
+    check what the user actually typed, not a substituted default.
     """
     cc = (country_code or "").upper()
     if not city:
@@ -486,21 +494,28 @@ class DHLService:
 
         Optional: cityName, postalCode, countyName, addressLine1..3,
         strictValidation.
+
+        IMPORTANT: this method passes ONLY the values the caller provides.
+        It does NOT substitute the country-default city/postal from
+        DEFAULT_CITY_BY_COUNTRY / DEFAULT_POSTAL_BY_COUNTRY. Those defaults
+        are appropriate for rate estimation (where we need any valid
+        destination), but for address validation we must check exactly what
+        the user typed — otherwise we could falsely "verify" an address
+        against a default the user never entered.
         """
         cc = (country_code or "").upper()
         if not cc:
             raise DHLConfigurationError("country_code is required for address validation")
 
-        # Fill city/postal from the country lookup when only a code is given.
-        city, postal = _resolve_destination(cc, city_name, postal_code)
-
         params = {
             "type": "delivery",
             "countryCode": cc,
-            "cityName": city,
-            "postalCode": postal,
             "strictValidation": "false",
         }
+        if city_name:
+            params["cityName"] = city_name
+        if postal_code:
+            params["postalCode"] = postal_code
         if address_line1:
             params["addressLine1"] = address_line1
 

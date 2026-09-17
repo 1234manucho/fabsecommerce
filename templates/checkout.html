@@ -1168,9 +1168,14 @@
                         id="checkout-shipping-country"
                         type="text"
                         maxlength="2"
+                        inputmode="latin"
                         placeholder="Destination country code (e.g. US)"
                         aria-label="Destination country code"
                         autocomplete="country"
+                        autocapitalize="characters"
+                        autocorrect="off"
+                        spellcheck="false"
+                        enterkeyhint="go"
                     >
                     <button id="checkout-shipping-quote-btn" type="button">Get rates</button>
                 </div>
@@ -1569,6 +1574,13 @@
         });
     }
 
+    // ============ ADDRESS VERIFY — parse DHL's address-validate response ============
+    // DHL GET /address-validate returns one of:
+    //   { address: [ { countryCode, postalCode, cityName, addressLine1, ... } ], originalAddress: {...} }
+    //   { suggestions: [ ... ] }
+    //   { data: [ ... ] }
+    // We display the normalised address and compare it to the user's input to decide
+    // between a green "verified" state and an amber "different address" warning.
     $verifyBtn?.addEventListener('click', async () => {
         const country = (($toolbarInput.value || '').trim() ||
                         ($countryInput && $countryInput.value || '').trim()).toUpperCase();
@@ -1612,17 +1624,49 @@
                 return;
             }
 
-            const suggestions = data.address || data.suggestions || data.data || [];
-            const isValid = data.status === 'valid' || (Array.isArray(suggestions) && suggestions.length === 0);
+            // DHL returns `address` (array) in v2 or `suggestions`/`data` in some
+            // API versions. Normalise to a single object.
+            const raw = data.address ?? data.suggestions ?? data.data ?? null;
+            const validated = Array.isArray(raw) ? raw[0] : raw;
 
-            if (isValid) {
-                setVerifyStatus('Address looks valid — DHL can deliver here.', 'success');
-            } else if (Array.isArray(suggestions) && suggestions.length) {
-                const first = suggestions[0];
-                const text = first.address?.addressLine1 || first.addressLine1 || first.formattedAddress || 'Did you mean a different address?';
-                setVerifyStatus('DHL suggests: ' + text, 'warning');
+            if (!validated || typeof validated !== 'object') {
+                setVerifyStatus('DHL could not validate this address — you can still continue.', 'warning');
+                return;
+            }
+
+            // Build a readable one-line address from whatever DHL returned.
+            const parts = [
+                validated.addressLine1,
+                validated.addressLine2,
+                validated.addressLine3,
+                validated.cityName || validated.city,
+                validated.postalCode || validated.postal,
+                validated.countryCode || validated.country
+            ]
+                .map(v => String(v || '').trim())
+                .filter(Boolean);
+
+            const normalised = parts.length
+                ? parts.join(', ')
+                : 'Address accepted by DHL';
+
+            // Compare DHL's normalised form against the user's input.
+            const norm = s => String(s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+            const stripPostal = s => norm(s).replace(/[\s-]/g, '');
+
+            const cityMatches   = !city   || !validated.cityName   || norm(city)   === norm(validated.cityName);
+            const postalMatches = !postal || !validated.postalCode || stripPostal(postal) === stripPostal(validated.postalCode);
+
+            if (cityMatches && postalMatches) {
+                setVerifyStatus(
+                    `Address verified by DHL — service is available. DHL matches: ${normalised}`,
+                    'success'
+                );
             } else {
-                setVerifyStatus('Address could not be fully verified — you can still continue.', 'warning');
+                setVerifyStatus(
+                    `DHL suggests a different address: ${normalised}`,
+                    'warning'
+                );
             }
         } catch (err) {
             console.error(err);
@@ -1766,7 +1810,10 @@
 
             const points = Array.isArray(data) ? data : (data.servicePoints || data.data || []);
             if (!points.length) {
-                setSpStatus('No DHL service points found nearby.', false);
+                setSpStatus(
+                    'DHL service points aren’t available for this destination — delivery goes direct to your address.',
+                    false
+                );
                 return;
             }
 
@@ -1803,7 +1850,7 @@
         }
     } catch (e) { /* ignore */ }
 
-    $btn.addEventListener('click', async () => {
+    const runRateLookup = async () => {
         const country = (($toolbarInput.value || '').trim() ||
                          ($countryInput && $countryInput.value || '').trim()).toUpperCase();
 
@@ -1846,7 +1893,7 @@
                 if (data.message) {
                     setStatus(data.message, 'info');
                 } else {
-                    setStatus('No DHL rates returned for that destination.');
+                    setStatus('No DHL rates returned for that destination.', 'error');
                 }
                 state.shipping = 0;
                 updateSummary();
@@ -1864,14 +1911,42 @@
             $btn.disabled = false;
             $btn.textContent = 'Get rates';
         }
+    };
+
+    $btn.addEventListener('click', runRateLookup);
+    // Enter key inside the country input triggers the lookup on mobile keyboards
+    $toolbarInput?.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            runRateLookup();
+        }
     });
 
     function renderRates(products, country) {
-        const top = products.slice(0, 5);
+        // Only keep products with a real numeric price so a null-price row can't
+        // silently win the "first checked" slot and give a KES 0.00 shipping line.
+        const priced = products
+            .map(p => {
+                const price = p.totalPrice && p.totalPrice[0]
+                    ? Number(p.totalPrice[0].price)
+                    : null;
+                return { raw: p, price: Number.isFinite(price) && price > 0 ? price : null };
+            })
+            .filter(x => x.price !== null)
+            .slice(0, 5);
+
+        if (!priced.length) {
+            setStatus('No priced DHL rates returned for that destination — shipping is quoted on request.', 'info');
+            state.shipping = 0;
+            updateSummary();
+            return;
+        }
+
         $options.innerHTML = '';
 
-        top.forEach((p, idx) => {
-            const price = p.totalPrice && p.totalPrice[0] ? Number(p.totalPrice[0].price) : null;
+        priced.forEach((entry, idx) => {
+            const p     = entry.raw;
+            const price = entry.price;
             const days  = (p.deliveryCapabilities && p.deliveryCapabilities.totalTransitDays) || null;
             const name  = p.productName || p.productCode || 'DHL Express';
             const id    = 'checkout-ship-' + idx;
@@ -1880,15 +1955,15 @@
             label.className = 'checkout-shipping-option';
             label.innerHTML = `
                 <input type="radio" name="checkout_shipping_rate" id="${id}"
-                       value="${price !== null ? price : ''}" ${idx === 0 ? 'checked' : ''}>
+                       value="${price}" data-price="${price}" ${idx === 0 ? 'checked' : ''}>
                 <div class="checkout-shipping-card">
                     <div>
                         <strong>${esc(name)}</strong>
                         <small>${days ? days + ' day(s) transit' : 'Transit time on request'}</small>
                     </div>
                     <div class="checkout-shipping-price">
-                        <strong>${price !== null ? fmtKes(price) : '—'}</strong>
-                        <span>${price !== null ? fmtUsd(price) : ''}</span>
+                        <strong>${fmtKes(price)}</strong>
+                        <span>${fmtUsd(price)}</span>
                     </div>
                 </div>
             `;
@@ -1899,23 +1974,20 @@
 
         $options.querySelectorAll('input[type="radio"]').forEach(radio => {
             radio.addEventListener('change', () => {
-                const cost = Number(radio.value || 0);
-                const prod = top.find(p =>
-                    Number(p.totalPrice?.[0]?.price || 0) === cost
-                ) || null;
+                const cost = Number(radio.dataset.price || 0);
+                const prod = priced.find(x => x.price === cost)?.raw || null;
                 selectProduct(cost, country, prod);
             });
         });
 
-        const first = top[0];
-        const firstPrice = first.totalPrice && first.totalPrice[0]
-            ? Number(first.totalPrice[0].price) : 0;
-        selectProduct(firstPrice, country, first);
+        // Default to the cheapest priced option (top of the sorted list).
+        const first = priced[0];
+        selectProduct(first.price, country, first.raw);
 
         try {
             sessionStorage.setItem('fabs_cart_shipping', JSON.stringify({
                 country: country,
-                cost_usd: firstPrice
+                cost_usd: first.price
             }));
         } catch (e) { /* ignore */ }
 
