@@ -5,55 +5,45 @@
 
 {% block head %}
 <style>
-  .order-hero-bg {
-    background:
-      radial-gradient(circle at 88% 20%, rgba(255, 0, 0, 0.14), transparent 28%),
-      linear-gradient(135deg, #11161b 0%, #1d242b 100%);
-  }
-  .order-hero-bg::after {
-    content: "";
-    position: absolute;
-    right: -80px;
-    bottom: -140px;
-    width: 340px;
-    height: 340px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 50%;
-  }
-  .order-btn-primary {
-    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
-  }
-  .order-btn-primary:hover {
-    background: #cc0000;
-    border-color: #cc0000;
-    transform: translateY(-1px);
-    box-shadow: 0 10px 25px rgba(255, 0, 0, 0.28);
-  }
-  .order-btn-primary:focus-visible {
-    outline: 3px solid rgba(255, 0, 0, 0.35);
-    outline-offset: 3px;
-  }
-  .order-step::before {
-    content: "";
-    position: absolute;
-    left: 13px;
-    top: 32px;
-    bottom: -16px;
-    width: 2px;
-    background: #e0e3e6;
-  }
+  .order-hero-bg { background: radial-gradient(circle at 88% 20%, rgba(255, 0, 0, 0.14), transparent 28%),
+    linear-gradient(135deg, #11161b 0%, #1d242b 100%); }
+  .order-hero-bg::after { content: ""; position: absolute; right: -80px; bottom: -140px;
+    width: 340px; height: 340px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 50%; }
+  .order-btn-primary { transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
+  .order-btn-primary:hover { background: #cc0000; border-color: #cc0000; transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(255, 0, 0, 0.28); }
+  .order-btn-primary:focus-visible { outline: 3px solid rgba(255, 0, 0, 0.35); outline-offset: 3px; }
+  .order-btn-dhl { transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease; }
+  .order-btn-dhl:hover { background: #ffd633; border-color: #ffd633; transform: translateY(-1px); }
+  .order-step::before { content: ""; position: absolute; left: 13px; top: 32px; bottom: -16px;
+    width: 2px; background: #e0e3e6; }
   .order-step:last-child::before { display: none; }
   .order-step.is-done::before { background: #21842a; }
-  .order-step.is-done .order-step-dot {
-    background: #21842a;
-    border-color: #21842a;
-    color: #fff;
-  }
-  .order-step.is-active .order-step-dot {
-    background: #ff0000;
-    border-color: #ff0000;
-    color: #fff;
-  }
+  .order-step.is-done .order-step-dot { background: #21842a; border-color: #21842a; color: #fff; }
+  .order-step.is-active .order-step-dot { background: #ff0000; border-color: #ff0000; color: #fff; }
+
+  /* ePOD modal */
+  .pod-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(7, 16, 29, 0.72);
+    backdrop-filter: blur(3px); opacity: 0; transition: opacity 200ms ease; }
+  .pod-backdrop.is-visible { opacity: 1; }
+  .pod-modal { position: fixed; inset: 0; z-index: 1010; display: grid; place-items: center;
+    padding: 20px; pointer-events: none; }
+  .pod-modal.is-open { pointer-events: auto; }
+  .pod-modal-inner { width: min(560px, 100%); max-height: 85vh; overflow-y: auto; background: #fff;
+    border: 1px solid #e0e3e6; box-shadow: 0 40px 100px rgba(0, 0, 0, 0.35);
+    opacity: 0; transform: translateY(12px) scale(0.98); transition: opacity 200ms ease, transform 200ms ease; }
+  .pod-modal.is-open .pod-modal-inner { opacity: 1; transform: none; }
+  .pod-modal-head { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 18px 22px; border-bottom: 1px solid #e0e3e6; background: #fff; z-index: 2; }
+  .pod-modal-head h3 { margin: 0; font-size: 1.1rem; letter-spacing: -0.02em; }
+  .pod-modal-close { width: 38px; height: 38px; border: 1px solid #e0e3e6; background: #fff;
+    font-size: 1.4rem; line-height: 1; cursor: pointer; }
+  .pod-modal-body { padding: 22px; }
+  .pod-modal-body img { width: 100%; height: auto; display: block; border: 1px solid #e0e3e6; }
+  .pod-modal-body dl { margin: 0; display: grid; gap: 12px; }
+  .pod-modal-body dt { color: #68717a; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.06em;
+    text-transform: uppercase; }
+  .pod-modal-body dd { margin: 3px 0 0; color: #161a1f; font-weight: 800; font-size: 0.88rem; }
 </style>
 {% endblock %}
 
@@ -63,12 +53,7 @@
   <!-- ================== HERO ================== -->
   <section class="relative overflow-hidden order-hero-bg text-white py-[clamp(48px,7vw,88px)]">
     <div class="w-[min(1100px,calc(100%-40px))] mx-auto relative z-10">
-
-      <a href="{{ url_for('account') }}"
-         class="inline-flex items-center gap-1.5 mb-5 text-[#bdc5cc] text-[0.7rem] font-black tracking-[0.05em] uppercase no-underline hover:text-white">
-        ← Back to account
-      </a>
-
+      <a href="{{ url_for('account') }}" class="inline-flex items-center gap-1.5 mb-5 text-[#bdc5cc] text-[0.7rem] font-black tracking-[0.05em] uppercase no-underline hover:text-white">← Back to account</a>
       <span class="inline-flex items-center gap-2 mb-4 text-[#ff7479] text-[0.72rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-6 before:h-[2px] before:bg-current">
         Order {{ order.reference }}
       </span>
@@ -86,7 +71,7 @@
         </div>
         {% endif %}
         {% if order.dhl_tracking_number %}
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-[#ff0000] border border-[#ff0000] text-[0.72rem] font-black tracking-[0.04em] uppercase text-white">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-[#ffcc00] border border-[#ffcc00] text-[0.72rem] font-black tracking-[0.04em] uppercase text-[#111]">
           DHL · {{ order.dhl_tracking_number }}
         </div>
         {% endif %}
@@ -117,15 +102,11 @@
               <small class="block mt-1 text-[0.7rem] text-[#68717a] uppercase tracking-[0.04em] font-bold">
                 {{ item.platform }}{% if item.edition is defined and item.edition %} · {{ item.edition }}{% endif %}
               </small>
-              <small class="block mt-1.5 text-[0.72rem] text-[#68717a]">
-                Quantity: <strong class="text-[#161a1f]">{{ item.quantity }}</strong>
-              </small>
+              <small class="block mt-1.5 text-[0.72rem] text-[#68717a]">Quantity: <strong class="text-[#161a1f]">{{ item.quantity }}</strong></small>
             </div>
             <div class="text-right whitespace-nowrap">
               <b class="block text-[0.9rem]">${{ '%.2f'|format(item.unit_price) }}</b>
-              <span class="block mt-1 text-[0.68rem] text-[#68717a]">
-                × {{ item.quantity }}
-              </span>
+              <span class="block mt-1 text-[0.68rem] text-[#68717a]">× {{ item.quantity }}</span>
             </div>
           </div>
           {% else %}
@@ -138,59 +119,43 @@
         <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
           <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
             <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Delivery address</h2>
-            <span class="inline-flex items-center gap-2 text-[0.68rem] font-black tracking-[0.05em] uppercase text-[#21842a]">
-              ✓ Ready for DHL
-            </span>
+            <span class="inline-flex items-center gap-2 text-[0.68rem] font-black tracking-[0.05em] uppercase text-[#21842a]">✓ Ready for DHL</span>
           </div>
-
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 p-5 text-[0.85rem] leading-[1.6] text-[#4f5860]">
-
             <div>
-              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
-                Recipient
-              </span>
+              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Recipient</span>
               <strong class="block text-[#161a1f]">{{ order.full_name }}</strong>
               {% if order.company %}<div>{{ order.company }}</div>{% endif %}
               <div>{{ order.email }}</div>
               {% if order.phone %}<div class="mt-1">Phone: {{ order.phone }}</div>{% endif %}
             </div>
-
             <div>
-              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
-                Address
-              </span>
+              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Address</span>
               <div>{{ order.address_line1 or '' }}</div>
               {% if order.address_line2 %}<div>{{ order.address_line2 }}</div>{% endif %}
-              <div>
-                {{ order.city or '' }}{% if order.postal_code %} · {{ order.postal_code }}{% endif %}
-              </div>
+              <div>{{ order.city or '' }}{% if order.postal_code %} · {{ order.postal_code }}{% endif %}</div>
               <div class="font-bold text-[#161a1f]">{{ order.country }}</div>
             </div>
-
           </div>
         </section>
         {% endif %}
 
-        <!-- DHL shipment -->
+        <!-- ================== DHL SHIPMENT ================== -->
         {% if order.dhl_tracking_number or order.shipping_status %}
-        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]" id="dhl-section" data-tracking="{{ order.dhl_tracking_number or '' }}" data-order-id="{{ order.id }}">
           <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
-            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">DHL shipment</h2>
-            {% if order.shipping_status %}
-              {{ status(order.shipping_status) }}
-            {% endif %}
+            <div class="flex items-center gap-3">
+              <span class="grid place-items-center min-w-[52px] h-[26px] px-2 bg-[#ffcc00] text-[#d40511] font-black text-[13px] tracking-[-0.02em] rounded-[3px]">DHL</span>
+              <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">DHL Express shipment</h2>
+            </div>
+            {% if order.shipping_status %}{{ status(order.shipping_status) }}{% endif %}
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-5">
-
             <div class="md:col-span-3">
-              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
-                Tracking number
-              </span>
+              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Tracking number</span>
               {% if order.dhl_tracking_number %}
-                <a href="https://www.dhl.com/global-en/home/tracking.html?tracking-id={{ order.dhl_tracking_number }}"
-                   target="_blank" rel="noopener"
-                   class="inline-flex items-center gap-1.5 font-mono text-[0.95rem] text-[#ff0000] hover:underline">
+                <a href="https://www.dhl.com/global-en/home/tracking.html?tracking-id={{ order.dhl_tracking_number }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 font-mono text-[0.95rem] text-[#ff0000] hover:underline">
                   {{ order.dhl_tracking_number }} ↗
                 </a>
               {% else %}
@@ -200,42 +165,52 @@
 
             {% if order.shipping_cost %}
             <div>
-              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
-                Shipping cost
-              </span>
-              <strong class="text-[0.9rem]">
-                {{ order.shipping_currency or 'USD' }} {{ '%.2f'|format(order.shipping_cost) }}
-              </strong>
+              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Shipping cost</span>
+              <strong class="text-[0.9rem]">{{ order.shipping_currency or 'USD' }} {{ '%.2f'|format(order.shipping_cost) }}</strong>
             </div>
             {% endif %}
 
             {% if order.shipped_at %}
             <div>
-              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
-                Shipped
-              </span>
+              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Shipped</span>
               <strong class="text-[0.9rem]">{{ order.shipped_at.strftime('%d %b %Y') }}</strong>
             </div>
             {% endif %}
 
             {% if order.delivered_at %}
             <div>
-              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
-                Delivered
-              </span>
+              <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Delivered</span>
               <strong class="text-[0.9rem] text-[#21842a]">{{ order.delivered_at.strftime('%d %b %Y') }}</strong>
             </div>
             {% endif %}
 
-            {% if order.dhl_label_url %}
-            <div class="md:col-span-3 mt-1">
-              <a href="{{ order.dhl_label_url }}" target="_blank" rel="noopener"
-                 class="order-btn-primary inline-flex items-center gap-2 min-h-[44px] px-4 bg-[#ff0000] text-white text-[0.72rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] no-underline">
-                Download shipping label
-              </a>
+            {% if order.dhl_tracking_number %}
+            <!-- Download documents -->
+            <div class="md:col-span-3 mt-2">
+              <span class="block mb-2 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Download documents</span>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="js-download-doc order-btn-primary inline-flex items-center gap-2 min-h-[40px] px-4 bg-[#ff0000] text-white text-[0.68rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] cursor-pointer" data-doc-type="label">Shipping label</button>
+                <button type="button" class="js-download-doc inline-flex items-center gap-2 min-h-[40px] px-4 bg-white text-[#161a1f] text-[0.68rem] font-black tracking-[0.05em] uppercase border border-[#161a1f] cursor-pointer hover:bg-[#f4f5f6]" data-doc-type="invoice">Commercial invoice</button>
+                <button type="button" class="js-download-doc inline-flex items-center gap-2 min-h-[40px] px-4 bg-white text-[#161a1f] text-[0.68rem] font-black tracking-[0.05em] uppercase border border-[#161a1f] cursor-pointer hover:bg-[#f4f5f6]" data-doc-type="waybillDoc">Waybill</button>
+              </div>
+            </div>
+
+            <!-- Proof of Delivery (visible once delivered) -->
+            {% if order.shipping_status == 'delivered' %}
+            <div class="md:col-span-3 mt-2 pt-4 border-t border-[#e0e3e6]">
+              <span class="block mb-2 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Electronic Proof of Delivery</span>
+              <button type="button" id="pod-open-btn" class="order-btn-dhl inline-flex items-center gap-2 min-h-[44px] px-5 bg-[#ffcc00] text-[#111] text-[0.72rem] font-black tracking-[0.05em] uppercase border border-[#ffcc00] cursor-pointer">
+                View signed delivery proof
+              </button>
             </div>
             {% endif %}
 
+            <!-- Live tracking events -->
+            <div class="md:col-span-3 mt-4 pt-4 border-t border-[#e0e3e6]">
+              <span class="block mb-2 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Latest DHL tracking events</span>
+              <div id="dhl-tracking-feed" class="text-[0.8rem] text-[#68717a]">Loading…</div>
+            </div>
+            {% endif %}
           </div>
         </section>
         {% endif %}
@@ -245,7 +220,6 @@
           <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
             <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Order progress</h2>
           </div>
-
           {% set steps = [
             ('Order created', order.created_at, True),
             ('Payment approved', order.payment_status == 'paid', order.payment_status == 'paid'),
@@ -253,7 +227,6 @@
             ('In transit', order.shipping_status == 'in_transit', order.shipping_status == 'in_transit'),
             ('Delivered', order.shipping_status == 'delivered', order.shipping_status == 'delivered'),
           ] %}
-
           <ol class="relative p-5 pt-6 m-0 list-none">
             {% for label, when, done in steps %}
             <li class="order-step relative pl-10 pb-5 {% if done %}is-done{% endif %} {% if loop.index == 1 or (not done and loop.index == 2 and order.payment_status == 'paid') %}is-active{% endif %}">
@@ -274,100 +247,196 @@
             {% endfor %}
           </ol>
         </section>
-
       </div>
 
       <!-- ================== RIGHT COLUMN ================== -->
       <aside class="lg:sticky lg:top-[120px] grid gap-6">
 
-        <!-- Totals -->
         <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)] p-6">
-          <span class="inline-flex items-center gap-2 mb-3 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">
-            Summary
-          </span>
-
+          <span class="inline-flex items-center gap-2 mb-3 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">Summary</span>
           <dl class="m-0 mt-2">
             <div class="flex items-center justify-between gap-4 py-2.5 text-[0.82rem]">
               <dt class="text-[#68717a] font-bold">Subtotal</dt>
               <dd class="m-0 font-black">${{ '%.2f'|format(order.subtotal) }}</dd>
             </div>
-
             {% if order.shipping_cost %}
             <div class="flex items-center justify-between gap-4 py-2.5 text-[0.82rem]">
               <dt class="text-[#68717a] font-bold">Shipping (DHL)</dt>
               <dd class="m-0 font-black">${{ '%.2f'|format(order.shipping_cost) }}</dd>
             </div>
             {% endif %}
-
             <div class="flex items-center justify-between gap-4 pt-4 mt-2 border-t border-[#e0e3e6]">
               <dt class="text-[0.9rem] font-black uppercase">Total</dt>
               <dd class="m-0 text-right">
-                <strong class="block text-[1.5rem] tracking-[-0.035em] leading-none">
-                  ${{ '%.2f'|format(order.total) }}
-                </strong>
-                <span class="block mt-1 text-[0.7rem] font-black text-[#68717a] uppercase tracking-[0.05em]">
-                  {{ order.currency }}
-                </span>
+                <strong class="block text-[1.5rem] tracking-[-0.035em] leading-none">${{ '%.2f'|format(order.total) }}</strong>
+                <span class="block mt-1 text-[0.7rem] font-black text-[#68717a] uppercase tracking-[0.05em]">{{ order.currency }}</span>
               </dd>
             </div>
           </dl>
         </section>
 
-        <!-- Payment details -->
         <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)] p-6">
-          <span class="inline-flex items-center gap-2 mb-3 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">
-            Payment
-          </span>
-
+          <span class="inline-flex items-center gap-2 mb-3 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">Payment</span>
           <div class="mt-3 grid gap-3.5 text-[0.78rem] leading-[1.55] text-[#4f5860]">
             <div>
-              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
-                Method
-              </span>
+              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Method</span>
               <strong class="text-[#161a1f]">Card · DPO (3G Direct Pay)</strong>
             </div>
             <div>
-              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
-                Status
-              </span>
+              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Status</span>
               {{ status(order.payment_status) }}
             </div>
             <div>
-              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
-                Transaction reference
-              </span>
-              <span class="font-mono text-[0.78rem] text-[#161a1f] break-all">
-                {{ order.payment_reference or 'Not created' }}
-              </span>
+              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Transaction reference</span>
+              <span class="font-mono text-[0.78rem] text-[#161a1f] break-all">{{ order.payment_reference or 'Not created' }}</span>
             </div>
             <div>
-              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#68717a]">
-                Order date
-              </span>
+              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Order date</span>
               <strong class="text-[#161a1f]">{{ order.created_at.strftime('%d %b %Y, %H:%M') }}</strong>
             </div>
           </div>
         </section>
 
-        <!-- Support -->
         <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)] p-6">
-          <span class="inline-flex items-center gap-2 mb-3 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">
-            Need help?
-          </span>
-
-          <p class="m-0 text-[0.78rem] leading-[1.65] text-[#68717a]">
-            Contact our fulfilment team with this order reference and we'll respond as soon as
-            possible.
-          </p>
-
+          <span class="inline-flex items-center gap-2 mb-3 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">Need help?</span>
+          <p class="m-0 text-[0.78rem] leading-[1.65] text-[#68717a]">Contact our fulfilment team with this order reference and we'll respond as soon as possible.</p>
           <a href="mailto:{{ support_email if support_email else 'e-trades@fabstrading.com' }}?subject=Order%20{{ order.reference }}"
              class="mt-4 inline-flex items-center justify-center w-full min-h-[44px] px-4 bg-white text-[#ff0000] text-[0.72rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] no-underline hover:bg-[#fff7f7]">
             Email support
           </a>
         </section>
-
       </aside>
     </div>
   </section>
 </main>
+
+<!-- ================== ePOD modal ================== -->
+<div id="pod-backdrop" class="pod-backdrop" hidden></div>
+<div id="pod-modal" class="pod-modal" hidden role="dialog" aria-modal="true" aria-labelledby="pod-modal-title">
+  <div class="pod-modal-inner">
+    <div class="pod-modal-head">
+      <h3 id="pod-modal-title">Proof of Delivery</h3>
+      <button class="pod-modal-close" type="button" id="pod-close" aria-label="Close">×</button>
+    </div>
+    <div class="pod-modal-body" id="pod-body">
+      <p class="text-center text-[#68717a] text-sm">Loading…</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const section = document.getElementById('dhl-section');
+  if (!section) return;
+  const tracking = section.dataset.tracking || '';
+  const orderId  = section.dataset.orderId;
+  const csrf     = '{{ csrf_token() }}';
+
+  // ---------- Live tracking feed ----------
+  async function loadTracking() {
+    const feed = document.getElementById('dhl-tracking-feed');
+    if (!feed || !tracking) return;
+    try {
+      const res = await fetch(`/api/shipping/${encodeURIComponent(tracking)}/tracking`, {
+        headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Unavailable');
+
+      const events = (data.shipments?.[0]?.events) || data.events || data.data || [];
+      if (!Array.isArray(events) || events.length === 0) {
+        feed.innerHTML = '<span class="text-[#8a9198]">Tracking is not yet available. Open the DHL link above for live status.</span>';
+        return;
+      }
+      feed.innerHTML = events.slice(0, 6).map(e => {
+        const ts = e.timestamp || e.date || e.dateTime || '';
+        const date = ts ? new Date(ts).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+        const desc = e.description || e.status || e.eventDescription || 'Update';
+        const loc  = e.location?.address?.addressLocality || e.location?.address?.countryCode || '';
+        return `
+          <div class="grid grid-cols-[110px_minmax(0,1fr)] gap-3 py-2 border-b border-[#e0e3e6] last:border-b-0">
+            <span class="text-[0.68rem] text-[#8a9198] uppercase tracking-wide">${date || '—'}</span>
+            <span><strong class="text-[#161a1f]">${desc}</strong>${loc ? ' · ' + loc : ''}</span>
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      feed.innerHTML = '<span class="text-[#8a9198]">Live tracking unavailable. Open the DHL link above for status.</span>';
+    }
+  }
+  if (tracking) loadTracking();
+
+  // ---------- Download documents ----------
+  document.querySelectorAll('.js-download-doc').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!tracking) return;
+      const type = btn.dataset.docType;
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Loading…';
+      try {
+        const res = await fetch(`/api/shipping/${encodeURIComponent(tracking)}/documents?type=${encodeURIComponent(type)}`, {
+          headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not fetch document.');
+
+        // Try common URL fields
+        const url = data.url || data.document?.url || data.documents?.[0]?.url ||
+                    (data.content ? 'data:application/pdf;base64,' + data.content : null);
+        if (!url) throw new Error('Document URL missing.');
+        window.open(url, '_blank', 'noopener');
+      } catch (err) {
+        alert(err.message || 'Could not download this document.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    });
+  });
+
+  // ---------- ePOD modal ----------
+  const podOpen   = document.getElementById('pod-open-btn');
+  const podModal  = document.getElementById('pod-modal');
+  const podBack   = document.getElementById('pod-backdrop');
+  const podClose  = document.getElementById('pod-close');
+  const podBody   = document.getElementById('pod-body');
+
+  const showPod = () => { podBack.hidden = false; podModal.hidden = false;
+    requestAnimationFrame(() => { podBack.classList.add('is-visible'); podModal.classList.add('is-open'); }); };
+  const hidePod = () => { podBack.classList.remove('is-visible'); podModal.classList.remove('is-open');
+    setTimeout(() => { podBack.hidden = true; podModal.hidden = true; }, 200); };
+
+  podOpen?.addEventListener('click', async () => {
+    podBody.innerHTML = '<p class="text-center text-[#68717a] text-sm">Loading proof of delivery…</p>';
+    showPod();
+    try {
+      const res = await fetch(`/api/shipping/${encodeURIComponent(tracking)}/pod`, {
+        headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load proof of delivery.');
+
+      const recName = data.receiverName || data.signedBy || data.receiver || '—';
+      const delAt   = data.deliveryDate || data.deliveredAt || data.date || '';
+      const img     = data.imageUrl || data.image || data.signatureImage || null;
+
+      podBody.innerHTML = `
+        <dl>
+          <div><dt>Received by</dt><dd>${recName}</dd></div>
+          <div><dt>Delivered</dt><dd>${delAt ? new Date(delAt).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}</dd></div>
+          <div><dt>Tracking number</dt><dd class="font-mono">${tracking}</dd></div>
+        </dl>
+        ${img ? `<div class="mt-5"><dt class="block mb-2 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Signature / delivery image</dt><img src="${img}" alt="Proof of delivery"></div>` : ''}
+      `;
+    } catch (err) {
+      podBody.innerHTML = `<p class="text-center text-[#b91c1c] text-sm">${err.message}</p>`;
+    }
+  });
+
+  podClose?.addEventListener('click', hidePod);
+  podBack?.addEventListener('click', hidePod);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !podModal.hidden) hidePod(); });
+})();
+</script>
 {% endblock %}

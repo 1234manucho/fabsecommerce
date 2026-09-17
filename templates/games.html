@@ -14,6 +14,8 @@
     --games-line: #dce2e8;
     --games-muted: #617083;
     --games-green: #16734a;
+    --dhl-yellow: #ffcc00;
+    --dhl-red: #d40511;
   }
 
   .games-page, .games-page * { box-sizing: border-box; }
@@ -58,6 +60,160 @@
   .games-search .games-cart-trigger:hover { background: #0b1729; }
   .games-cart-trigger svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .games-cart-trigger strong { min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; border-radius: 999px; background: var(--games-red); color: #fff; font-size: .62rem; }
+
+  /* ============ DHL SHIPPING ESTIMATE BAND ============ */
+  .games-shipping-band {
+    background: #fff;
+    border-bottom: 1px solid var(--games-line);
+  }
+  .games-shipping {
+    min-height: 84px;
+    display: grid;
+    grid-template-columns: auto minmax(180px, 220px) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+  }
+  .games-shipping-mark {
+    display: grid;
+    place-items: center;
+    min-width: 60px;
+    height: 30px;
+    padding: 0 10px;
+    background: var(--dhl-yellow);
+    color: var(--dhl-red);
+    font-weight: 900;
+    font-size: 14px;
+    letter-spacing: -0.02em;
+    border-radius: 3px;
+  }
+  .games-shipping-copy {
+    min-width: 0;
+  }
+  .games-shipping-copy strong {
+    display: block;
+    font-size: .82rem;
+    font-weight: 900;
+    letter-spacing: .01em;
+    color: var(--games-ink);
+  }
+  .games-shipping-copy small {
+    display: block;
+    margin-top: 3px;
+    color: var(--games-muted);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .games-shipping-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px;
+    width: 100%;
+    max-width: 340px;
+  }
+  .games-shipping-form input {
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #cfd7df;
+    background: #fff;
+    color: var(--games-ink);
+    font: inherit;
+    font-size: .82rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    outline: 0;
+    transition: border-color .16s ease, box-shadow .16s ease;
+  }
+  .games-shipping-form input:focus {
+    border-color: var(--dhl-yellow);
+    box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.22);
+  }
+  .games-shipping-form button {
+    height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--dhl-yellow);
+    background: var(--dhl-yellow);
+    color: #111;
+    font: inherit;
+    font-size: .70rem;
+    font-weight: 900;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color .16s ease, border-color .16s ease, transform .16s ease;
+  }
+  .games-shipping-form button:hover {
+    background: #ffd633;
+    border-color: #ffd633;
+    transform: translateY(-1px);
+  }
+  .games-shipping-form button:disabled {
+    opacity: .6;
+    cursor: wait;
+    transform: none;
+  }
+  .games-shipping-result {
+    min-width: 0;
+    padding: 10px 16px;
+    background: #fffdf3;
+    border: 1px solid rgba(255, 204, 0, 0.4);
+    border-left: 4px solid var(--dhl-yellow);
+    color: var(--games-ink);
+    font-size: .78rem;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .games-shipping-result strong {
+    font-weight: 900;
+  }
+  .games-shipping-result .games-shipping-error {
+    color: #b91c1c;
+    font-weight: 800;
+  }
+  .games-shipping-result .games-shipping-green {
+    color: var(--games-green);
+    font-weight: 900;
+  }
+  .games-shipping-result[hidden] {
+    display: none;
+  }
+
+  @media (max-width: 960px) {
+    .games-shipping {
+      grid-template-columns: auto 1fr;
+      row-gap: 10px;
+    }
+    .games-shipping-form {
+      grid-column: 1 / -1;
+      max-width: none;
+    }
+    .games-shipping-result {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 520px) {
+    .games-shipping-mark {
+      min-width: 48px;
+      height: 26px;
+      font-size: 12px;
+    }
+    .games-shipping-copy strong {
+      font-size: .76rem;
+    }
+    .games-shipping-copy small {
+      font-size: .6rem;
+    }
+    .games-shipping-form {
+      grid-template-columns: 1fr;
+    }
+    .games-shipping-form button {
+      width: 100%;
+    }
+  }
+  /* ==================================================== */
 
   .games-layout { display: grid; grid-template-columns: 252px minmax(0, 1fr); gap: 32px; padding: 38px 0 88px; }
   .games-filters { align-self: start; position: sticky; top: 110px; background: #fff; border: 1px solid var(--games-line); }
@@ -305,6 +461,30 @@
     </form>
   </section>
 
+  <!-- ================== DHL SHIPPING ESTIMATE BAND ================== -->
+  <section class="games-shipping-band" aria-label="DHL shipping estimate">
+    <div class="games-shell games-shipping">
+      <span class="games-shipping-mark">DHL</span>
+      <div class="games-shipping-copy">
+        <strong>Ships worldwide via DHL Express</strong>
+        <small>Official DHL Express partner</small>
+      </div>
+      <div class="games-shipping-form">
+        <input
+          id="games-shipping-country"
+          type="text"
+          maxlength="2"
+          placeholder="Country code (e.g. US)"
+          aria-label="Destination country code"
+          autocomplete="country"
+        >
+        <button type="button" id="games-shipping-btn">Estimate</button>
+      </div>
+      <div id="games-shipping-result" class="games-shipping-result" role="status" aria-live="polite" hidden></div>
+    </div>
+  </section>
+  <!-- ============================================================== -->
+
   <div class="games-shell games-layout">
     <aside class="games-filters" id="gamesFilters">
       <div class="games-filter-heading"><h2>Refine results</h2><button id="closeGameFilters" type="button" aria-label="Close filters">×</button></div>
@@ -462,6 +642,11 @@
     const cartCheckout = document.getElementById('gamesCartCheckout');
     const cartClear = document.getElementById('clearGamesCart');
     const cartToast = document.getElementById('gamesCartToast');
+
+    const shippingInput  = document.getElementById('games-shipping-country');
+    const shippingBtn    = document.getElementById('games-shipping-btn');
+    const shippingResult = document.getElementById('games-shipping-result');
+
     const storageKey = 'fabs-games-cart';
     const usdKesRate = Number({{ fx_rate|float }});
     let cart = {};
@@ -631,6 +816,104 @@
     });
 
     renderCart();
+
+    // ================================================================
+    // DHL SHIPPING ESTIMATE
+    // ================================================================
+    const setShippingResult = (html, isError) => {
+      if (!html) {
+        shippingResult.hidden = true;
+        shippingResult.innerHTML = '';
+        return;
+      }
+      shippingResult.hidden = false;
+      shippingResult.innerHTML = isError
+        ? `<span class="games-shipping-error">${html}</span>`
+        : html;
+    };
+
+    shippingBtn?.addEventListener('click', async () => {
+      const country = (shippingInput.value || '').trim().toUpperCase();
+      if (country.length !== 2) {
+        setShippingResult('Please enter a 2-letter country code (e.g. US, KE, GB).', true);
+        return;
+      }
+
+      shippingBtn.disabled = true;
+      shippingBtn.textContent = 'Loading…';
+      setShippingResult('Fetching DHL Express rate…');
+
+      try {
+        const res = await fetch('/api/shipping/rates', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRFToken': window.FABS_CSRF_TOKEN
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            country: country,
+            weight_kg: 1.0,
+            length_cm: 30,
+            width_cm: 20,
+            height_cm: 10,
+            declared_value: 100,
+            currency: 'USD'
+          })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          setShippingResult(data.error || 'Could not fetch a shipping estimate.', true);
+          return;
+        }
+
+        const products = Array.isArray(data.products) ? data.products : [];
+        if (!products.length) {
+          setShippingResult('No DHL rates available for that destination.', true);
+          return;
+        }
+
+        const cheapest = products
+          .map(p => ({
+            name: p.productName || p.productCode || 'DHL Express',
+            price: p.totalPrice && p.totalPrice[0] ? Number(p.totalPrice[0].price) : null,
+            days: p.deliveryCapabilities && p.deliveryCapabilities.totalTransitDays || null
+          }))
+          .filter(p => p.price !== null)
+          .sort((a, b) => a.price - b.price)[0];
+
+        if (!cheapest) {
+          setShippingResult('No DHL rates available for that destination.', true);
+          return;
+        }
+
+        setShippingResult(
+          `Indicative 1kg parcel to <strong>${country}</strong>: from <strong>${moneyKes(cheapest.price)}</strong> <span class="games-shipping-green">· ${moneyUsd(cheapest.price)}</span>` +
+          `${cheapest.days ? ' · ' + cheapest.days + ' day(s) transit' : ''} · ${cheapest.name}. Full rate confirmed at cart &amp; checkout.`
+        );
+
+        // Persist for return visits
+        try {
+          sessionStorage.setItem('fabs_cart_shipping', JSON.stringify({ country: country }));
+        } catch (e) { /* ignore */ }
+      } catch (err) {
+        console.error(err);
+        setShippingResult('Shipping estimate is temporarily unavailable.', true);
+      } finally {
+        shippingBtn.disabled = false;
+        shippingBtn.textContent = 'Estimate';
+      }
+    });
+
+    // Prefill from previous session
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('fabs_cart_shipping') || '{}');
+      if (saved && saved.country && shippingInput && !shippingInput.value) {
+        shippingInput.value = saved.country;
+      }
+    } catch (e) { /* ignore */ }
   })();
 </script>
 {% endblock %}

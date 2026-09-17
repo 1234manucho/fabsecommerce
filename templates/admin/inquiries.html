@@ -1,1 +1,402 @@
-{% extends 'base.html' %}{% block title %}Gaming Inquiries | FABS Admin{% endblock %}{% block content %}<main class="light-page"><section class="small-hero"><div class="shell"><span class="kicker">Gaming sourcing desk</span><h1>Product inquiries.</h1><p>Review product, buyer, MOQ and destination requirements.</p></div></section><section class="section light"><div class="shell table-wrap"><table><thead><tr><th>Reference</th><th>Buyer</th><th>Product</th><th>Requirement</th><th>Destination</th><th>Status</th></tr></thead><tbody>{% for inquiry in inquiries %}<tr><td>{{ inquiry.reference }}</td><td><strong>{{ inquiry.company }}</strong><br><small>{{ inquiry.full_name }} · {{ inquiry.email }} · {{ inquiry.phone }}</small></td><td>{{ inquiry.game.title }}<br><small>{{ inquiry.game.supplier }}</small></td><td>{{ inquiry.quantity }}<br><small>{{ inquiry.requirements or 'No additional specifications' }}</small></td><td>{{ inquiry.destination }}<br><small>{{ inquiry.country }}</small></td><td><form class="status-form" method="post" action="{{ url_for('admin_inquiry_status',inquiry_id=inquiry.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="status" onchange="this.form.submit()">{% for value in ['submitted','reviewing','quoted','negotiating','won','closed'] %}<option value="{{ value }}" {% if inquiry.status==value %}selected{% endif %}>{{ value|title }}</option>{% endfor %}</select></form></td></tr>{% else %}<tr><td colspan="6">No gaming inquiries yet.</td></tr>{% endfor %}</tbody></table></div></section></main>{% endblock %}
+{% extends 'base.html' %}
+{% from 'macros.html' import status %}
+
+{% block title %}Gaming Inquiries | FABS Admin{% endblock %}
+
+{% block head %}
+<style>
+  .admin-hero-bg {
+    background:
+      radial-gradient(circle at 88% 20%, rgba(255, 204, 0, 0.14), transparent 28%),
+      linear-gradient(135deg, #11161b 0%, #1d242b 100%);
+  }
+  .admin-hero-bg::after {
+    content: "";
+    position: absolute;
+    right: -80px;
+    bottom: -140px;
+    width: 340px;
+    height: 340px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+  }
+  .admin-btn-primary {
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  }
+  .admin-btn-primary:hover {
+    background: #cc0000; border-color: #cc0000;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(255, 0, 0, 0.28);
+  }
+  .admin-btn-primary:focus-visible { outline: 3px solid rgba(255, 0, 0, 0.35); outline-offset: 3px; }
+
+  .inq-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  .inq-table thead tr {
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: #f7f8f9;
+  }
+  .inq-table th {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e0e3e6;
+    font-size: 0.68rem;
+    font-weight: 900;
+    color: #68717a;
+    white-space: nowrap;
+  }
+  .inq-table td {
+    padding: 16px;
+    border-bottom: 1px solid #e0e3e6;
+    vertical-align: top;
+  }
+  .inq-table tbody tr:hover { background: #fafbfc; }
+  .inq-table tbody tr:last-child td { border-bottom: 0; }
+
+  .inq-ref {
+    font-weight: 900;
+    color: #161a1f;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+  .inq-buyer-strong { display: block; font-weight: 850; color: #161a1f; font-size: 0.86rem; }
+  .inq-buyer-detail { display: block; margin-top: 4px; color: #68717a; font-size: 0.72rem; line-height: 1.5; }
+  .inq-buyer-detail a { color: #161a1f; text-decoration: none; border-bottom: 1px solid transparent; }
+  .inq-buyer-detail a:hover { border-bottom-color: #ff0000; color: #ff0000; }
+
+  .inq-product { font-weight: 800; color: #161a1f; font-size: 0.86rem; line-height: 1.35; }
+  .inq-product small { display: block; margin-top: 4px; color: #68717a; font-size: 0.7rem; font-weight: 700; }
+
+  .inq-qty {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: #eef2f7;
+    color: #161a1f;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    border-radius: 3px;
+  }
+  .inq-note {
+    display: block;
+    margin-top: 8px;
+    color: #68717a;
+    font-size: 0.72rem;
+    line-height: 1.55;
+    max-width: 280px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .inq-destination {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #161a1f;
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+  .inq-destination small { display: block; margin-top: 3px; color: #68717a; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .inq-status-form { display: inline-block; }
+  .inq-status-select {
+    min-height: 36px;
+    padding: 6px 32px 6px 12px;
+    border: 1px solid #cfd4d8;
+    background: #fff url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2368717a' d='M6 8.825L1.175 4 2.238 2.938 6 6.7l3.763-3.763L10.825 4z'/%3E%3C/svg%3E") no-repeat right 10px center;
+    background-size: 10px;
+    color: #161a1f;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 850;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+    min-width: 130px;
+  }
+  .inq-status-select:hover { border-color: #161a1f; }
+  .inq-status-select:focus { outline: none; border-color: #ff0000; box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.12); }
+
+  .inq-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+  .inq-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 0 11px;
+    font-size: 0.6rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 160ms ease, border-color 160ms ease;
+  }
+  .inq-pill.red { background: #ff0000; border-color: #ff0000; color: #fff; }
+  .inq-pill.red:hover { background: #cc0000; border-color: #cc0000; }
+  .inq-pill.outline { background: #fff; border-color: #cfd4d8; color: #161a1f; }
+  .inq-pill.outline:hover { border-color: #161a1f; background: #f4f5f6; }
+  .inq-pill.ghost { background: transparent; color: #68717a; }
+  .inq-pill.ghost:hover { color: #161a1f; background: #f4f5f6; }
+
+  /* Summary chips */
+  .inq-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .inq-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    background: #fff;
+    border: 1px solid #e0e3e6;
+    box-shadow: 0 10px 30px rgba(17, 24, 39, 0.04);
+    min-width: 140px;
+  }
+  .inq-chip span {
+    display: block;
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #68717a;
+  }
+  .inq-chip strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: #161a1f;
+  }
+  .inq-chip.is-active { border-left: 4px solid #ff0000; }
+  .inq-chip.is-won { border-left: 4px solid #21842a; }
+
+  @media (max-width: 760px) {
+    .inq-table thead { display: none; }
+    .inq-table,
+    .inq-table tbody,
+    .inq-table tr,
+    .inq-table td { display: block; width: 100%; }
+    .inq-table tr {
+      margin-bottom: 12px;
+      padding: 16px;
+      background: #fff;
+      border: 1px solid #e0e3e6;
+      box-shadow: 0 6px 20px rgba(17, 24, 39, 0.04);
+    }
+    .inq-table td {
+      padding: 6px 0;
+      border-bottom: 0;
+    }
+    .inq-table td::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 4px;
+      color: #8a9198;
+      font-size: 0.62rem;
+      font-weight: 900;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+    .inq-note { max-width: 100%; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="min-h-[70vh] bg-[#f4f5f6] text-[#161a1f]">
+
+  <!-- ================== HERO ================== -->
+  <section class="relative overflow-hidden admin-hero-bg text-white py-[clamp(48px,7vw,88px)]">
+    <div class="w-[min(1440px,calc(100%-40px))] mx-auto relative z-10 flex flex-wrap items-end justify-between gap-6">
+      <div class="min-w-0">
+        <a href="{{ url_for('admin_dashboard') }}"
+           class="inline-flex items-center gap-1.5 mb-5 text-[#bdc5cc] text-[0.7rem] font-black tracking-[0.05em] uppercase no-underline hover:text-white">
+          ← Back to dashboard
+        </a>
+        <span class="inline-flex items-center gap-2 mb-3.5 text-[#ff7479] text-[0.7rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-6 before:h-[2px] before:bg-current">
+          Gaming sourcing desk
+        </span>
+        <h1 class="m-0 text-[clamp(2rem,4.5vw,3.2rem)] tracking-[-0.055em] leading-[1] max-w-[820px]">
+          Product inquiries.
+        </h1>
+        <p class="mt-4 max-w-[680px] text-[#bdc5cc] text-[0.95rem] leading-[1.7]">
+          Review product, buyer, MOQ and destination requirements. Update the status as
+          you progress each inquiry through to quotation and closure.
+        </p>
+      </div>
+      <a href="{{ url_for('admin_orders') }}"
+         class="inline-flex items-center justify-center min-h-[44px] px-5 bg-white text-[#11161b] text-[0.72rem] font-black tracking-[0.05em] uppercase border border-white no-underline hover:bg-[#f4f5f6]">
+        View orders
+      </a>
+    </div>
+  </section>
+
+  <!-- ================== BODY ================== -->
+  <section class="py-[clamp(38px,6vw,72px)] pb-[88px]">
+    <div class="w-[min(1440px,calc(100%-40px))] mx-auto">
+
+      <!-- Summary chips -->
+      {% set total = inquiries|length %}
+      {% set submitted = inquiries|selectattr('status','equalto','submitted')|list|length %}
+      {% set reviewing = inquiries|selectattr('status','equalto','reviewing')|list|length %}
+      {% set quoted = inquiries|selectattr('status','equalto','quoted')|list|length %}
+      {% set won = inquiries|selectattr('status','equalto','won')|list|length %}
+      <div class="inq-summary">
+        <div class="inq-chip">
+          <div>
+            <span>Total inquiries</span>
+            <strong>{{ total }}</strong>
+          </div>
+        </div>
+        <div class="inq-chip is-active">
+          <div>
+            <span>New / submitted</span>
+            <strong>{{ submitted }}</strong>
+          </div>
+        </div>
+        <div class="inq-chip">
+          <div>
+            <span>Reviewing</span>
+            <strong>{{ reviewing }}</strong>
+          </div>
+        </div>
+        <div class="inq-chip">
+          <div>
+            <span>Quoted</span>
+            <strong>{{ quoted }}</strong>
+          </div>
+        </div>
+        <div class="inq-chip is-won">
+          <div>
+            <span>Won</span>
+            <strong>{{ won }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)] overflow-x-auto">
+        <table class="inq-table">
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>Buyer</th>
+              <th>Product</th>
+              <th>Requirement</th>
+              <th>Destination</th>
+              <th>Status</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for inquiry in inquiries %}
+            <tr>
+              <td data-label="Reference">
+                <span class="inq-ref">{{ inquiry.reference }}</span>
+                <small class="block mt-2 text-[0.66rem] text-[#8a9198] uppercase tracking-[0.04em] font-bold">
+                  {{ inquiry.created_at.strftime('%d %b %Y') }}
+                </small>
+              </td>
+
+              <td data-label="Buyer">
+                <span class="inq-buyer-strong">{{ inquiry.company }}</span>
+                <span class="inq-buyer-detail">
+                  {{ inquiry.full_name }}<br>
+                  <a href="mailto:{{ inquiry.email }}">{{ inquiry.email }}</a>
+                </span>
+                {% if inquiry.phone %}
+                <span class="inq-buyer-detail">
+                  <a href="tel:{{ inquiry.phone }}">{{ inquiry.phone }}</a>
+                </span>
+                {% endif %}
+              </td>
+
+              <td data-label="Product">
+                <span class="inq-product">
+                  {{ inquiry.game.title if inquiry.game else 'Product unavailable' }}
+                  {% if inquiry.game %}
+                  <small>{{ inquiry.game.supplier }}</small>
+                  {% endif %}
+                </span>
+              </td>
+
+              <td data-label="Requirement">
+                <span class="inq-qty">MOQ · {{ inquiry.quantity }}</span>
+                <span class="inq-note">{{ inquiry.requirements or 'No additional specifications' }}</span>
+              </td>
+
+              <td data-label="Destination">
+                <span class="inq-destination">
+                  {{ inquiry.destination }}
+                  <small>{{ inquiry.country }}</small>
+                </span>
+              </td>
+
+              <td data-label="Status">
+                <form class="inq-status-form" method="post" action="{{ url_for('admin_inquiry_status', inquiry_id=inquiry.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <select class="inq-status-select" name="status" onchange="this.form.submit()" aria-label="Inquiry status">
+                    {% for value in ['submitted','reviewing','quoted','negotiating','won','closed'] %}
+                    <option value="{{ value }}" {% if inquiry.status == value %}selected{% endif %}>{{ value|title }}</option>
+                    {% endfor %}
+                  </select>
+                </form>
+              </td>
+
+              <td data-label="Actions">
+                <div class="inq-actions">
+                  <a class="inq-pill red" href="mailto:{{ inquiry.email }}?subject=Re%3A%20FABS%20inquiry%20{{ inquiry.reference }}">
+                    Reply
+                  </a>
+                  {% if inquiry.game %}
+                  <a class="inq-pill outline" href="{{ url_for('game_detail', slug=inquiry.game.slug) }}" target="_blank" rel="noopener">
+                    Product ↗
+                  </a>
+                  {% endif %}
+                  {% if inquiry.quantity %}
+                  <a class="inq-pill outline"
+                     href="{{ url_for('games') }}#games-shipping-country"
+                     target="_blank" rel="noopener"
+                     title="Open the shipping estimator on the catalogue page">
+                    Ship est. ↗
+                  </a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" class="p-10 text-center text-[#68717a] text-sm">
+                No gaming inquiries yet. Buyer inquiries submitted from the catalogue will appear here.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </section>
+</main>
+{% endblock %}

@@ -12,22 +12,41 @@
   <meta name="twitter:card" content="summary_large_image">
   <title>{% block title %}FABS Trading Global E-Commerce{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{fabs:'#ed3138',ink:'#121820',paper:'#f5f6f7',whatsapp:'#20b85a'},fontFamily:{sans:['Inter','ui-sans-serif','system-ui']}}}}</script>
+  <script>tailwind.config={theme:{extend:{colors:{fabs:'#ed3138',ink:'#121820',paper:'#f5f6f7',whatsapp:'#20b85a',dhl:'#ffcc00'},fontFamily:{sans:['Inter','ui-sans-serif','system-ui']}}}}</script>
   <link rel="stylesheet" href="{{ url_for('static',filename='css/app.css') }}">
   <link rel="stylesheet" href="{{ url_for('static',filename='css/premium.css') }}">
   <link rel="stylesheet" href="{{ url_for('static',filename='css/immersive.css') }}">
   <link rel="stylesheet" href="{{ url_for('static',filename='css/games-store.css') }}">
   <link rel="stylesheet" href="{{ url_for('static',filename='css/global-sapphire.css') }}">
   <style>
-    :root{--fabs-red:#ed3138;--fabs-red-dark:#c71924;--fabs-ink:#13171c;--fabs-muted:#6c737c;--fabs-paper:#f4f5f6;--fabs-line:#e3e6e9;--fabs-white:#fff;--fabs-green:#20b85a;color-scheme:light}
+    :root{--fabs-red:#ed3138;--fabs-red-dark:#c71924;--fabs-ink:#13171c;--fabs-muted:#6c737c;--fabs-paper:#f4f5f6;--fabs-line:#e3e6e9;--fabs-white:#fff;--fabs-green:#20b85a;--dhl-yellow:#ffcc00;--dhl-red:#d40511;color-scheme:light}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#fff;color:var(--fabs-ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}body.menu-open{overflow:hidden}a{text-decoration:none;color:inherit}.skip-link{position:fixed;left:12px;top:-80px;z-index:500;background:#fff;color:#111;padding:10px 14px}.skip-link:focus{top:12px}.fabs-shell{width:min(1440px,calc(100% - 64px));margin-inline:auto}
-    .fabs-topline{height:31px;background:#16191d;color:#bbc0c6;display:flex;align-items:center;font-size:10px;letter-spacing:.05em}.fabs-topline .fabs-shell{display:flex;justify-content:space-between;gap:20px}.fabs-topline a{color:#fff;font-weight:700}.fabs-main-header{position:sticky;top:0;z-index:120;background:rgba(255,255,255,.97);border-bottom:1px solid #e7e8ea;box-shadow:0 8px 26px rgba(20,25,31,.06);backdrop-filter:blur(18px)}.fabs-nav-row{height:88px;display:flex;align-items:center;gap:42px}.fabs-brand{display:flex;align-items:center;width:282px;min-width:240px}.fabs-brand img{width:100%;height:62px;object-fit:contain;object-position:left center}.fabs-nav{display:flex;align-items:center;justify-content:center;gap:28px;margin-left:auto}.fabs-nav a{font-size:12px;font-weight:750;color:#343b43;padding:34px 0;position:relative;white-space:nowrap}.fabs-nav a:after{content:"";position:absolute;left:0;right:100%;bottom:24px;height:2px;background:var(--fabs-red);transition:.25s}.fabs-nav a:hover:after,.fabs-nav a.active:after{right:0}.fabs-nav a:hover,.fabs-nav a.active{color:#111}.fabs-nav-actions{display:flex;align-items:center;gap:10px}.fabs-nav-action{height:43px;padding:0 16px;border:1px solid #d9dde0;display:inline-flex;align-items:center;gap:9px;font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.06em;background:#fff}.fabs-nav-action svg{width:17px}.fabs-nav-action.primary{background:var(--fabs-red);border-color:var(--fabs-red);color:#fff}.fabs-cart-count{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#171a1f;color:#fff;font-size:8px}.fabs-menu{display:none;border:0;background:#171a1f;color:#fff;width:44px;height:44px;place-items:center;cursor:pointer}.fabs-menu svg{width:22px}
+    .fabs-topline{height:31px;background:#16191d;color:#bbc0c6;display:flex;align-items:center;font-size:10px;letter-spacing:.05em}.fabs-topline .fabs-shell{display:flex;justify-content:space-between;gap:20px;align-items:center}.fabs-topline a{color:#fff;font-weight:700}.fabs-topline-dhl{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;background:var(--dhl-yellow);color:#111;font-weight:900;font-size:9px;letter-spacing:.08em;text-transform:uppercase;border-radius:2px}.fabs-topline-dhl svg{width:12px;height:12px}
+    .fabs-main-header{position:sticky;top:0;z-index:120;background:rgba(255,255,255,.97);border-bottom:1px solid #e7e8ea;box-shadow:0 8px 26px rgba(20,25,31,.06);backdrop-filter:blur(18px)}.fabs-nav-row{height:88px;display:flex;align-items:center;gap:42px}.fabs-brand{display:flex;align-items:center;width:282px;min-width:240px}.fabs-brand img{width:100%;height:62px;object-fit:contain;object-position:left center}.fabs-nav{display:flex;align-items:center;justify-content:center;gap:28px;margin-left:auto}.fabs-nav a{font-size:12px;font-weight:750;color:#343b43;padding:34px 0;position:relative;white-space:nowrap}.fabs-nav a:after{content:"";position:absolute;left:0;right:100%;bottom:24px;height:2px;background:var(--fabs-red);transition:.25s}.fabs-nav a:hover:after,.fabs-nav a.active:after{right:0}.fabs-nav a:hover,.fabs-nav a.active{color:#111}.fabs-nav-actions{display:flex;align-items:center;gap:10px}.fabs-nav-action{height:43px;padding:0 16px;border:1px solid #d9dde0;display:inline-flex;align-items:center;gap:9px;font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.06em;background:#fff}.fabs-nav-action svg{width:17px}.fabs-nav-action.primary{background:var(--fabs-red);border-color:var(--fabs-red);color:#fff}.fabs-cart-count{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#171a1f;color:#fff;font-size:8px}.fabs-menu{display:none;border:0;background:#171a1f;color:#fff;width:44px;height:44px;place-items:center;cursor:pointer}.fabs-menu svg{width:22px}
     .flash-stack{position:fixed;right:20px;top:132px;z-index:180;display:grid;gap:8px}.flash{min-width:280px;padding:14px 44px 14px 16px;background:#fff;color:#17202a;border-left:4px solid #2f80ed;box-shadow:0 15px 40px rgba(0,0,0,.17);font-size:11px;position:relative}.flash.success{border-color:#20a65c}.flash.danger{border-color:#ed3138}.flash.warning{border-color:#e4a21b}.flash button{position:absolute;right:12px;top:8px;border:0;background:none;font-size:20px;cursor:pointer}
     .fabs-footer{background:#101317;color:#fff;padding-top:78px}.fabs-footer-cta{display:flex;justify-content:space-between;align-items:end;gap:40px;padding-bottom:58px;border-bottom:1px solid rgba(255,255,255,.11)}.fabs-footer-cta span,.fabs-footer h3{font-size:9px;color:#aab0b7;letter-spacing:.14em;text-transform:uppercase}.fabs-footer-cta h2{font-size:clamp(34px,4vw,56px);line-height:1.03;letter-spacing:-.045em;margin:12px 0 0}.fabs-footer-buttons{display:flex;gap:10px}.fabs-footer-buttons a{height:50px;padding:0 20px;display:flex;align-items:center;font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.08em;border:1px solid rgba(255,255,255,.24)}.fabs-footer-buttons a:first-child{background:var(--fabs-red);border-color:var(--fabs-red)}.fabs-footer-grid{display:grid;grid-template-columns:1.7fr repeat(4,1fr);gap:45px;padding:56px 0}.fabs-footer-brand img{width:265px;filter:brightness(0) invert(1);opacity:.92}.fabs-footer-brand p{max-width:370px;color:#898f97;font-size:11px;line-height:1.85;margin-top:22px}.fabs-footer-grid>div:not(:first-child){display:flex;flex-direction:column;gap:13px}.fabs-footer-grid a{font-size:11px;color:#a8adb4}.fabs-footer-grid a:hover{color:#fff}.fabs-footer-bottom{border-top:1px solid rgba(255,255,255,.09);padding:24px 0 31px;color:#757b83;font-size:9px;display:flex;justify-content:space-between;gap:20px}
+
+    /* ============ DHL OFFICIAL PARTNER BADGES ============ */
+    .fabs-partner-strip{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding:22px 0;margin-top:36px;border-top:1px solid rgba(255,255,255,.09);border-bottom:1px solid rgba(255,255,255,.09)}
+    .fabs-partner-strip>span{font-size:9px;color:#8a9096;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+    .fabs-partner-badge{display:inline-flex;align-items:center;gap:10px;padding:9px 14px;background:#1a1e24;border:1px solid rgba(255,255,255,.09);border-radius:4px;color:#fff;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+    .fabs-partner-badge:hover{border-color:rgba(255,204,0,.5);background:#20252c}
+    .fabs-partner-badge .fabs-partner-mark{display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:22px;padding:0 6px;background:var(--dhl-yellow);color:var(--dhl-red);font-weight:900;font-size:11px;letter-spacing:-.02em;border-radius:2px}
+    .fabs-partner-badge small{display:block;color:#8a9096;font-size:8px;letter-spacing:.08em;font-weight:700;margin-top:2px}
+    .fabs-partner-badge .fabs-partner-text{display:flex;flex-direction:column;text-align:left}
+
+    .fabs-partner-cta{display:inline-flex;align-items:center;gap:12px;padding:10px 14px;background:linear-gradient(135deg,#1a1e24 0%,#11151a 100%);border:1px solid rgba(255,204,0,.25);border-radius:4px;margin-top:22px}
+    .fabs-partner-cta .fabs-partner-mark{display:grid;place-items:center;min-width:52px;height:26px;padding:0 8px;background:var(--dhl-yellow);color:var(--dhl-red);font-weight:900;font-size:13px;letter-spacing:-.02em;border-radius:3px}
+    .fabs-partner-cta .fabs-partner-copy strong{display:block;color:#fff;font-size:11px;font-weight:800;letter-spacing:.03em}
+    .fabs-partner-cta .fabs-partner-copy small{display:block;color:#9aa0a6;font-size:9px;margin-top:2px;letter-spacing:.04em}
+
+    .fabs-footer-dhl-note{display:inline-flex;align-items:center;gap:8px;color:#9aa0a6;font-size:9px;letter-spacing:.05em}
+    .fabs-footer-dhl-note b{color:var(--dhl-yellow);font-weight:900;letter-spacing:-.02em}
+
     .fabs-whatsapp{position:fixed;right:24px;bottom:24px;z-index:220;display:flex;align-items:center;gap:10px}.fabs-whatsapp-label{padding:10px 13px;background:#fff;color:#17202a;border:1px solid #e0e5e9;box-shadow:0 10px 30px rgba(15,28,40,.13);font-size:10px;font-weight:800;opacity:0;transform:translateX(8px);pointer-events:none;transition:.25s}.fabs-whatsapp:hover .fabs-whatsapp-label,.fabs-whatsapp:focus-within .fabs-whatsapp-label{opacity:1;transform:none}.fabs-whatsapp-trigger{position:relative;width:62px;height:62px;border:0;border-radius:50%;display:grid;place-items:center;background:var(--fabs-green);color:#fff;box-shadow:0 16px 38px rgba(22,161,76,.35);cursor:pointer;transition:.25s}.fabs-whatsapp-trigger:hover{background:#159a49;transform:translateY(-3px)}.fabs-whatsapp-trigger svg{width:32px;height:32px}.fabs-whatsapp-trigger>i{position:absolute;right:2px;top:3px;width:14px;height:14px;border:3px solid #fff;border-radius:50%;background:#ed464a}.fabs-whatsapp-panel{position:absolute;right:0;bottom:76px;width:min(350px,calc(100vw - 32px));background:#fff;color:#17202a;border:1px solid #dfe5e9;box-shadow:0 24px 70px rgba(8,20,31,.24);opacity:0;visibility:hidden;transform:translateY(12px) scale(.97);transform-origin:bottom right;transition:.25s;overflow:hidden}.fabs-whatsapp.open .fabs-whatsapp-panel{opacity:1;visibility:visible;transform:none}.fabs-whatsapp-panel>header{position:relative;padding:24px 24px 20px;background:linear-gradient(135deg,#12221b,#15472d);color:#fff}.fabs-whatsapp-panel>header>span{display:flex;align-items:center;gap:7px;color:#72e69c;font-size:7px;font-weight:850;letter-spacing:.16em}.fabs-whatsapp-panel>header>span i{width:7px;height:7px;border-radius:50%;background:#65e393;box-shadow:0 0 0 5px rgba(101,227,147,.12)}.fabs-whatsapp-panel>header button{position:absolute;right:14px;top:12px;border:0;background:transparent;color:#c7dbd0;font-size:24px;cursor:pointer}.fabs-whatsapp-panel>header strong{display:block;font-size:19px;margin:13px 0 6px}.fabs-whatsapp-panel>header p{margin:0;color:#b6c9be;font-size:9px}.fabs-whatsapp-panel>div{padding:10px}.fabs-whatsapp-panel>div>a{min-height:82px;padding:12px;display:grid;grid-template-columns:42px 1fr auto;gap:12px;align-items:center;color:#17202a;border-bottom:1px solid #e8ecef;transition:.2s}.fabs-whatsapp-panel>div>a:hover{background:#f1faf4}.fabs-whatsapp-panel>div>a>span{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#e5f8ec;color:#1aaa55}.fabs-whatsapp-panel>div>a svg{width:23px}.fabs-whatsapp-panel>div>a>div{display:flex;flex-direction:column}.fabs-whatsapp-panel small{color:#7a838b;font-size:7px;text-transform:uppercase;letter-spacing:.1em}.fabs-whatsapp-panel strong{font-size:12px;margin:3px 0}.fabs-whatsapp-panel b{color:#1b9f50;font-size:9px}.fabs-whatsapp-panel>footer{padding:12px 20px;background:#f4f6f7;color:#788188;text-align:center;font-size:7px}.fabs-whatsapp.open .fabs-whatsapp-label{opacity:0;visibility:hidden}
     @media(max-width:1120px){.fabs-nav{gap:18px}.fabs-nav a{font-size:10px}.fabs-nav-action{padding:0 12px}.fabs-brand{width:235px;min-width:220px}}
-    @media(max-width:900px){.fabs-shell{width:min(100% - 30px,1440px)}.fabs-topline{display:none}.fabs-nav-row{height:72px}.fabs-brand{width:220px;min-width:0}.fabs-brand img{height:54px}.fabs-menu{display:grid;margin-left:auto}.fabs-nav{position:fixed;inset:72px 0 0;background:#fff;display:none;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:28px 22px;gap:0;overflow:auto}.fabs-nav.open{display:flex}.fabs-nav a{padding:17px 5px;border-bottom:1px solid #eceeef;font-size:13px}.fabs-nav a:after{display:none}.fabs-nav-actions .account-link{display:none}.fabs-nav-action{height:42px}.fabs-footer-grid{grid-template-columns:1fr 1fr}.fabs-footer-brand{grid-column:1/-1}.fabs-footer-cta{align-items:flex-start;flex-direction:column}.fabs-footer-bottom{flex-direction:column}.fabs-whatsapp{right:15px;bottom:76px}.fabs-whatsapp-label{display:none}.fabs-whatsapp-trigger{width:56px;height:56px}.fabs-whatsapp-panel{bottom:68px}}
-    @media(max-width:560px){.fabs-brand{width:175px}.fabs-nav-action.primary{padding:0 11px;font-size:8px}.fabs-nav-action.primary span{display:none}.fabs-footer-buttons{width:100%;flex-direction:column}.fabs-footer-buttons a{justify-content:center}.fabs-footer-grid{grid-template-columns:1fr}.fabs-footer-brand{grid-column:auto}.fabs-footer-cta h2{font-size:36px}}
+    @media(max-width:900px){.fabs-shell{width:min(100% - 30px,1440px)}.fabs-topline{display:none}.fabs-nav-row{height:72px}.fabs-brand{width:220px;min-width:0}.fabs-brand img{height:54px}.fabs-menu{display:grid;margin-left:auto}.fabs-nav{position:fixed;inset:72px 0 0;background:#fff;display:none;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:28px 22px;gap:0;overflow:auto}.fabs-nav.open{display:flex}.fabs-nav a{padding:17px 5px;border-bottom:1px solid #eceeef;font-size:13px}.fabs-nav a:after{display:none}.fabs-nav-actions .account-link{display:none}.fabs-nav-action{height:42px}.fabs-footer-grid{grid-template-columns:1fr 1fr}.fabs-footer-brand{grid-column:1/-1}.fabs-footer-cta{align-items:flex-start;flex-direction:column}.fabs-footer-bottom{flex-direction:column}.fabs-whatsapp{right:15px;bottom:76px}.fabs-whatsapp-label{display:none}.fabs-whatsapp-trigger{width:56px;height:56px}.fabs-whatsapp-panel{bottom:68px}.fabs-partner-strip{gap:10px 14px}}
+    @media(max-width:560px){.fabs-brand{width:175px}.fabs-nav-action.primary{padding:0 11px;font-size:8px}.fabs-nav-action.primary span{display:none}.fabs-footer-buttons{width:100%;flex-direction:column}.fabs-footer-buttons a{justify-content:center}.fabs-footer-grid{grid-template-columns:1fr}.fabs-footer-brand{grid-column:auto}.fabs-footer-cta h2{font-size:36px}.fabs-partner-badge{width:100%}.fabs-partner-badge .fabs-partner-text{flex:1}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.fabs-whatsapp-trigger,.fabs-whatsapp-label,.fabs-whatsapp-panel{transition:none!important}}
   </style>
   {% block head %}{% endblock %}
@@ -35,7 +54,16 @@
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
-<div class="fabs-topline"><div class="fabs-shell"><span>GLOBAL GAMING SOURCING · REAL PRODUCT MEDIA · COMMERCIAL MOQ</span><span>Support: <a href="mailto:{{ support_email }}">{{ support_email }}</a></span></div></div>
+<div class="fabs-topline"><div class="fabs-shell">
+  <span>GLOBAL GAMING SOURCING · REAL PRODUCT MEDIA · COMMERCIAL MOQ</span>
+  <span style="display:inline-flex;align-items:center;gap:14px">
+    <span class="fabs-topline-dhl">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 7h8a4 4 0 0 1 0 8H2V7Zm3 3v2h5a1 1 0 0 0 0-2H5Zm9-3h3a4 4 0 0 1 0 8h-3V7Zm3 3v2h.5a1 1 0 0 0 0-2H17Zm5-3h3v2h-3V7Z"/></svg>
+      Official DHL Express Partner
+    </span>
+    <span>Support: <a href="mailto:{{ support_email }}">{{ support_email }}</a></span>
+  </span>
+</div></div>
 <header class="fabs-main-header"><div class="fabs-shell fabs-nav-row">
   <a class="fabs-brand" href="{{ url_for('index') }}"><img src="{{ url_for('static',filename='images/fabs-brand-v2.png') }}" alt="FABS Trading Global E-Commerce"></a>
   <nav class="fabs-nav" id="fabs-nav" aria-label="Primary navigation">
@@ -57,9 +85,59 @@
 {% with messages=get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flash-stack">{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}<button type="button" aria-label="Close notification">×</button></div>{% endfor %}</div>{% endif %}{% endwith %}
 <div id="main-content">{% block content %}{% endblock %}</div>
 <footer class="fabs-footer"><div class="fabs-shell">
-  <div class="fabs-footer-cta"><div><span>FABS GLOBAL E-COMMERCE</span><h2>Millions of products.<br>One accountable partner.</h2></div><div class="fabs-footer-buttons"><a href="{{ url_for('games') }}">Explore games</a><a href="{{ url_for('inquiry') }}">Open an inquiry</a></div></div>
-  <div class="fabs-footer-grid"><div class="fabs-footer-brand"><img src="{{ url_for('static',filename='images/fabs-brand-v2.png') }}" alt="FABS Trading"><p>A professional international marketplace for commercial gaming systems, venue equipment, tabletop production and structured sourcing support.</p></div><div><h3>Marketplace</h3><a href="{{ url_for('games') }}">All games</a><a href="{{ url_for('games',category='VR Simulator') }}">VR systems</a><a href="{{ url_for('games',category='Arcade Game') }}">Arcade machines</a><a href="{{ url_for('games',category='Board Game') }}">Tabletop games</a></div><div><h3>Buyer services</h3><a href="{{ url_for('inquiry') }}">Post an RFQ</a><a href="{{ url_for('how_it_works') }}">How it works</a><a href="{{ url_for('support') }}">Buyer support</a><a href="{{ url_for('contact') }}">Contact</a></div><div><h3>Company</h3><a href="{{ url_for('about') }}">About FABS</a><a href="{{ url_for('media_page',page_name='partners') }}">Partners</a><a href="{{ url_for('compliance') }}">Compliance</a><a href="{{ url_for('news') }}">Newsroom</a></div><div><h3>Legal</h3><a href="{{ url_for('terms') }}">Terms</a><a href="{{ url_for('privacy') }}">Privacy</a><a href="{{ url_for('refunds') }}">Refunds</a>{% if current_user.is_authenticated %}<form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-left text-[11px] text-[#a8adb4]" type="submit">Sign out</button></form>{% endif %}</div></div>
-  <div class="fabs-footer-bottom"><span>© {{ current_year }} FABS Trading Global E-Commerce</span><span>Secure checkout · Traceable inquiries · Global sourcing support</span></div>
+  <div class="fabs-footer-cta">
+    <div>
+      <span>FABS GLOBAL E-COMMERCE</span>
+      <h2>Millions of products.<br>One accountable partner.</h2>
+      <div class="fabs-partner-cta">
+        <span class="fabs-partner-mark">DHL</span>
+        <div class="fabs-partner-copy">
+          <strong>Official DHL Express Shipping Partner</strong>
+          <small>Tracked international delivery · Duties &amp; taxes calculated at checkout</small>
+        </div>
+      </div>
+    </div>
+    <div class="fabs-footer-buttons">
+      <a href="{{ url_for('games') }}">Explore games</a>
+      <a href="{{ url_for('inquiry') }}">Open an inquiry</a>
+    </div>
+  </div>
+
+  <!-- ========== PARTNER STRIP WITH DHL ========== -->
+  <div class="fabs-partner-strip" aria-label="Our official partners">
+    <span>Official shipping &amp; logistics partners</span>
+    <div class="fabs-partner-badge" title="Official DHL Express shipping partner">
+      <span class="fabs-partner-mark">DHL</span>
+      <span class="fabs-partner-text">
+        <strong>DHL Express</strong>
+        <small>Official shipping partner</small>
+      </span>
+    </div>
+  </div>
+
+  <div class="fabs-footer-grid">
+    <div class="fabs-footer-brand">
+      <img src="{{ url_for('static',filename='images/fabs-brand-v2.png') }}" alt="FABS Trading">
+      <p>A professional international marketplace for commercial gaming systems, venue equipment, tabletop production and structured sourcing support.</p>
+      <div style="margin-top:18px">
+        <span class="fabs-partner-badge" style="background:transparent;border-color:rgba(255,204,0,.28)">
+          <span class="fabs-partner-mark">DHL</span>
+          <span class="fabs-partner-text">
+            <strong style="color:#fff">DHL Express</strong>
+            <small>Official shipping partner</small>
+          </span>
+        </span>
+      </div>
+    </div>
+    <div><h3>Marketplace</h3><a href="{{ url_for('games') }}">All games</a><a href="{{ url_for('games',category='VR Simulator') }}">VR systems</a><a href="{{ url_for('games',category='Arcade Game') }}">Arcade machines</a><a href="{{ url_for('games',category='Board Game') }}">Tabletop games</a></div>
+    <div><h3>Buyer services</h3><a href="{{ url_for('inquiry') }}">Post an RFQ</a><a href="{{ url_for('how_it_works') }}">How it works</a><a href="{{ url_for('support') }}">Buyer support</a><a href="{{ url_for('contact') }}">Contact</a></div>
+    <div><h3>Shipping</h3><a href="{{ url_for('how_it_works') }}">DHL Express rates</a><a href="{{ url_for('how_it_works') }}">Track your order</a><a href="{{ url_for('refunds') }}">Returns &amp; refunds</a><a href="{{ url_for('contact') }}">Customs &amp; duties</a></div>
+    <div><h3>Company</h3><a href="{{ url_for('about') }}">About FABS</a><a href="{{ url_for('media_page',page_name='partners') }}">Partners</a><a href="{{ url_for('compliance') }}">Compliance</a><a href="{{ url_for('news') }}">Newsroom</a></div>
+  </div>
+  <div class="fabs-footer-bottom">
+    <span>© {{ current_year }} FABS Trading Global E-Commerce</span>
+    <span class="fabs-footer-dhl-note">Powered by <b>DHL Express</b> · Secure checkout · Traceable inquiries</span>
+  </div>
 </div></footer>
 
 <div class="fabs-whatsapp" data-whatsapp>

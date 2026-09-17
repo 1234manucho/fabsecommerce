@@ -1,1 +1,414 @@
-{% extends 'base.html' %}{% from 'macros.html' import field %}{% block title %}{{ title }} | FABS Admin{% endblock %}{% block content %}<main class="light-page"><section class="small-hero"><div class="shell"><span class="kicker">Catalogue</span><h1>{{ title }}.</h1></div></section><section class="section light"><form class="form-card large-form" method="post">{{ form.hidden_tag() }}<div class="form-grid">{{ field(form.title) }}{{ field(form.slug) }}{{ field(form.genre) }}{{ field(form.platform) }}{{ field(form.edition) }}{{ field(form.region) }}{{ field(form.price) }}{{ field(form.compare_price) }}{{ field(form.stock_count) }}{{ field(form.image_url) }}</div>{{ field(form.description) }}<label class="check-row">{{ form.is_featured() }} {{ form.is_featured.label.text }}</label><label class="check-row">{{ form.is_active() }} {{ form.is_active.label.text }}</label>{{ form.submit(class_='button primary') }}</form></section></main>{% endblock %}
+{% extends 'base.html' %}
+{% from 'macros.html' import field %}
+
+{% block title %}{{ title }} | FABS Admin{% endblock %}
+
+{% block head %}
+<style>
+  .admin-hero-bg {
+    background:
+      radial-gradient(circle at 88% 20%, rgba(255, 204, 0, 0.14), transparent 28%),
+      linear-gradient(135deg, #11161b 0%, #1d242b 100%);
+  }
+  .admin-hero-bg::after {
+    content: "";
+    position: absolute;
+    right: -80px;
+    bottom: -140px;
+    width: 340px;
+    height: 340px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+  }
+  .admin-btn-primary {
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  }
+  .admin-btn-primary:hover {
+    background: #cc0000; border-color: #cc0000;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(255, 0, 0, 0.28);
+  }
+  .admin-btn-primary:focus-visible { outline: 3px solid rgba(255, 0, 0, 0.35); outline-offset: 3px; }
+
+  .admin-form-card {
+    background: #fff;
+    border: 1px solid #e0e3e6;
+    box-shadow: 0 18px 55px rgba(17, 24, 39, 0.06);
+    padding: clamp(24px, 4vw, 42px);
+  }
+
+  .admin-section {
+    padding-bottom: 24px;
+    margin-bottom: 26px;
+    border-bottom: 1px solid #e0e3e6;
+  }
+  .admin-section:last-of-type {
+    border-bottom: 0;
+    padding-bottom: 0;
+    margin-bottom: 22px;
+  }
+
+  .admin-section h2 {
+    margin: 0;
+    font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+    letter-spacing: -0.035em;
+    line-height: 1.2;
+  }
+  .admin-section p {
+    margin: 8px 0 0;
+    color: #68717a;
+    font-size: 0.85rem;
+    line-height: 1.65;
+  }
+
+  .admin-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    color: #ff7479;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .admin-kicker::before {
+    content: "";
+    width: 20px;
+    height: 2px;
+    background: currentColor;
+  }
+
+  .admin-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 20px;
+  }
+  .admin-form-grid .span-2 {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 640px) {
+    .admin-form-grid {
+      grid-template-columns: 1fr;
+    }
+    .admin-form-grid .span-2 {
+      grid-column: auto;
+    }
+  }
+
+  .admin-form-grid label {
+    color: #32383e;
+    font-size: 0.76rem;
+    font-weight: 850;
+  }
+  .admin-form-grid input,
+  .admin-form-grid select,
+  .admin-form-grid textarea {
+    width: 100%;
+    min-height: 52px;
+    padding: 12px 14px;
+    border: 1px solid #cfd4d8;
+    border-radius: 0;
+    background: #fff;
+    color: #161a1f;
+    font: inherit;
+    font-size: 0.9rem;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .admin-form-grid input:focus,
+  .admin-form-grid select:focus,
+  .admin-form-grid textarea:focus {
+    border-color: #ff0000;
+    box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.12);
+    outline: none;
+  }
+  .admin-form-grid textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  .admin-check-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 11px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    background: #fff;
+    border: 1px solid #e0e3e6;
+    color: #4f5860;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    cursor: pointer;
+  }
+  .admin-check-row input {
+    width: 18px;
+    height: 18px;
+    margin: 1px 0 0;
+    accent-color: #ff0000;
+  }
+
+  /* DHL shipping section */
+  .admin-shipping-section {
+    padding: 24px;
+    background: #fffdf3;
+    border: 1px solid #e0e3e6;
+    border-left: 4px solid #ffcc00;
+  }
+  .admin-shipping-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .admin-shipping-mark {
+    display: grid;
+    place-items: center;
+    min-width: 52px;
+    height: 26px;
+    padding: 0 8px;
+    background: #ffcc00;
+    color: #d40511;
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: -0.02em;
+    border-radius: 3px;
+  }
+  .admin-shipping-head h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    letter-spacing: -0.025em;
+  }
+  .admin-shipping-head p {
+    margin: 3px 0 0;
+    color: #68717a;
+    font-size: 0.8rem;
+    line-height: 1.55;
+  }
+
+  /* Unit hint inside field labels */
+  .unit-hint {
+    color: #8a9198;
+    font-size: 0.66rem;
+    font-weight: 700;
+    margin-left: 4px;
+  }
+
+  .admin-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 26px;
+    margin-top: 8px;
+    border-top: 1px solid #e0e3e6;
+  }
+  .admin-form-actions .admin-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    padding: 0 26px;
+    border: 1px solid #ff0000;
+    background: #ff0000;
+    color: #fff;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .admin-form-actions .admin-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    padding: 0 22px;
+    border: 1px solid #161a1f;
+    background: #fff;
+    color: #161a1f;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 160ms ease, border-color 160ms ease;
+  }
+  .admin-form-actions .admin-btn-secondary:hover {
+    background: #f4f5f6;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="min-h-[70vh] bg-[#f4f5f6] text-[#161a1f]">
+
+  <!-- ================== HERO ================== -->
+  <section class="relative overflow-hidden admin-hero-bg text-white py-[clamp(48px,7vw,88px)]">
+    <div class="w-[min(1180px,calc(100%-40px))] mx-auto relative z-10">
+      <a href="{{ url_for('admin_dashboard') }}"
+         class="inline-flex items-center gap-1.5 mb-5 text-[#bdc5cc] text-[0.7rem] font-black tracking-[0.05em] uppercase no-underline hover:text-white">
+        ← Back to dashboard
+      </a>
+      <span class="inline-flex items-center gap-2 mb-3.5 text-[#ff7479] text-[0.7rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-6 before:h-[2px] before:bg-current">
+        Catalogue
+      </span>
+      <h1 class="m-0 text-[clamp(2rem,4.5vw,3.2rem)] tracking-[-0.055em] leading-[1] max-w-[820px]">
+        {{ title }}.
+      </h1>
+      <p class="mt-4 max-w-[660px] text-[#bdc5cc] text-[0.95rem] leading-[1.7]">
+        Set the product details and shipping dimensions. Shipping data feeds DHL Express
+        rate quotes and shipment creation automatically.
+      </p>
+    </div>
+  </section>
+
+  <!-- ================== BODY ================== -->
+  <section class="py-[clamp(38px,6vw,72px)] pb-[88px]">
+    <div class="w-[min(1180px,calc(100%-40px))] mx-auto">
+      <form method="post" class="admin-form-card" novalidate>
+        {{ form.hidden_tag() }}
+
+        <!-- ================== PRODUCT DETAILS ================== -->
+        <section class="admin-section">
+          <span class="admin-kicker">Product information</span>
+          <h2>Product details</h2>
+          <p>
+            The name, edition, region and pricing shown on the catalogue page. The slug
+            is used in the product URL — keep it lowercase and hyphenated.
+          </p>
+
+          <div class="admin-form-grid">
+            {{ field(form.title) }}
+            {{ field(form.slug) }}
+            {{ field(form.genre) }}
+            {{ field(form.platform) }}
+            {{ field(form.edition) }}
+            {{ field(form.region) }}
+            {{ field(form.price) }}
+            {{ field(form.compare_price) }}
+            {{ field(form.stock_count) }}
+            {{ field(form.image_url) }}
+          </div>
+        </section>
+
+        <!-- ================== DESCRIPTION ================== -->
+        <section class="admin-section">
+          <span class="admin-kicker">Product narrative</span>
+          <h2>Description</h2>
+          <p>
+            A clear description of the product. Include platform, hardware requirements,
+            warranty and any customisation options available to buyers.
+          </p>
+
+          <div class="admin-form-grid">
+            <div class="span-2">
+              {{ field(form.description) }}
+            </div>
+          </div>
+        </section>
+
+        <!-- ================== DHL SHIPPING DIMENSIONS ================== -->
+        <section class="admin-section">
+          <div class="admin-shipping-section">
+            <div class="admin-shipping-head">
+              <span class="admin-shipping-mark">DHL</span>
+              <div>
+                <h2>Shipping &amp; customs</h2>
+                <p>
+                  Weight and dimensions are used to calculate live DHL Express shipping
+                  rates at checkout. The HS code is printed on the customs invoice.
+                </p>
+              </div>
+            </div>
+
+            <div class="admin-form-grid">
+              <label class="block">
+                <span class="block mb-2 text-[0.76rem] font-extrabold tracking-wide text-[#32383e]">
+                  Weight <span class="unit-hint">(kg per unit)</span>
+                </span>
+                {{ form.weight_kg(class_='w-full min-h-[52px] px-3.5 py-3 border border-[#cfd4d8] bg-white text-[#161a1f] text-sm rounded-none focus:outline-none focus:border-[#ff0000] focus:ring-4 focus:ring-red-500/10', placeholder='e.g. 2.5') }}
+                {% if form.weight_kg.errors %}
+                  <span class="block mt-1.5 text-xs font-semibold text-red-600">{{ form.weight_kg.errors[0] }}</span>
+                {% endif %}
+              </label>
+
+              <label class="block">
+                <span class="block mb-2 text-[0.76rem] font-extrabold tracking-wide text-[#32383e]">
+                  HS code <span class="unit-hint">(customs harmonised code)</span>
+                </span>
+                {{ form.hs_code(class_='w-full min-h-[52px] px-3.5 py-3 border border-[#cfd4d8] bg-white text-[#161a1f] text-sm rounded-none focus:outline-none focus:border-[#ff0000] focus:ring-4 focus:ring-red-500/10', placeholder='e.g. 9504.50.00') }}
+                {% if form.hs_code.errors %}
+                  <span class="block mt-1.5 text-xs font-semibold text-red-600">{{ form.hs_code.errors[0] }}</span>
+                {% endif %}
+              </label>
+
+              <label class="block">
+                <span class="block mb-2 text-[0.76rem] font-extrabold tracking-wide text-[#32383e]">
+                  Length <span class="unit-hint">(cm)</span>
+                </span>
+                {{ form.length_cm(class_='w-full min-h-[52px] px-3.5 py-3 border border-[#cfd4d8] bg-white text-[#161a1f] text-sm rounded-none focus:outline-none focus:border-[#ff0000] focus:ring-4 focus:ring-red-500/10', placeholder='e.g. 40') }}
+                {% if form.length_cm.errors %}
+                  <span class="block mt-1.5 text-xs font-semibold text-red-600">{{ form.length_cm.errors[0] }}</span>
+                {% endif %}
+              </label>
+
+              <label class="block">
+                <span class="block mb-2 text-[0.76rem] font-extrabold tracking-wide text-[#32383e]">
+                  Width <span class="unit-hint">(cm)</span>
+                </span>
+                {{ form.width_cm(class_='w-full min-h-[52px] px-3.5 py-3 border border-[#cfd4d8] bg-white text-[#161a1f] text-sm rounded-none focus:outline-none focus:border-[#ff0000] focus:ring-4 focus:ring-red-500/10', placeholder='e.g. 30') }}
+                {% if form.width_cm.errors %}
+                  <span class="block mt-1.5 text-xs font-semibold text-red-600">{{ form.width_cm.errors[0] }}</span>
+                {% endif %}
+              </label>
+
+              <label class="block">
+                <span class="block mb-2 text-[0.76rem] font-extrabold tracking-wide text-[#32383e]">
+                  Height <span class="unit-hint">(cm)</span>
+                </span>
+                {{ form.height_cm(class_='w-full min-h-[52px] px-3.5 py-3 border border-[#cfd4d8] bg-white text-[#161a1f] text-sm rounded-none focus:outline-none focus:border-[#ff0000] focus:ring-4 focus:ring-red-500/10', placeholder='e.g. 20') }}
+                {% if form.height_cm.errors %}
+                  <span class="block mt-1.5 text-xs font-semibold text-red-600">{{ form.height_cm.errors[0] }}</span>
+                {% endif %}
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================== PUBLISHING ================== -->
+        <section class="admin-section">
+          <span class="admin-kicker">Publishing</span>
+          <h2>Visibility</h2>
+          <p>
+            Featured products appear on the homepage. Inactive products are hidden from
+            the catalogue but retained in the database.
+          </p>
+
+          <div style="margin-top: 18px;">
+            <label class="admin-check-row">
+              {{ form.is_featured() }}
+              <span>{{ form.is_featured.label.text }}</span>
+            </label>
+
+            <label class="admin-check-row">
+              {{ form.is_active() }}
+              <span>{{ form.is_active.label.text }}</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- ================== ACTIONS ================== -->
+        <div class="admin-form-actions">
+          {{ form.submit(class_='admin-btn-primary', value='Save game') }}
+          <a href="{{ url_for('admin_dashboard') }}" class="admin-btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+{% endblock %}

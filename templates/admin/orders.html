@@ -1,1 +1,240 @@
-{% extends 'base.html' %}{% from 'macros.html' import status %}{% block title %}Orders | FABS Admin{% endblock %}{% block content %}<main class="light-page"><section class="small-hero"><div class="shell"><span class="kicker">Operations</span><h1>Digital orders.</h1></div></section><section class="section light"><div class="shell table-wrap"><table><thead><tr><th>Reference</th><th>Customer</th><th>Total</th><th>Payment</th><th>Order</th><th>Date</th></tr></thead><tbody>{% for order in orders %}<tr><td><a href="{{ url_for('order_detail',reference=order.reference) }}">{{ order.reference }}</a></td><td>{{ order.email }}</td><td>${{ '%.2f'|format(order.total) }}</td><td>{{ status(order.payment_status) }}</td><td>{{ status(order.status) }}</td><td>{{ order.created_at.strftime('%d %b %Y') }}</td></tr>{% endfor %}</tbody></table></div></section></main>{% endblock %}
+{% extends 'base.html' %}
+{% from 'macros.html' import status %}
+
+{% block title %}Orders | FABS Admin{% endblock %}
+
+{% block head %}
+<style>
+  .admin-btn-primary { transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
+  .admin-btn-primary:hover { background: #cc0000; border-color: #cc0000; transform: translateY(-1px); box-shadow: 0 10px 25px rgba(255, 0, 0, 0.28); }
+  .admin-btn-primary:focus-visible { outline: 3px solid rgba(255, 0, 0, 0.35); outline-offset: 3px; }
+  .admin-btn-dhl { transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease; }
+  .admin-btn-dhl:hover { background: #ffd633; border-color: #ffd633; transform: translateY(-1px); }
+  .admin-row-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .admin-pill-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px;
+    font-size: 0.62rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase;
+    cursor: pointer; border: 1px solid transparent; text-decoration: none; white-space: nowrap; }
+  .admin-pill-btn.red { background: #ff0000; border-color: #ff0000; color: #fff; }
+  .admin-pill-btn.red:hover { background: #cc0000; border-color: #cc0000; }
+  .admin-pill-btn.dark { background: #161a1f; border-color: #161a1f; color: #fff; }
+  .admin-pill-btn.dark:hover { background: #000; border-color: #000; }
+  .admin-pill-btn.yellow { background: #ffcc00; border-color: #ffcc00; color: #111; }
+  .admin-pill-btn.yellow:hover { background: #ffd633; border-color: #ffd633; }
+  .admin-pill-btn.outline { background: #fff; border-color: #cfd4d8; color: #161a1f; }
+  .admin-pill-btn.outline:hover { border-color: #161a1f; background: #f4f5f6; }
+  .admin-pill-btn.ghost { background: transparent; border-color: transparent; color: #68717a; }
+  .admin-pill-btn.ghost:hover { color: #161a1f; background: #f4f5f6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="min-h-[70vh] bg-[#f4f5f6] text-[#161a1f]">
+
+  <!-- HERO -->
+  <section class="relative overflow-hidden text-white py-14" style="background: radial-gradient(circle at 88% 20%, rgba(255, 204, 0, 0.16), transparent 28%), linear-gradient(135deg, #11161b 0%, #1d242b 100%);">
+    <div class="w-[min(1440px,calc(100%-40px))] mx-auto relative z-10">
+      <span class="inline-flex items-center gap-2 mb-3 text-[#ff7479] text-[0.7rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">Operations</span>
+      <h1 class="m-0 text-[clamp(2rem,4.5vw,3.2rem)] tracking-[-0.05em] leading-none">Digital orders.</h1>
+      <p class="mt-4 max-w-[720px] text-[#bdc5cc] text-[0.95rem] leading-[1.7]">
+        Manage payments, generate DHL Express shipments, request pickups, download labels
+        and monitor live tracking — all from one place.
+      </p>
+    </div>
+  </section>
+
+  <!-- BODY -->
+  <section class="py-10">
+    <div class="w-[min(1440px,calc(100%-40px))] mx-auto bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)] overflow-x-auto">
+      <table class="w-full border-collapse text-sm">
+        <thead>
+          <tr class="text-left text-[0.68rem] uppercase tracking-[0.06em] text-[#68717a] bg-[#f7f8f9]">
+            <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Reference</th>
+            <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Customer</th>
+            <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Total</th>
+            <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Payment</th>
+            <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Order</th>
+            <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Shipping</th>
+            <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">DHL Tracking</th>
+            <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Date</th>
+            <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr class="border-b border-[#e0e3e6] hover:bg-[#fafbfc]" data-order-id="{{ order.id }}" data-tracking="{{ order.dhl_tracking_number or '' }}">
+            <td class="px-4 py-3.5 font-extrabold">
+              <a href="{{ url_for('order_detail', reference=order.reference) }}" class="text-[#161a1f] no-underline border-b border-transparent hover:border-[#ff0000] hover:text-[#ff0000]">
+                {{ order.reference }}
+              </a>
+            </td>
+            <td class="px-4 py-3.5 text-[#68717a]">{{ order.email }}</td>
+            <td class="px-4 py-3.5 font-black whitespace-nowrap">${{ '%.2f'|format(order.total) }}</td>
+            <td class="px-4 py-3.5">{{ status(order.payment_status) }}</td>
+            <td class="px-4 py-3.5">{{ status(order.status) }}</td>
+            <td class="px-4 py-3.5">{{ status(order.shipping_status or 'pending') }}</td>
+            <td class="px-4 py-3.5 whitespace-nowrap">
+              {% if order.dhl_tracking_number %}
+              <a href="https://www.dhl.com/global-en/home/tracking.html?tracking-id={{ order.dhl_tracking_number }}" target="_blank" rel="noopener" class="font-mono text-[0.78rem] text-[#d40511] hover:underline">
+                {{ order.dhl_tracking_number }} ↗
+              </a>
+              {% else %}
+              <span class="text-[#8a9198] text-xs">—</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3.5 whitespace-nowrap text-[#68717a] text-[0.8rem]">{{ order.created_at.strftime('%d %b %Y') }}</td>
+            <td class="px-4 py-3.5">
+              <div class="admin-row-actions">
+                {% if not order.dhl_tracking_number %}
+                <form method="post" action="{{ url_for('admin_create_shipment', order_id=order.id) }}" class="m-0">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="admin-pill-btn red admin-btn-primary" onclick="return confirm('Create DHL shipment for {{ order.reference }}?');">
+                    Create DHL
+                  </button>
+                </form>
+                {% else %}
+                <!-- Download dropdown -->
+                <div class="relative" x-data>
+                  <button type="button" class="admin-pill-btn outline js-dl-toggle">Download ▾</button>
+                  <div class="js-dl-menu hidden absolute right-0 mt-1 z-20 bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.15)] min-w-[180px]">
+                    <button type="button" class="js-download-doc block w-full text-left px-4 py-2.5 text-[0.7rem] font-black uppercase tracking-[0.05em] hover:bg-[#f4f5f6]" data-doc-type="label">Shipping label</button>
+                    <button type="button" class="js-download-doc block w-full text-left px-4 py-2.5 text-[0.7rem] font-black uppercase tracking-[0.05em] hover:bg-[#f4f5f6]" data-doc-type="invoice">Commercial invoice</button>
+                    <button type="button" class="js-download-doc block w-full text-left px-4 py-2.5 text-[0.7rem] font-black uppercase tracking-[0.05em] hover:bg-[#f4f5f6]" data-doc-type="waybillDoc">Waybill</button>
+                  </div>
+                </div>
+
+                <!-- Track -->
+                <button type="button" class="admin-pill-btn dark js-track">Track</button>
+
+                <!-- Request pickup -->
+                <form method="post" action="{{ url_for('admin_request_pickup', order_id=order.id) }}" class="m-0">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="admin-pill-btn yellow admin-btn-dhl" onclick="return confirm('Request DHL pickup for {{ order.reference }}?');">
+                    Pickup
+                  </button>
+                </form>
+                {% endif %}
+                <a class="admin-pill-btn ghost" href="{{ url_for('order_detail', reference=order.reference) }}">View</a>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="9" class="px-4 py-10 text-center text-[#68717a]">No orders yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<!-- Tracking modal -->
+<div id="track-backdrop" class="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm hidden"></div>
+<div id="track-modal" class="fixed inset-0 z-[1010] hidden grid place-items-center p-5">
+  <div class="w-[min(640px,100%)] max-h-[85vh] overflow-y-auto bg-white border border-[#e0e3e6] shadow-[0_40px_100px_rgba(0,0,0,0.35)]">
+    <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#e0e3e6] sticky top-0 bg-white z-10">
+      <h3 class="m-0 text-[1.05rem] tracking-[-0.02em]">DHL tracking</h3>
+      <button class="w-9 h-9 border border-[#e0e3e6] bg-white text-xl leading-none cursor-pointer" id="track-close" aria-label="Close">×</button>
+    </div>
+    <div class="p-5" id="track-body"><p class="text-center text-sm text-[#68717a]">Loading…</p></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const csrf = '{{ csrf_token() }}';
+
+  // ============ DOWNLOAD DOCUMENTS ============
+  document.querySelectorAll('tr[data-order-id]').forEach(row => {
+    const tracking = row.dataset.tracking;
+    if (!tracking) return;
+
+    // Toggle dropdown
+    const toggle = row.querySelector('.js-dl-toggle');
+    const menu   = row.querySelector('.js-dl-menu');
+    toggle?.addEventListener('click', e => {
+      e.stopPropagation();
+      document.querySelectorAll('.js-dl-menu').forEach(m => { if (m !== menu) m.classList.add('hidden'); });
+      menu?.classList.toggle('hidden');
+    });
+
+    // Download
+    row.querySelectorAll('.js-download-doc').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        menu?.classList.add('hidden');
+        const type = btn.dataset.docType;
+        const original = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Loading…';
+        try {
+          const res = await fetch(`/api/shipping/${encodeURIComponent(tracking)}/documents?type=${encodeURIComponent(type)}`, {
+            headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Could not fetch document.');
+          const url = data.url || data.document?.url || data.documents?.[0]?.url ||
+                      (data.content ? 'data:application/pdf;base64,' + data.content : null);
+          if (!url) throw new Error('Document URL missing.');
+          window.open(url, '_blank', 'noopener');
+        } catch (err) {
+          alert(err.message || 'Could not download document.');
+        } finally {
+          btn.disabled = false; btn.textContent = original;
+        }
+      });
+    });
+
+    // Track modal
+    const trackBtn = row.querySelector('.js-track');
+    trackBtn?.addEventListener('click', async () => {
+      openTrack();
+      try {
+        const res = await fetch(`/admin/orders/${encodeURIComponent(row.dataset.orderId)}/tracking`, {
+          headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not fetch tracking.');
+
+        const events = (data.shipments?.[0]?.events) || data.events || data.data || [];
+        if (!Array.isArray(events) || events.length === 0) {
+          document.getElementById('track-body').innerHTML = '<p class="text-center text-sm text-[#68717a]">No tracking events yet.</p>';
+          return;
+        }
+        document.getElementById('track-body').innerHTML = `
+          <div class="grid gap-3">
+            ${events.map(e => {
+              const ts = e.timestamp || e.date || e.dateTime || '';
+              const date = ts ? new Date(ts).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+              const desc = e.description || e.status || e.eventDescription || 'Update';
+              const loc  = e.location?.address?.addressLocality || e.location?.address?.countryCode || '';
+              return `
+                <div class="grid grid-cols-[140px_minmax(0,1fr)] gap-4 py-3 border-b border-[#e0e3e6] last:border-b-0">
+                  <span class="text-[0.7rem] text-[#8a9198] uppercase tracking-wide">${date}</span>
+                  <span class="text-[0.85rem]"><strong>${desc}</strong>${loc ? ' · ' + loc : ''}</span>
+                </div>`;
+            }).join('')}
+          </div>`;
+      } catch (err) {
+        document.getElementById('track-body').innerHTML = `<p class="text-center text-sm text-[#b91c1c]">${err.message}</p>`;
+      }
+    });
+  });
+
+  function openTrack() {
+    const back = document.getElementById('track-backdrop');
+    const modal = document.getElementById('track-modal');
+    back.classList.remove('hidden'); modal.classList.remove('hidden');
+    document.getElementById('track-body').innerHTML = '<p class="text-center text-sm text-[#68717a]">Loading…</p>';
+  }
+  function closeTrack() {
+    document.getElementById('track-backdrop').classList.add('hidden');
+    document.getElementById('track-modal').classList.add('hidden');
+  }
+  document.getElementById('track-close')?.addEventListener('click', closeTrack);
+  document.getElementById('track-backdrop')?.addEventListener('click', closeTrack);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTrack(); });
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.js-dl-menu').forEach(m => m.classList.add('hidden'));
+  });
+})();
+</script>
+{% endblock %}

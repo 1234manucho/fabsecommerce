@@ -1,1 +1,469 @@
-{% extends 'base.html' %}{% from 'macros.html' import status %}{% block title %}My Account | FABS Trading{% endblock %}{% block content %}<main class="light-page"><section class="small-hero"><div class="shell account-head"><div><span class="kicker">Customer portal</span><h1>{{ current_user.full_name }}</h1><p>Track gaming inquiries, purchases and commodity requests.</p></div><form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button secondary">Sign out</button></form></div></section><section class="section light"><div class="shell portal-grid"><section><span class="kicker">Gaming sourcing</span><h2>Product inquiries</h2>{% for inquiry in inquiries %}<div class="portal-row"><span><strong>{{ inquiry.reference }} · {{ inquiry.game.title }}</strong><small>{{ inquiry.quantity }} to {{ inquiry.destination }}</small></span>{{ status(inquiry.status) }}</div>{% else %}<div class="empty">No gaming inquiries yet.</div>{% endfor %}</section><section><span class="kicker">Commerce</span><h2>Orders</h2>{% for order in orders %}<a class="portal-row" href="{{ url_for('order_detail',reference=order.reference) }}"><span><strong>{{ order.reference }}</strong><small>{{ order.created_at.strftime('%d %b %Y') }}</small></span>{{ status(order.status) }}<b>${{ '%.2f'|format(order.total) }}</b></a>{% else %}<div class="empty">No orders yet.</div>{% endfor %}</section><section><span class="kicker">Industrial trade</span><h2>Commodity RFQs</h2>{% for quote in quotes %}<div class="portal-row"><span><strong>{{ quote.reference }} · {{ quote.commodity.name }}</strong><small>{{ quote.quantity }} to {{ quote.destination }}</small></span>{{ status(quote.status) }}</div>{% else %}<div class="empty">No commodity enquiries yet.</div>{% endfor %}</section></div></section></main>{% endblock %}
+{% extends 'base.html' %}
+{% from 'macros.html' import status %}
+
+{% block title %}My Account | FABS Trading{% endblock %}
+
+{% block head %}
+<style>
+  .account-hero-bg {
+    background:
+      radial-gradient(circle at 88% 20%, rgba(255, 0, 0, 0.14), transparent 28%),
+      linear-gradient(135deg, #11161b 0%, #1d242b 100%);
+  }
+  .account-hero-bg::after {
+    content: "";
+    position: absolute;
+    right: -80px;
+    bottom: -140px;
+    width: 340px;
+    height: 340px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+  }
+
+  .account-btn-primary {
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  }
+  .account-btn-primary:hover {
+    background: #cc0000; border-color: #cc0000;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(255, 0, 0, 0.28);
+  }
+  .account-btn-primary:focus-visible { outline: 3px solid rgba(255, 0, 0, 0.35); outline-offset: 3px; }
+
+  .account-btn-outline { transition: background-color 160ms ease, border-color 160ms ease; }
+  .account-btn-outline:hover { border-color: #161a1f; background: #f4f5f6; }
+
+  /* Address cards */
+  .address-card {
+    position: relative;
+    display: grid;
+    gap: 10px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #e0e3e6;
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  }
+  .address-card:hover {
+    border-color: #cfd4d8;
+    box-shadow: 0 14px 40px rgba(17, 24, 39, 0.07);
+    transform: translateY(-1px);
+  }
+  .address-card.is-default {
+    border-color: #ff0000;
+    box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.08);
+  }
+
+  .address-badge-default {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px;
+    background: #ff0000; color: #fff;
+    font-size: 0.6rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase;
+    border-radius: 2px;
+  }
+  .address-badge-label {
+    display: inline-flex; align-items: center;
+    padding: 3px 9px;
+    background: #f4f5f6; color: #161a1f;
+    font-size: 0.6rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase;
+    border-radius: 2px;
+  }
+
+  .address-card strong { font-size: 0.92rem; }
+  .address-card .address-lines { font-size: 0.82rem; line-height: 1.6; color: #4f5860; }
+  .address-card .address-country { font-weight: 800; color: #161a1f; }
+
+  .address-actions { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 12px; margin-top: auto; border-top: 1px dashed #e0e3e6; }
+  .address-actions button,
+  .address-actions form button { font: inherit; cursor: pointer; }
+
+  .address-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    min-height: 34px; padding: 0 12px;
+    font-size: 0.62rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase;
+    border: 1px solid #e0e3e6; background: #fff; color: #161a1f;
+    transition: border-color 160ms ease, background-color 160ms ease;
+  }
+  .address-pill:hover { border-color: #161a1f; background: #f4f5f6; }
+  .address-pill.danger { color: #b91c1c; border-color: #f4d3d3; }
+  .address-pill.danger:hover { background: #fdeeee; border-color: #b91c1c; }
+  .address-pill.success { color: #1c6b34; border-color: #cce8d4; }
+  .address-pill.success:hover { background: #eefaf0; border-color: #1c6b34; }
+
+  /* Modal */
+  .fabs-modal-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(7, 16, 29, 0.72); backdrop-filter: blur(3px); opacity: 0; transition: opacity 200ms ease; }
+  .fabs-modal-backdrop.is-visible { opacity: 1; }
+  .fabs-modal { position: fixed; inset: 0; z-index: 1010; display: grid; place-items: center; padding: 20px; pointer-events: none; }
+  .fabs-modal.is-open { pointer-events: auto; }
+  .fabs-modal-inner {
+    width: min(600px, 100%); max-height: 90vh; overflow-y: auto; background: #fff; border: 1px solid #e0e3e6;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.35);
+    opacity: 0; transform: translateY(12px) scale(0.98);
+    transition: opacity 200ms ease, transform 200ms ease;
+  }
+  .fabs-modal.is-open .fabs-modal-inner { opacity: 1; transform: none; }
+  .fabs-modal-head { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px; border-bottom: 1px solid #e0e3e6; background: #fff; z-index: 2; }
+  .fabs-modal-head h3 { margin: 0; font-size: 1.15rem; letter-spacing: -0.02em; }
+  .fabs-modal-close { width: 40px; height: 40px; border: 1px solid #e0e3e6; background: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; }
+  .fabs-modal-body { padding: 24px; }
+
+  .fabs-field { display: grid; gap: 6px; margin-bottom: 14px; }
+  .fabs-field span { font-size: 0.7rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: #4f5860; }
+  .fabs-field input,
+  .fabs-field select {
+    width: 100%; min-height: 48px; padding: 10px 14px;
+    border: 1px solid #cfd4d8; background: #fff; color: #161a1f;
+    font: inherit; font-size: 0.9rem;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .fabs-field input:focus,
+  .fabs-field select:focus {
+    border-color: #ff0000; box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.12); outline: none;
+  }
+  .fabs-field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  @media (max-width: 520px) { .fabs-field-row { grid-template-columns: 1fr; } }
+
+  .fabs-checkbox {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start;
+    padding: 12px 14px; margin: 6px 0 18px;
+    border: 1px solid #e0e3e6; background: #fff;
+    font-size: 0.82rem; color: #4f5860; cursor: pointer;
+  }
+  .fabs-checkbox input { width: 18px; height: 18px; margin-top: 1px; accent-color: #ff0000; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="min-h-[70vh] bg-[#f4f5f6] text-[#161a1f]">
+
+  <!-- ================== HERO ================== -->
+  <section class="relative overflow-hidden account-hero-bg text-white py-[clamp(48px,7vw,88px)]">
+    <div class="w-[min(1180px,calc(100%-40px))] mx-auto relative z-10 flex flex-wrap items-end justify-between gap-6">
+      <div class="min-w-0">
+        <span class="inline-flex items-center gap-2 mb-3.5 text-[#ff7479] text-[0.7rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-6 before:h-[2px] before:bg-current">
+          Customer portal
+        </span>
+        <h1 class="m-0 text-[clamp(2rem,4.5vw,3.4rem)] tracking-[-0.055em] leading-[1] max-w-[820px]">
+          {{ current_user.full_name }}
+        </h1>
+        <p class="mt-4 max-w-[660px] text-[#bdc5cc] text-[0.95rem] leading-[1.7]">
+          Track gaming inquiries, purchases, saved delivery addresses and commodity requests.
+        </p>
+      </div>
+      <form method="post" action="{{ url_for('logout') }}" class="m-0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit"
+          class="inline-flex items-center justify-center min-h-[44px] px-5 bg-white text-[#11161b] text-[0.72rem] font-black tracking-[0.05em] uppercase border border-white hover:bg-[#f4f5f6] cursor-pointer">
+          Sign out
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ================== BODY ================== -->
+  <section class="py-[clamp(38px,6vw,72px)] pb-[88px]">
+    <div class="w-[min(1180px,calc(100%-40px))] mx-auto grid gap-8">
+
+      <!-- ================== SAVED ADDRESSES ================== -->
+      <section id="addresses" class="grid gap-5">
+        <header class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span class="inline-flex items-center gap-2 mb-2 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">
+              Delivery
+            </span>
+            <h2 class="m-0 text-[clamp(1.5rem,2.6vw,2rem)] tracking-[-0.035em] leading-tight">
+              Saved addresses
+            </h2>
+            <p class="mt-2 max-w-[640px] text-[#68717a] text-[0.88rem] leading-[1.6]">
+              Store your shipping addresses once and pick them at checkout. Your default
+              address is used when you place an order.
+            </p>
+          </div>
+          <button type="button" id="address-open-new"
+            class="account-btn-primary inline-flex items-center gap-2 min-h-[46px] px-5 bg-[#ff0000] text-white text-[0.72rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] cursor-pointer">
+            + Add address
+          </button>
+        </header>
+
+        {% if addresses %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {% for addr in addresses %}
+          <article class="address-card {% if addr.is_default %}is-default{% endif %}" data-address-id="{{ addr.id }}">
+            <div class="flex flex-wrap items-center gap-2">
+              {% if addr.is_default %}
+                <span class="address-badge-default">✓ Default</span>
+              {% endif %}
+              <span class="address-badge-label">{{ addr.label }}</span>
+            </div>
+
+            <strong>{{ addr.full_name }}</strong>
+
+            <div class="address-lines">
+              {% if addr.company %}<div>{{ addr.company }}</div>{% endif %}
+              <div>{{ addr.address_line1 }}</div>
+              {% if addr.address_line2 %}<div>{{ addr.address_line2 }}</div>{% endif %}
+              <div>{{ addr.city }}{% if addr.postal_code %} · {{ addr.postal_code }}{% endif %}</div>
+              <div class="address-country">{{ addr.country }}</div>
+              {% if addr.phone %}<div class="mt-2 text-[#68717a]">Phone: {{ addr.phone }}</div>{% endif %}
+            </div>
+
+            <div class="address-actions">
+              <button type="button" class="address-pill js-edit-address"
+                data-id="{{ addr.id }}"
+                data-label="{{ addr.label }}"
+                data-full-name="{{ addr.full_name }}"
+                data-company="{{ addr.company or '' }}"
+                data-phone="{{ addr.phone or '' }}"
+                data-country="{{ addr.country }}"
+                data-city="{{ addr.city }}"
+                data-postal-code="{{ addr.postal_code }}"
+                data-address-line1="{{ addr.address_line1 }}"
+                data-address-line2="{{ addr.address_line2 or '' }}"
+                data-is-default="{{ 'true' if addr.is_default else 'false' }}">
+                Edit
+              </button>
+
+              {% if not addr.is_default %}
+              <form method="post" action="{{ url_for('address_set_default', address_id=addr.id) }}" class="m-0">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="address-pill success">Set as default</button>
+              </form>
+              {% endif %}
+
+              <form method="post" action="{{ url_for('address_delete', address_id=addr.id) }}" class="m-0"
+                    onsubmit="return confirm('Remove this address?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="address-pill danger">Delete</button>
+              </form>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-8 bg-white border border-[#e0e3e6] text-center">
+          <p class="m-0 text-[#68717a] text-[0.9rem]">
+            You haven't saved any delivery addresses yet.
+            <button type="button" id="address-open-new-empty" class="text-[#ff0000] font-black underline ml-1">
+              Add your first address
+            </button>
+          </p>
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- ================== ORDERS ================== -->
+      <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+        <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
+          <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Orders</h2>
+          <span class="text-[0.7rem] font-black tracking-[0.05em] uppercase text-[#68717a]">
+            {{ orders|length }} order{{ '' if orders|length == 1 else 's' }}
+          </span>
+        </div>
+
+        {% for order in orders %}
+        <a href="{{ url_for('order_detail', reference=order.reference) }}"
+           class="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-4 items-center px-5 py-4 border-b border-[#e0e3e6] last:border-b-0 no-underline text-[#161a1f] hover:bg-[#fafbfc]">
+          <div class="min-w-0">
+            <strong class="block text-[0.9rem]">{{ order.reference }}</strong>
+            <small class="block mt-1 text-[0.7rem] text-[#68717a] uppercase tracking-[0.04em] font-bold">
+              {{ order.created_at.strftime('%d %b %Y') }}
+            </small>
+          </div>
+          {{ status(order.status) }}
+          <b class="text-[0.9rem] whitespace-nowrap">${{ '%.2f'|format(order.total) }}</b>
+        </a>
+        {% else %}
+        <div class="p-6 text-center text-[#68717a] text-sm">No orders yet.</div>
+        {% endfor %}
+      </section>
+
+      <!-- ================== PRODUCT INQUIRIES ================== -->
+      <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+        <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
+          <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Gaming product inquiries</h2>
+          <span class="text-[0.7rem] font-black tracking-[0.05em] uppercase text-[#68717a]">
+            {{ inquiries|length }} inquir{{ 'y' if inquiries|length == 1 else 'ies' }}
+          </span>
+        </div>
+
+        {% for inquiry in inquiries %}
+        <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-4 items-center px-5 py-4 border-b border-[#e0e3e6] last:border-b-0">
+          <div class="min-w-0">
+            <strong class="block text-[0.9rem]">{{ inquiry.reference }} · {{ inquiry.game.title if inquiry.game else 'Product' }}</strong>
+            <small class="block mt-1 text-[0.7rem] text-[#68717a]">
+              {{ inquiry.quantity }} to {{ inquiry.destination }}
+            </small>
+          </div>
+          {{ status(inquiry.status) }}
+        </div>
+        {% else %}
+        <div class="p-6 text-center text-[#68717a] text-sm">No gaming inquiries yet.</div>
+        {% endfor %}
+      </section>
+
+      <!-- ================== COMMODITY RFQs ================== -->
+      <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+        <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
+          <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Commodity RFQs</h2>
+          <span class="text-[0.7rem] font-black tracking-[0.05em] uppercase text-[#68717a]">
+            {{ quotes|length }} RFQ{{ '' if quotes|length == 1 else 's' }}
+          </span>
+        </div>
+
+        {% for quote in quotes %}
+        <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-4 items-center px-5 py-4 border-b border-[#e0e3e6] last:border-b-0">
+          <div class="min-w-0">
+            <strong class="block text-[0.9rem]">{{ quote.reference }} · {{ quote.commodity.name if quote.commodity else 'Commodity' }}</strong>
+            <small class="block mt-1 text-[0.7rem] text-[#68717a]">{{ quote.quantity }} to {{ quote.destination }}</small>
+          </div>
+          {{ status(quote.status) }}
+        </div>
+        {% else %}
+        <div class="p-6 text-center text-[#68717a] text-sm">No commodity enquiries yet.</div>
+        {% endfor %}
+      </section>
+
+    </div>
+  </section>
+</main>
+
+<!-- ================== ADDRESS MODAL ================== -->
+<div id="address-backdrop" class="fabs-modal-backdrop" hidden></div>
+<div id="address-modal" class="fabs-modal" hidden role="dialog" aria-modal="true" aria-labelledby="address-modal-title">
+  <div class="fabs-modal-inner">
+    <div class="fabs-modal-head">
+      <h3 id="address-modal-title">Add a new address</h3>
+      <button type="button" class="fabs-modal-close" id="address-close" aria-label="Close">×</button>
+    </div>
+
+    <div class="fabs-modal-body">
+      <form id="address-form" method="post" action="{{ url_for('address_create') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="fabs-field-row">
+          <label class="fabs-field">
+            <span>Label (e.g. Home, Office)</span>
+            <input type="text" name="label" value="Home" maxlength="80" required>
+          </label>
+          <label class="fabs-field">
+            <span>Full name</span>
+            <input type="text" name="full_name" value="{{ current_user.full_name }}" maxlength="140" required>
+          </label>
+        </div>
+
+        <div class="fabs-field-row">
+          <label class="fabs-field">
+            <span>Company (optional)</span>
+            <input type="text" name="company" maxlength="180">
+          </label>
+          <label class="fabs-field">
+            <span>Phone</span>
+            <input type="tel" name="phone" maxlength="40">
+          </label>
+        </div>
+
+        <label class="fabs-field">
+          <span>Address line 1</span>
+          <input type="text" name="address_line1" maxlength="200" required>
+        </label>
+
+        <label class="fabs-field">
+          <span>Address line 2 (optional)</span>
+          <input type="text" name="address_line2" maxlength="200">
+        </label>
+
+        <div class="fabs-field-row">
+          <label class="fabs-field">
+            <span>City</span>
+            <input type="text" name="city" maxlength="100" required>
+          </label>
+          <label class="fabs-field">
+            <span>Postal code</span>
+            <input type="text" name="postal_code" maxlength="20" required>
+          </label>
+        </div>
+
+        <label class="fabs-field">
+          <span>Country code (ISO-2)</span>
+          <input type="text" name="country" maxlength="2" placeholder="e.g. KE, US, GB" required
+                 style="text-transform: uppercase;">
+        </label>
+
+        <label class="fabs-checkbox">
+          <input type="checkbox" name="is_default">
+          <span>Set this as my default delivery address</span>
+        </label>
+
+        <button type="submit"
+          class="account-btn-primary flex items-center justify-center w-full min-h-[52px] px-5 bg-[#ff0000] text-white text-[0.76rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] cursor-pointer">
+          Save address
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $modal     = document.getElementById('address-modal');
+  const $backdrop  = document.getElementById('address-backdrop');
+  const $form      = document.getElementById('address-form');
+  const $title     = document.getElementById('address-modal-title');
+  const $close     = document.getElementById('address-close');
+
+  const openModal  = () => {
+    $backdrop.hidden = false; $modal.hidden = false;
+    requestAnimationFrame(() => { $backdrop.classList.add('is-visible'); $modal.classList.add('is-open'); });
+  };
+  const closeModal = () => {
+    $backdrop.classList.remove('is-visible'); $modal.classList.remove('is-open');
+    setTimeout(() => { $backdrop.hidden = true; $modal.hidden = true; }, 200);
+  };
+
+  const resetForNew = () => {
+    $form.action = "{{ url_for('address_create') }}";
+    $form.reset();
+    $form.querySelector('input[name="label"]').value = 'Home';
+    $form.querySelector('input[name="full_name"]').value = "{{ current_user.full_name }}";
+    $form.querySelector('input[name="is_default"]').checked = false;
+    $title.textContent = 'Add a new address';
+    openModal();
+  };
+
+  // Open-new buttons
+  document.getElementById('address-open-new')?.addEventListener('click', resetForNew);
+  document.getElementById('address-open-new-empty')?.addEventListener('click', resetForNew);
+
+  // Edit button
+  document.querySelectorAll('.js-edit-address').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      $form.action = `/account/addresses/${id}/edit`;
+      $form.querySelector('input[name="label"]').value = btn.dataset.label || '';
+      $form.querySelector('input[name="full_name"]').value = btn.dataset.fullName || '';
+      $form.querySelector('input[name="company"]').value = btn.dataset.company || '';
+      $form.querySelector('input[name="phone"]').value = btn.dataset.phone || '';
+      $form.querySelector('input[name="country"]').value = btn.dataset.country || '';
+      $form.querySelector('input[name="city"]').value = btn.dataset.city || '';
+      $form.querySelector('input[name="postal_code"]').value = btn.dataset.postalCode || '';
+      $form.querySelector('input[name="address_line1"]').value = btn.dataset.addressLine1 || '';
+      $form.querySelector('input[name="address_line2"]').value = btn.dataset.addressLine2 || '';
+      $form.querySelector('input[name="is_default"]').checked = btn.dataset.isDefault === 'true';
+      $title.textContent = 'Edit address';
+      openModal();
+    });
+  });
+
+  $close?.addEventListener('click', closeModal);
+  $backdrop?.addEventListener('click', closeModal);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$modal.hidden) closeModal(); });
+
+  // Auto-scroll to #addresses after a save/delete action
+  if (window.location.hash === '#addresses') {
+    setTimeout(() => {
+      document.getElementById('addresses')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+})();
+</script>
+{% endblock %}

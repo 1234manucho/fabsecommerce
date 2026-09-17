@@ -13,6 +13,9 @@
         --checkout-muted: #68717a;
         --checkout-line: #e0e3e6;
         --checkout-soft: #f4f5f6;
+        --dhl-yellow: #ffcc00;
+        --dhl-red: #d40511;
+        --dhl-amber: #b45309;
         min-height: 72vh;
         background: var(--checkout-soft);
         color: var(--checkout-ink);
@@ -168,6 +171,127 @@
         outline: none;
     }
 
+    /* ---------- Saved address picker ---------- */
+    .checkout-saved-address {
+        margin-bottom: 22px;
+        padding: 16px 18px;
+        background: #f7f8f9;
+        border: 1px solid var(--checkout-line);
+        border-left: 4px solid var(--checkout-red);
+    }
+
+    .checkout-saved-address label {
+        display: block;
+        margin-bottom: 8px;
+        color: #32383e;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .checkout-saved-address select {
+        width: 100%;
+        min-height: 48px;
+        padding: 10px 14px;
+        border: 1px solid #cfd4d8;
+        background: #fff;
+        color: var(--checkout-ink);
+        font: inherit;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .checkout-saved-address select:focus {
+        border-color: var(--checkout-red);
+        box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.12);
+        outline: none;
+    }
+
+    .checkout-saved-address small {
+        display: block;
+        margin-top: 8px;
+        color: var(--checkout-muted);
+        font-size: 0.7rem;
+        line-height: 1.5;
+    }
+
+    .checkout-saved-address a {
+        color: var(--checkout-red);
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .checkout-saved-address a:hover {
+        text-decoration: underline;
+    }
+
+    /* ---------- Address verification ---------- */
+    .checkout-verify-row {
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 12px;
+        align-items: start;
+    }
+
+    .checkout-verify-btn {
+        min-height: 44px;
+        padding: 0 18px;
+        border: 1px solid var(--dhl-yellow);
+        background: var(--dhl-yellow);
+        color: #111;
+        font: inherit;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+
+    .checkout-verify-btn:hover {
+        background: #ffd633;
+        border-color: #ffd633;
+        transform: translateY(-1px);
+    }
+
+    .checkout-verify-btn:disabled {
+        opacity: 0.6;
+        cursor: wait;
+        transform: none;
+    }
+
+    .checkout-verify-status {
+        margin: 0;
+        padding: 10px 14px;
+        font-size: 0.76rem;
+        line-height: 1.5;
+        border-left: 3px solid var(--checkout-muted);
+        background: #f7f8f9;
+        color: var(--checkout-muted);
+    }
+
+    .checkout-verify-status.is-success {
+        border-left-color: var(--checkout-green);
+        background: #eefaf0;
+        color: #1c6b34;
+    }
+
+    .checkout-verify-status.is-warning {
+        border-left-color: #e4a21b;
+        background: #fff8e8;
+        color: #7a5410;
+    }
+
+    .checkout-verify-status.is-error {
+        border-left-color: #b91c1c;
+        background: #fdeeee;
+        color: #b91c1c;
+    }
+
     /* ---------- DHL shipping method picker ---------- */
     .checkout-shipping-toolbar {
         display: grid;
@@ -300,6 +424,212 @@
     }
 
     .checkout-shipping-status.is-error {
+        color: #b91c1c;
+    }
+
+    /* ---------- Duties & taxes panel (DHL yellow accent) ---------- */
+    .checkout-duties-panel {
+        margin: 0 0 22px;
+        border: 1px solid var(--checkout-line);
+        border-left: 4px solid var(--dhl-yellow);
+        background: #fffdf3;
+    }
+
+    .checkout-duties-head {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: center;
+        padding: 16px 20px;
+    }
+
+    .checkout-duties-mark {
+        display: grid;
+        place-items: center;
+        min-width: 52px;
+        height: 26px;
+        padding: 0 8px;
+        background: var(--dhl-yellow);
+        color: var(--dhl-red);
+        font-weight: 900;
+        font-size: 13px;
+        letter-spacing: -0.02em;
+        border-radius: 3px;
+    }
+
+    .checkout-duties-head strong {
+        display: block;
+        font-size: 0.9rem;
+        color: var(--checkout-ink);
+    }
+
+    .checkout-duties-head small {
+        display: block;
+        margin-top: 3px;
+        color: var(--checkout-muted);
+        font-size: 0.7rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .checkout-duties-amount {
+        color: var(--checkout-ink);
+        font-size: 1.05rem;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+    }
+
+    .checkout-duties-breakdown {
+        margin: 0;
+        padding: 0 20px 10px;
+        list-style: none;
+        border-top: 1px solid rgba(255, 204, 0, 0.25);
+    }
+
+    .checkout-duties-breakdown li {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        padding: 8px 0;
+        font-size: 0.76rem;
+        color: var(--checkout-muted);
+        border-bottom: 1px dashed rgba(255, 204, 0, 0.25);
+    }
+
+    .checkout-duties-breakdown li:last-child {
+        border-bottom: 0;
+    }
+
+    .checkout-duties-breakdown li strong {
+        color: var(--checkout-ink);
+        font-weight: 800;
+    }
+
+    .checkout-duties-note {
+        margin: 0;
+        padding: 10px 20px 14px;
+        color: #7a5410;
+        font-size: 0.68rem;
+        line-height: 1.5;
+    }
+
+    /* ---------- Service point picker ---------- */
+    .checkout-service-points {
+        margin: 0 0 22px;
+    }
+
+    .checkout-service-points-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        min-height: 52px;
+        padding: 0 18px;
+        border: 1px dashed #cfd4d8;
+        background: #fff;
+        color: var(--checkout-ink);
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        transition: border-color 160ms ease, background-color 160ms ease;
+    }
+
+    .checkout-service-points-toggle:hover {
+        border-color: var(--checkout-ink);
+        background: #f7f8f9;
+    }
+
+    .checkout-service-points-toggle::after {
+        content: "▾";
+        font-size: 0.9rem;
+        color: var(--checkout-muted);
+        transition: transform 160ms ease;
+    }
+
+    .checkout-service-points-toggle[aria-expanded="true"]::after {
+        transform: rotate(180deg);
+    }
+
+    .checkout-service-points-panel {
+        margin-top: 8px;
+        border: 1px solid var(--checkout-line);
+        background: #fff;
+    }
+
+    .checkout-service-points-list {
+        display: grid;
+        grid-gap: 0;
+    }
+
+    .checkout-service-points-list:empty::before {
+        content: "Searching…";
+        display: block;
+        padding: 16px 18px;
+        color: var(--checkout-muted);
+        font-size: 0.8rem;
+    }
+
+    .checkout-service-point {
+        display: grid;
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: start;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--checkout-line);
+        font-size: 0.78rem;
+    }
+
+    .checkout-service-point:last-child {
+        border-bottom: 0;
+    }
+
+    .checkout-service-point-icon {
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        background: var(--dhl-yellow);
+        color: var(--dhl-red);
+        font-weight: 900;
+        font-size: 11px;
+        border-radius: 3px;
+    }
+
+    .checkout-service-point strong {
+        display: block;
+        font-size: 0.82rem;
+        color: var(--checkout-ink);
+    }
+
+    .checkout-service-point small {
+        display: block;
+        margin-top: 3px;
+        color: var(--checkout-muted);
+        font-size: 0.7rem;
+        line-height: 1.5;
+    }
+
+    .checkout-service-point b {
+        color: var(--checkout-green);
+        font-size: 0.7rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .checkout-service-points-status {
+        margin: 0;
+        padding: 14px 18px;
+        color: var(--checkout-muted);
+        font-size: 0.76rem;
+        line-height: 1.55;
+    }
+
+    .checkout-service-points-status.is-error {
         color: #b91c1c;
     }
 
@@ -563,6 +893,19 @@
         padding: 13px 0;
     }
 
+    .checkout-total-row.duties-row dt {
+        color: #7a5410;
+        font-weight: 850;
+    }
+
+    .checkout-total-row.duties-row .checkout-money-kes {
+        color: #7a5410;
+    }
+
+    .checkout-total-row.duties-row .checkout-money-usd {
+        color: var(--dhl-amber);
+    }
+
     .checkout-total-row dt {
         color: var(--checkout-muted);
         font-size: 0.78rem;
@@ -676,7 +1019,8 @@
 
         .checkout-form-grid,
         .checkout-notice-grid,
-        .checkout-shipping-toolbar {
+        .checkout-shipping-toolbar,
+        .checkout-verify-row {
             grid-template-columns: 1fr;
         }
 
@@ -713,6 +1057,24 @@
         .checkout-dpo-strip .checkout-dpo-name {
             margin-left: 0;
         }
+
+        .checkout-duties-head {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .checkout-duties-amount {
+            margin-top: 6px;
+        }
+
+        .checkout-service-point {
+            grid-template-columns: 32px minmax(0, 1fr);
+        }
+
+        .checkout-service-point b {
+            grid-column: 2;
+            margin-top: 6px;
+        }
     }
 </style>
 {% endblock %}
@@ -724,8 +1086,9 @@
             <span class="checkout-kicker">Secure checkout</span>
             <h1>Review and pay.</h1>
             <p>
-                Confirm your customer and delivery details, choose a DHL shipping method,
-                then continue to DPO's hosted payment page to complete your card payment securely.
+                Confirm your customer and delivery details, choose a DHL Express shipping
+                method, then continue to DPO's hosted payment page to complete your card
+                payment securely.
             </p>
         </div>
     </section>
@@ -735,6 +1098,9 @@
             <form method="post" class="checkout-card" id="checkout-form">
                 {{ form.hidden_tag() }}
                 <input type="hidden" name="shipping_quote" id="checkout-shipping-quote" value="">
+
+                <!-- Country autocomplete suggestions (populated from DHL) -->
+                <datalist id="checkout-country-datalist"></datalist>
 
                 <!-- ================== CUSTOMER DETAILS ================== -->
                 <header class="checkout-card-header">
@@ -749,7 +1115,7 @@
                 <div class="checkout-form-grid">
                     {{ field(form.full_name) }}
                     {{ field(form.email) }}
-                    {{ field(form.country, extra_class='checkout-span-2') }}
+                    {{ field(form.country, extra_class='checkout-span-2', placeholder='Country (e.g. Kenya, United States)') }}
                 </div>
 
                 <!-- ================== DELIVERY ADDRESS ================== -->
@@ -757,10 +1123,25 @@
                     <span class="checkout-kicker">Delivery address</span>
                     <h2>Where should we ship?</h2>
                     <p>
-                        We use DHL Express for international shipping. These details are sent to
-                        DHL when the shipment is created after payment.
+                        We use DHL Express for international shipping. Verify your address
+                        below to reduce delivery delays.
                     </p>
                 </header>
+
+                {% if current_user.is_authenticated %}
+                <!-- ============ SAVED ADDRESS PICKER ============ -->
+                <div class="checkout-saved-address" id="checkout-saved-address-wrap">
+                    <label for="checkout-saved-address-select">Use a saved address</label>
+                    <select id="checkout-saved-address-select" aria-label="Choose a saved address">
+                        <option value="">— Fill manually or choose a saved address —</option>
+                    </select>
+                    <small>
+                        Manage your addresses in
+                        <a href="{{ url_for('account') }}#addresses" target="_blank" rel="noopener">My Account</a>.
+                    </small>
+                </div>
+                <!-- ============================================ -->
+                {% endif %}
 
                 <div class="checkout-form-grid">
                     {{ field(form.company) if form.company is defined else '' }}
@@ -771,13 +1152,20 @@
                     {{ field(form.postal_code) if form.postal_code is defined else '' }}
                 </div>
 
+                <div class="checkout-verify-row">
+                    <button type="button" id="checkout-verify-btn" class="checkout-verify-btn">
+                        Verify address with DHL
+                    </button>
+                    <p id="checkout-verify-status" class="checkout-verify-status" hidden></p>
+                </div>
+
                 <!-- ================== DHL SHIPPING METHOD ================== -->
                 <header class="checkout-card-header">
                     <span class="checkout-kicker">Shipping method</span>
                     <h2>Choose a DHL Express service.</h2>
                     <p>
-                        We'll fetch live rates from DHL Express for your destination. The price
-                        is confirmed when the shipment is created.
+                        We'll fetch live rates from DHL Express for your destination, then
+                        estimate customs duties and taxes so you know the full landed cost.
                     </p>
                 </header>
 
@@ -795,6 +1183,40 @@
 
                 <p id="checkout-shipping-status" class="checkout-shipping-status" hidden></p>
                 <div id="checkout-shipping-options" class="checkout-shipping-options" aria-live="polite"></div>
+
+                <!-- ============ Duties & Taxes (DHL landing cost) ============ -->
+                <div id="checkout-duties-panel" class="checkout-duties-panel" hidden>
+                    <div class="checkout-duties-head">
+                        <span class="checkout-duties-mark">DHL</span>
+                        <div>
+                            <strong>Estimated duties &amp; taxes</strong>
+                            <small>Customs clearance at destination</small>
+                        </div>
+                        <strong class="checkout-duties-amount" id="checkout-duties-amount">—</strong>
+                    </div>
+                    <ul class="checkout-duties-breakdown" id="checkout-duties-breakdown"></ul>
+                    <p class="checkout-duties-note">
+                        Estimate only. Final duties are determined by the destination customs
+                        authority and may differ from this figure.
+                    </p>
+                </div>
+
+                <!-- ============ Nearby DHL service points ============ -->
+                <div class="checkout-service-points">
+                    <button
+                        type="button"
+                        id="checkout-service-points-toggle"
+                        class="checkout-service-points-toggle"
+                        aria-expanded="false"
+                        aria-controls="checkout-service-points-panel"
+                    >
+                        Or collect from a nearby DHL service point
+                    </button>
+                    <div id="checkout-service-points-panel" class="checkout-service-points-panel" hidden>
+                        <div id="checkout-service-points-list" class="checkout-service-points-list" aria-live="polite"></div>
+                        <p id="checkout-service-points-status" class="checkout-service-points-status" hidden></p>
+                    </div>
+                </div>
 
                 <!-- ================== DPO PAYMENT ================== -->
                 <div class="checkout-payment-box">
@@ -825,9 +1247,9 @@
                         the DPO merchant account.
                     </div>
                     <div class="checkout-notice">
-                        <strong>Payment services</strong>
-                        113830 · Gaming<br>
-                        117036 · Commercial gaming equipment
+                        <strong>Shipping &amp; duties</strong>
+                        International delivery via DHL Express. Duties and taxes are estimated
+                        above and finalised at customs clearance.
                     </div>
                 </div>
 
@@ -882,6 +1304,15 @@
                         </dd>
                     </div>
 
+                    <!-- Duties & taxes row — hidden until landing cost returns -->
+                    <div class="checkout-total-row duties-row" id="summary-duties-row" hidden>
+                        <dt>Duties &amp; taxes</dt>
+                        <dd>
+                            <strong id="summary-duties-kes" class="checkout-money-kes">KES 0.00</strong>
+                            <span id="summary-duties-usd" class="checkout-money-usd">USD 0.00</span>
+                        </dd>
+                    </div>
+
                     <div class="checkout-total-row grand-total">
                         <dt>Total</dt>
                         <dd>
@@ -906,10 +1337,10 @@
 
                 <ol class="checkout-steps" aria-label="What happens next">
                     <li>Your order is created with reference <strong>FABS-GM-…</strong></li>
+                    <li>A DHL shipping rate and duties estimate are confirmed</li>
                     <li>A DPO payment token is created for the total amount</li>
                     <li>You are redirected to DPO's secure card page</li>
                     <li>DPO returns you to FABS Trading with the payment result</li>
-                    <li>The order is verified and marked paid</li>
                 </ol>
             </aside>
         </div>
@@ -918,28 +1349,109 @@
 
 <script>
 (function () {
+    // ================================================================
+    // CONFIG
+    // ================================================================
     const USD_KES      = Number({{ usd_kes_rate|float }});
     const SUBTOTAL_USD = Number({{ total }});
 
+    // ================================================================
+    // DOM REFS
+    // ================================================================
     const $countryInput = document.querySelector('input[name="country"], select[name="country"]');
     const $toolbarInput = document.getElementById('checkout-shipping-country');
     const $btn          = document.getElementById('checkout-shipping-quote-btn');
     const $options      = document.getElementById('checkout-shipping-options');
     const $status       = document.getElementById('checkout-shipping-status');
     const $quoteHidden  = document.getElementById('checkout-shipping-quote');
+    const $datalist     = document.getElementById('checkout-country-datalist');
+
+    const $verifyBtn    = document.getElementById('checkout-verify-btn');
+    const $verifyStatus = document.getElementById('checkout-verify-status');
+
+    const $dutiesPanel      = document.getElementById('checkout-duties-panel');
+    const $dutiesAmount     = document.getElementById('checkout-duties-amount');
+    const $dutiesBreakdown  = document.getElementById('checkout-duties-breakdown');
+
+    const $spToggle  = document.getElementById('checkout-service-points-toggle');
+    const $spPanel   = document.getElementById('checkout-service-points-panel');
+    const $spList    = document.getElementById('checkout-service-points-list');
+    const $spStatus  = document.getElementById('checkout-service-points-status');
+
+    const $savedSelect = document.getElementById('checkout-saved-address-select');
 
     const $sumShipK = document.getElementById('summary-shipping-kes');
     const $sumShipU = document.getElementById('summary-shipping-usd');
+    const $sumDutyK = document.getElementById('summary-duties-kes');
+    const $sumDutyU = document.getElementById('summary-duties-usd');
+    const $sumDutyRow = document.getElementById('summary-duties-row');
     const $sumTotK  = document.getElementById('summary-total-kes');
     const $sumTotU  = document.getElementById('summary-total-usd');
 
     if (!$btn) return;
 
+    // ================================================================
+    // FIELD GETTERS (safe — forms may or may not have these fields)
+    // ================================================================
+    const fieldEl = (name) => document.querySelector(`#checkout-form [name="${name}"]`);
+
+    // ================================================================
+    // STATE
+    // ================================================================
+    const state = {
+        country: '',
+        shipping: 0,
+        duties: 0,
+        product: null,
+        servicePointsLoaded: false,
+    };
+
+    // ================================================================
+    // FORMATTERS
+    // ================================================================
     const fmtUsd = v => 'US$ ' + Number(v).toLocaleString('en-US', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
     const fmtKes = v => 'KES ' + Math.round(Number(v) * USD_KES).toLocaleString('en-KE');
+    const esc = s => String(s == null ? '' : s).replace(/[<>]/g, '');
 
+    // ================================================================
+    // SUMMARY UPDATER
+    // ================================================================
+    const updateSummary = () => {
+        const shipping = Number(state.shipping) || 0;
+        const duties   = Number(state.duties)   || 0;
+        const total    = SUBTOTAL_USD + shipping + duties;
+
+        $sumShipK.textContent = fmtKes(shipping);
+        $sumShipU.textContent = fmtUsd(shipping);
+        $sumTotK.textContent  = fmtKes(total);
+        $sumTotU.textContent  = fmtUsd(total);
+
+        if (duties > 0) {
+            $sumDutyK.textContent = fmtKes(duties);
+            $sumDutyU.textContent = fmtUsd(duties);
+            $sumDutyRow.hidden = false;
+        } else {
+            $sumDutyRow.hidden = true;
+        }
+
+        if ($quoteHidden) {
+            $quoteHidden.value = JSON.stringify({
+                country:        state.country || '',
+                cost_usd:       shipping + duties,
+                cost_shipping:  shipping,
+                cost_duties:    duties,
+                product_code:   state.product?.productCode || null,
+                product_name:   state.product?.productName || null,
+                transit_days:   state.product?.deliveryCapabilities?.totalTransitDays || null
+            });
+        }
+    };
+
+    // ================================================================
+    // STATUS HELPERS
+    // ================================================================
     const setStatus = (msg, isError) => {
         if (!msg) { $status.hidden = true; $status.textContent = ''; return; }
         $status.hidden = false;
@@ -947,35 +1459,395 @@
         $status.classList.toggle('is-error', Boolean(isError));
     };
 
-    const applyShipping = (costUsd, country, product) => {
-        const cost = Number(costUsd) || 0;
-        $sumShipK.textContent = fmtKes(cost);
-        $sumShipU.textContent = fmtUsd(cost);
-        $sumTotK.textContent  = fmtKes(SUBTOTAL_USD + cost);
-        $sumTotU.textContent  = fmtUsd(SUBTOTAL_USD + cost);
+    const setVerifyStatus = (msg, kind) => {
+        if (!msg) { $verifyStatus.hidden = true; $verifyStatus.textContent = ''; return; }
+        $verifyStatus.hidden = false;
+        $verifyStatus.textContent = msg;
+        $verifyStatus.classList.remove('is-success', 'is-warning', 'is-error');
+        if (kind) $verifyStatus.classList.add('is-' + kind);
+    };
 
-        if ($quoteHidden) {
-            $quoteHidden.value = JSON.stringify({
-                country:      country || '',
-                cost_usd:     cost,
-                product_code: product?.productCode || null,
-                product_name: product?.productName || null,
-                transit_days: product?.deliveryCapabilities?.totalTransitDays || null
+    const setSpStatus = (msg, isError) => {
+        if (!msg) { $spStatus.hidden = true; $spStatus.textContent = ''; return; }
+        $spStatus.hidden = false;
+        $spStatus.textContent = msg;
+        $spStatus.classList.toggle('is-error', Boolean(isError));
+    };
+
+    // ================================================================
+    // SAVED ADDRESSES
+    // ================================================================
+    const loadSavedAddresses = async () => {
+        if (!$savedSelect) return;
+        try {
+            const res = await fetch('/api/account/addresses', {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
             });
+            if (!res.ok) return;
+
+            const list = await res.json();
+            if (!Array.isArray(list) || !list.length) {
+                // No saved addresses — hide the picker entirely
+                const wrap = document.getElementById('checkout-saved-address-wrap');
+                if (wrap) wrap.style.display = 'none';
+                return;
+            }
+
+            $savedSelect.innerHTML = '<option value="">— Fill manually or choose a saved address —</option>';
+            list.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = String(a.id);
+                opt.textContent = `${a.is_default ? '★ ' : ''}${a.label} — ${a.full_name}, ${a.city}, ${a.country}`;
+                opt.dataset.address = JSON.stringify(a);
+                $savedSelect.appendChild(opt);
+            });
+
+            // Auto-select default address (best UX)
+            const defaultOpt = Array.from($savedSelect.options).find(o => o.dataset.address && JSON.parse(o.dataset.address).is_default);
+            if (defaultOpt) {
+                $savedSelect.value = defaultOpt.value;
+                applySavedAddress(JSON.parse(defaultOpt.dataset.address));
+            }
+        } catch (err) {
+            console.warn('Saved addresses unavailable:', err);
+            const wrap = document.getElementById('checkout-saved-address-wrap');
+            if (wrap) wrap.style.display = 'none';
         }
     };
 
-    // Pre-fill country from the form field (if the user typed it above)
-    if ($countryInput && $toolbarInput) {
+    const applySavedAddress = (a) => {
+        if (!a) return;
+
+        const setVal = (name, value) => {
+            const el = fieldEl(name);
+            if (el) {
+                el.value = value || '';
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        };
+
+        setVal('full_name', a.full_name);
+        setVal('country', a.country);
+        setVal('company', a.company);
+        setVal('phone', a.phone);
+        setVal('address_line1', a.address_line1);
+        setVal('address_line2', a.address_line2);
+        setVal('city', a.city);
+        setVal('postal_code', a.postal_code);
+
+        // Sync the shipping country field so rate lookup is preloaded with the right country
+        if ($toolbarInput && a.country) {
+            $toolbarInput.value = String(a.country).toUpperCase();
+        }
+
+        // Clear any previous verification message
+        setVerifyStatus('');
+    };
+
+    $savedSelect?.addEventListener('change', () => {
+        const opt = $savedSelect.selectedOptions[0];
+        if (!opt || !opt.dataset.address) return;
+        try {
+            applySavedAddress(JSON.parse(opt.dataset.address));
+        } catch (e) {
+            console.warn('Invalid saved address payload');
+        }
+    });
+
+    // ================================================================
+    // COUNTRY DATALIST — fetched from DHL
+    // ================================================================
+    const loadCountryList = async () => {
+        try {
+            const cached = sessionStorage.getItem('fabs_dhl_countries');
+            if (cached) {
+                try { applyCountryList(JSON.parse(cached)); } catch (e) { /* refresh */ }
+            }
+            const res = await fetch('/api/shipping/countries', {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            const list = Array.isArray(data) ? data : (data.countries || data.data || []);
+            if (list && list.length) {
+                applyCountryList(list);
+                try { sessionStorage.setItem('fabs_dhl_countries', JSON.stringify(list)); } catch (e) {}
+            }
+        } catch (e) {
+            console.warn('DHL countries list unavailable:', e);
+        }
+    };
+
+    const applyCountryList = (list) => {
+        if (!$datalist) return;
+        $datalist.innerHTML = '';
+        list.slice(0, 300).forEach(c => {
+            const code  = c.countryCode || c.code || '';
+            const name  = c.countryName || c.name || code;
+            if (!code || !name) return;
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.label = `${code} — ${name}`;
+            opt.dataset.code = code;
+            $datalist.appendChild(opt);
+        });
+    };
+
+    if ($countryInput && $datalist) {
+        $countryInput.setAttribute('list', 'checkout-country-datalist');
         $countryInput.addEventListener('input', () => {
-            const v = ($countryInput.value || '').trim().toUpperCase();
-            if (v.length === 2 && !$toolbarInput.value) {
-                $toolbarInput.value = v;
+            const v = ($countryInput.value || '').trim();
+            const match = Array.from($datalist.options).find(o => o.value.toLowerCase() === v.toLowerCase());
+            if (match && match.dataset.code) {
+                if (!$toolbarInput.value) $toolbarInput.value = match.dataset.code;
+            } else if (v.length === 2 && !$toolbarInput.value) {
+                $toolbarInput.value = v.toUpperCase();
             }
         });
     }
 
-    // Auto-restore previously selected rate if user returns
+    // ================================================================
+    // ADDRESS VERIFICATION
+    // ================================================================
+    $verifyBtn?.addEventListener('click', async () => {
+        const country = (($toolbarInput.value || '').trim() ||
+                        ($countryInput && $countryInput.value || '').trim()).toUpperCase();
+        const city = fieldEl('city')?.value?.trim() || '';
+        const postal = fieldEl('postal_code')?.value?.trim() || '';
+        const line1  = fieldEl('address_line1')?.value?.trim() || '';
+
+        if (country.length !== 2) {
+            setVerifyStatus('Enter your 2-letter country code first (e.g. US, KE, GB).', 'warning');
+            return;
+        }
+        if (!city && !postal && !line1) {
+            setVerifyStatus('Fill in at least a city, postal code or street address to verify.', 'warning');
+            return;
+        }
+
+        $verifyBtn.disabled = true;
+        $verifyBtn.textContent = 'Verifying…';
+        setVerifyStatus('Checking address with DHL…');
+
+        try {
+            const res = await fetch('/api/shipping/validate-address', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    country: country,
+                    city: city || null,
+                    postal_code: postal || null,
+                    address_line1: line1 || null
+                })
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                setVerifyStatus(data.error || 'Could not verify address.', 'error');
+                return;
+            }
+
+            const suggestions = data.address || data.suggestions || data.data || [];
+            const isValid = data.status === 'valid' || (Array.isArray(suggestions) && suggestions.length === 0);
+
+            if (isValid) {
+                setVerifyStatus('Address looks valid — DHL can deliver here.', 'success');
+            } else if (Array.isArray(suggestions) && suggestions.length) {
+                const first = suggestions[0];
+                const text = first.address?.addressLine1 || first.addressLine1 || first.formattedAddress || 'Did you mean a different address?';
+                setVerifyStatus('DHL suggests: ' + text, 'warning');
+            } else {
+                setVerifyStatus('Address could not be fully verified — you can still continue.', 'warning');
+            }
+        } catch (err) {
+            console.error(err);
+            setVerifyStatus('Address verification is temporarily unavailable.', 'error');
+        } finally {
+            $verifyBtn.disabled = false;
+            $verifyBtn.textContent = 'Verify address with DHL';
+        }
+    });
+
+    // ================================================================
+    // DUTIES & TAXES (LANDING COST)
+    // ================================================================
+    const loadDuties = async (country) => {
+        if (!country || country.length !== 2) {
+            $dutiesPanel.hidden = true;
+            state.duties = 0;
+            updateSummary();
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/shipping/landing-cost/cart?country=${encodeURIComponent(country)}`, {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                console.warn('Landing cost unavailable:', data.error);
+                $dutiesPanel.hidden = true;
+                state.duties = 0;
+                updateSummary();
+                return;
+            }
+
+            const totalCharge = pickNumber(data, [
+                'totalPrice.0.price',
+                'totalPrice.price',
+                'totalCharge.0.price',
+                'totalCharge.price',
+                'totalAmount',
+                'total'
+            ]) || 0;
+
+            const breakdown = pickBreakdown(data);
+
+            if (totalCharge <= 0 && !breakdown.length) {
+                $dutiesPanel.hidden = true;
+                state.duties = 0;
+                updateSummary();
+                return;
+            }
+
+            state.duties = Number(totalCharge) || 0;
+            $dutiesAmount.textContent = fmtUsd(state.duties);
+
+            $dutiesBreakdown.innerHTML = breakdown.length
+                ? breakdown.map(b => `
+                    <li>
+                        <span>${esc(b.label)}</span>
+                        <strong>${fmtUsd(b.value)}</strong>
+                    </li>
+                `).join('')
+                : `<li><span>Total estimated customs charges</span><strong>${fmtUsd(state.duties)}</strong></li>`;
+
+            $dutiesPanel.hidden = false;
+            updateSummary();
+        } catch (err) {
+            console.warn('Landing cost failed:', err);
+            $dutiesPanel.hidden = true;
+            state.duties = 0;
+            updateSummary();
+        }
+    };
+
+    const pickNumber = (obj, paths) => {
+        for (const path of paths) {
+            const value = path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
+            if (typeof value === 'number' && value > 0) return value;
+            if (typeof value === 'string' && !isNaN(parseFloat(value)) && parseFloat(value) > 0) {
+                return parseFloat(value);
+            }
+        }
+        return 0;
+    };
+
+    const pickBreakdown = (data) => {
+        const out = [];
+        const push = (label, value) => {
+            const n = Number(value);
+            if (n > 0) out.push({ label, value: n });
+        };
+        const src = data.breakdown || data.charges || data.lineItems || data.items || [];
+        if (Array.isArray(src)) {
+            src.forEach(item => {
+                const label = item.description || item.name || item.typeCode || 'Charge';
+                const value = item.price?.value || item.price || item.amount || item.total || 0;
+                push(label, value);
+            });
+        }
+        if (!out.length) {
+            push('Duty', data.duty || data.duties);
+            push('Tax', data.tax || data.vat || data.taxes);
+            push('Clearance fee', data.clearanceFee || data.handlingFee);
+        }
+        return out;
+    };
+
+    // ================================================================
+    // SERVICE POINTS
+    // ================================================================
+    $spToggle?.addEventListener('click', async () => {
+        const isOpen = $spToggle.getAttribute('aria-expanded') === 'true';
+        const nextOpen = !isOpen;
+        $spToggle.setAttribute('aria-expanded', String(nextOpen));
+        $spPanel.hidden = !nextOpen;
+
+        if (!nextOpen || state.servicePointsLoaded) return;
+
+        const country = (($toolbarInput.value || '').trim() ||
+                        ($countryInput && $countryInput.value || '').trim()).toUpperCase();
+        if (country.length !== 2) {
+            setSpStatus('Enter your destination country code first to see nearby DHL points.', true);
+            return;
+        }
+
+        const city = fieldEl('city')?.value?.trim() || '';
+
+        setSpStatus('Finding DHL service points…');
+        $spList.innerHTML = '';
+
+        try {
+            const params = new URLSearchParams({ country, radius: '15' });
+            if (city) params.set('city', city);
+
+            const res = await fetch(`/api/shipping/service-points?${params.toString()}`, {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                setSpStatus(data.error || 'Could not fetch service points.', true);
+                return;
+            }
+
+            const points = Array.isArray(data) ? data : (data.servicePoints || data.data || []);
+            if (!points.length) {
+                setSpStatus('No DHL service points found nearby.', false);
+                return;
+            }
+
+            setSpStatus('');
+            state.servicePointsLoaded = true;
+
+            $spList.innerHTML = points.slice(0, 8).map(p => {
+                const name = p.name || p.servicePointName || 'DHL Service Point';
+                const addr = p.address?.addressLine1 || p.addressLine1 || p.address || '';
+                const pCity = p.address?.cityName || p.city || '';
+                const hours = p.openingHours || p.hours || 'Hours on request';
+                return `
+                    <div class="checkout-service-point">
+                        <span class="checkout-service-point-icon">DHL</span>
+                        <div>
+                            <strong>${esc(name)}</strong>
+                            <small>${esc(addr)}${addr && pCity ? ' · ' : ''}${esc(pCity)}</small>
+                            <small>${esc(hours)}</small>
+                        </div>
+                        <b>Available</b>
+                    </div>
+                `;
+            }).join('');
+        } catch (err) {
+            console.error(err);
+            setSpStatus('Could not fetch service points.', true);
+        }
+    });
+
+    // ================================================================
+    // SHIPPING RATES
+    // ================================================================
     try {
         const saved = JSON.parse(sessionStorage.getItem('fabs_cart_shipping') || '{}');
         if (saved && saved.country && $toolbarInput && !$toolbarInput.value) {
@@ -991,15 +1863,25 @@
             setStatus('Please enter your 2-letter country code (e.g. US, KE, GB).', true);
             $options.classList.remove('is-visible');
             $options.innerHTML = '';
-            applyShipping(0, '', null);
+            state.country = '';
+            state.shipping = 0;
+            state.duties = 0;
+            $dutiesPanel.hidden = true;
+            updateSummary();
             return;
         }
+
+        state.country = country;
+        $toolbarInput.value = country;
 
         $btn.disabled = true;
         $btn.textContent = 'Loading…';
         setStatus('Fetching DHL Express rates…');
         $options.classList.remove('is-visible');
         $options.innerHTML = '';
+        $dutiesPanel.hidden = true;
+        state.duties = 0;
+        updateSummary();
 
         try {
             const res = await fetch(`/api/shipping/rates/cart?country=${encodeURIComponent(country)}`, {
@@ -1013,7 +1895,8 @@
             const products = Array.isArray(data.products) ? data.products : [];
             if (!products.length) {
                 setStatus('No DHL rates returned for that destination.');
-                applyShipping(0, country, null);
+                state.shipping = 0;
+                updateSummary();
                 return;
             }
 
@@ -1022,7 +1905,8 @@
         } catch (err) {
             console.error(err);
             setStatus(err.message || 'Could not fetch shipping rates.', true);
-            applyShipping(0, country, null);
+            state.shipping = 0;
+            updateSummary();
         } finally {
             $btn.disabled = false;
             $btn.textContent = 'Get rates';
@@ -1046,7 +1930,7 @@
                        value="${price !== null ? price : ''}" ${idx === 0 ? 'checked' : ''}>
                 <div class="checkout-shipping-card">
                     <div>
-                        <strong>${name}</strong>
+                        <strong>${esc(name)}</strong>
                         <small>${days ? days + ' day(s) transit' : 'Transit time on request'}</small>
                     </div>
                     <div class="checkout-shipping-price">
@@ -1066,15 +1950,40 @@
                 const prod = top.find(p =>
                     Number(p.totalPrice?.[0]?.price || 0) === cost
                 ) || null;
-                applyShipping(cost, country, prod);
+                selectProduct(cost, country, prod);
             });
         });
 
         const first = top[0];
         const firstPrice = first.totalPrice && first.totalPrice[0]
             ? Number(first.totalPrice[0].price) : 0;
-        applyShipping(firstPrice, country, first);
+        selectProduct(firstPrice, country, first);
+
+        try {
+            sessionStorage.setItem('fabs_cart_shipping', JSON.stringify({
+                country: country,
+                cost_usd: firstPrice
+            }));
+        } catch (e) { /* ignore */ }
+
+        state.servicePointsLoaded = false;
     }
+
+    function selectProduct(cost, country, product) {
+        state.country = country;
+        state.shipping = Number(cost) || 0;
+        state.product = product || null;
+        state.duties = 0;
+
+        updateSummary();
+        loadDuties(country);
+    }
+
+    // ================================================================
+    // BOOTSTRAP
+    // ================================================================
+    loadCountryList();
+    loadSavedAddresses();
 })();
 </script>
 {% endblock %}

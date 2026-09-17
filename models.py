@@ -33,6 +33,39 @@ class User(UserMixin, TimestampMixin, db.Model):
     def is_admin(self): return self.role == "admin"
 
 
+class Address(TimestampMixin, db.Model):
+    """Saved shipping address belonging to a user — used at checkout."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    label = db.Column(db.String(80), default="Home", nullable=False)
+    full_name = db.Column(db.String(140), nullable=False)
+    company = db.Column(db.String(180))
+    phone = db.Column(db.String(40))
+    country = db.Column(db.String(90), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    postal_code = db.Column(db.String(20), nullable=False)
+    address_line1 = db.Column(db.String(200), nullable=False)
+    address_line2 = db.Column(db.String(200))
+    is_default = db.Column(db.Boolean, default=False, nullable=False, index=True)
+
+    user = db.relationship("User", backref=db.backref("addresses", cascade="all, delete-orphan"))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "label": self.label,
+            "full_name": self.full_name,
+            "company": self.company or "",
+            "phone": self.phone or "",
+            "country": self.country,
+            "city": self.city,
+            "postal_code": self.postal_code,
+            "address_line1": self.address_line1,
+            "address_line2": self.address_line2 or "",
+            "is_default": bool(self.is_default),
+        }
+
+
 class Game(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     slug = db.Column(db.String(160), unique=True, nullable=False, index=True)
@@ -58,7 +91,7 @@ class Game(TimestampMixin, db.Model):
     length_cm = db.Column(db.Float, default=30.0, nullable=True)
     width_cm = db.Column(db.Float, default=20.0, nullable=True)
     height_cm = db.Column(db.Float, default=10.0, nullable=True)
-    hs_code = db.Column(db.String(20), nullable=True)  # customs harmonised code
+    hs_code = db.Column(db.String(20), nullable=True)
 
     @property
     def discount_percent(self):

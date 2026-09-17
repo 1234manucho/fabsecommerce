@@ -12,6 +12,8 @@
         --gpd-muted: #68717a;
         --gpd-line: #e0e3e6;
         --gpd-soft: #f4f5f6;
+        --dhl-yellow: #ffcc00;
+        --dhl-red: #d40511;
         background: var(--gpd-soft);
         color: var(--gpd-ink);
     }
@@ -252,6 +254,199 @@
         line-height: 1.4;
     }
 
+    /* ============ DHL Shipping & Delivery card ============ */
+    .gpd-shipping {
+        margin-top: 24px;
+        border: 1px solid var(--gpd-line);
+        border-left: 4px solid var(--dhl-yellow);
+        background: #fffdf3;
+    }
+
+    .gpd-shipping-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 18px;
+        border-bottom: 1px solid rgba(255, 204, 0, 0.25);
+    }
+
+    .gpd-shipping-mark {
+        display: grid;
+        place-items: center;
+        min-width: 52px;
+        height: 26px;
+        padding: 0 8px;
+        background: var(--dhl-yellow);
+        color: var(--dhl-red);
+        font-weight: 900;
+        font-size: 13px;
+        letter-spacing: -0.02em;
+        border-radius: 3px;
+    }
+
+    .gpd-shipping-head strong {
+        display: block;
+        font-size: 0.9rem;
+        color: var(--gpd-ink);
+    }
+
+    .gpd-shipping-head small {
+        display: block;
+        margin-top: 2px;
+        color: #7a5410;
+        font-size: 0.68rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .gpd-shipping-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0;
+        border-top: 1px solid rgba(255, 204, 0, 0.18);
+    }
+
+    .gpd-shipping-grid > div {
+        padding: 12px 18px;
+        border-right: 1px solid rgba(255, 204, 0, 0.18);
+        border-bottom: 1px solid rgba(255, 204, 0, 0.18);
+    }
+
+    .gpd-shipping-grid > div:nth-child(even) {
+        border-right: 0;
+    }
+
+    .gpd-shipping-grid span {
+        display: block;
+        color: #7a828a;
+        font-size: 0.62rem;
+        font-weight: 900;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    .gpd-shipping-grid strong {
+        display: block;
+        margin-top: 4px;
+        color: var(--gpd-ink);
+        font-size: 0.82rem;
+        line-height: 1.4;
+    }
+
+    /* Estimate widget */
+    .gpd-estimate {
+        padding: 16px 18px;
+        border-top: 1px solid rgba(255, 204, 0, 0.25);
+    }
+
+    .gpd-estimate-label {
+        display: block;
+        margin-bottom: 8px;
+        color: #7a5410;
+        font-size: 0.66rem;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .gpd-estimate-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+    }
+
+    .gpd-estimate-row input {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
+        border: 1px solid #cfd4d8;
+        background: #fff;
+        color: var(--gpd-ink);
+        font: inherit;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .gpd-estimate-row input:focus {
+        border-color: var(--gpd-red);
+        box-shadow: 0 0 0 3px rgba(237, 49, 56, 0.14);
+        outline: none;
+    }
+
+    .gpd-estimate-row button {
+        min-height: 44px;
+        padding: 0 16px;
+        border: 1px solid var(--dhl-yellow);
+        background: var(--dhl-yellow);
+        color: #111;
+        font: inherit;
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: background-color 160ms ease, border-color 160ms ease;
+    }
+
+    .gpd-estimate-row button:hover {
+        background: #ffd633;
+        border-color: #ffd633;
+    }
+
+    .gpd-estimate-row button:disabled {
+        opacity: 0.6;
+        cursor: wait;
+    }
+
+    .gpd-estimate-result {
+        display: none;
+        margin-top: 12px;
+        padding: 12px 14px;
+        background: #fff;
+        border: 1px solid rgba(255, 204, 0, 0.4);
+        font-size: 0.78rem;
+        line-height: 1.5;
+        color: var(--gpd-ink);
+    }
+
+    .gpd-estimate-result.is-visible {
+        display: block;
+    }
+
+    .gpd-estimate-result strong {
+        display: block;
+        font-size: 0.95rem;
+    }
+
+    .gpd-estimate-result small {
+        display: block;
+        margin-top: 4px;
+        color: var(--gpd-muted);
+        font-size: 0.68rem;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .gpd-estimate-result .gpd-estimate-error {
+        color: #b91c1c;
+    }
+
+    .gpd-estimate-result .gpd-estimate-green {
+        color: var(--gpd-green);
+    }
+
+    .gpd-estimate-hint {
+        margin: 8px 0 0;
+        color: #7a828a;
+        font-size: 0.68rem;
+        line-height: 1.5;
+    }
+
+    /* ============ CTA ============ */
     .gpd-cta {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -400,8 +595,20 @@
             grid-template-columns: 1fr;
         }
 
+        .gpd-shipping-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .gpd-shipping-grid > div {
+            border-right: 0;
+        }
+
         .gpd-info h1 {
             font-size: 2.05rem;
+        }
+
+        .gpd-estimate-row {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -496,6 +703,64 @@
                     </div>
                 </div>
 
+                <!-- ============ DHL SHIPPING & DELIVERY ============ -->
+                <section class="gpd-shipping" aria-labelledby="shipping-title">
+                    <div class="gpd-shipping-head">
+                        <span class="gpd-shipping-mark">DHL</span>
+                        <div>
+                            <strong id="shipping-title">Shipping &amp; delivery</strong>
+                            <small>Official DHL Express partner</small>
+                        </div>
+                    </div>
+
+                    <div class="gpd-shipping-grid">
+                        <div>
+                            <span>Unit weight</span>
+                            <strong>{% if game.weight_kg %}{{ '%.2f'|format(game.weight_kg) }} kg{% else %}1.00 kg{% endif %}</strong>
+                        </div>
+                        <div>
+                            <span>Dimensions</span>
+                            <strong>
+                                {% set L = game.length_cm or 30 %}
+                                {% set W = game.width_cm or 20 %}
+                                {% set H = game.height_cm or 10 %}
+                                {{ '%.0f'|format(L) }} × {{ '%.0f'|format(W) }} × {{ '%.0f'|format(H) }} cm
+                            </strong>
+                        </div>
+                        <div>
+                            <span>Transit</span>
+                            <strong>3–7 business days</strong>
+                        </div>
+                        <div>
+                            <span>Tracking</span>
+                            <strong>Fully traceable</strong>
+                        </div>
+                    </div>
+
+                    <div class="gpd-estimate">
+                        <label class="gpd-estimate-label" for="gpd-estimate-country">
+                            Estimate shipping to your country
+                        </label>
+                        <div class="gpd-estimate-row">
+                            <input
+                                id="gpd-estimate-country"
+                                type="text"
+                                maxlength="2"
+                                placeholder="Country code (e.g. US)"
+                                aria-label="Destination country code"
+                                autocomplete="country"
+                                value=""
+                            >
+                            <button type="button" id="gpd-estimate-btn">Get estimate</button>
+                        </div>
+                        <p class="gpd-estimate-hint">
+                            Uses DHL Express live rates for 1 unit at this product's weight and dimensions.
+                        </p>
+                        <div id="gpd-estimate-result" class="gpd-estimate-result" role="status" aria-live="polite"></div>
+                    </div>
+                </section>
+                <!-- ============================================ -->
+
                 <div class="gpd-cta">
                     <a href="{{ url_for('game_inquiry', slug=game.slug) }}">Send product enquiry</a>
                     <form method="post" action="{{ url_for('add_to_cart', game_id=game.id) }}">
@@ -527,4 +792,132 @@
         </section>
     </div>
 </main>
+
+<script>
+(function () {
+    const USD_KES = Number({{ usd_kes_rate|float }});
+
+    const $input  = document.getElementById('gpd-estimate-country');
+    const $btn    = document.getElementById('gpd-estimate-btn');
+    const $result = document.getElementById('gpd-estimate-result');
+
+    if (!$btn) return;
+
+    const WEIGHT_KG = Number({{ game.weight_kg if game.weight_kg else 1.0 }});
+    const LENGTH_CM = Number({{ game.length_cm if game.length_cm else 30.0 }});
+    const WIDTH_CM  = Number({{ game.width_cm  if game.width_cm  else 20.0 }});
+    const HEIGHT_CM = Number({{ game.height_cm if game.height_cm else 10.0 }});
+    const DECLARED  = Number({{ game.price if game.price else 100.0 }});
+
+    const fmtUsd = v => 'US$ ' + Number(v).toLocaleString('en-US', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+    const fmtKes = v => 'KES ' + Math.round(Number(v) * USD_KES).toLocaleString('en-KE');
+    const esc = s => String(s == null ? '' : s).replace(/[<>]/g, '');
+
+    const setResult = (html, isError) => {
+        if (!html) {
+            $result.classList.remove('is-visible');
+            $result.innerHTML = '';
+            return;
+        }
+        $result.classList.add('is-visible');
+        $result.innerHTML = isError
+            ? `<span class="gpd-estimate-error">${esc(html)}</span>`
+            : html;
+    };
+
+    $btn.addEventListener('click', async () => {
+        const country = ($input.value || '').trim().toUpperCase();
+        if (country.length !== 2) {
+            setResult('Please enter a 2-letter country code (e.g. US, KE, GB).', true);
+            return;
+        }
+
+        $btn.disabled = true;
+        $btn.textContent = 'Loading…';
+        setResult('<small>Fetching DHL rate…</small>');
+
+        try {
+            const res = await fetch('/api/shipping/rates', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    country: country,
+                    weight_kg: WEIGHT_KG,
+                    length_cm: LENGTH_CM,
+                    width_cm: WIDTH_CM,
+                    height_cm: HEIGHT_CM,
+                    declared_value: DECLARED,
+                    currency: 'USD'
+                })
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                setResult(data.error || 'Could not fetch a shipping estimate.', true);
+                return;
+            }
+
+            const products = Array.isArray(data.products) ? data.products : [];
+            if (!products.length) {
+                setResult('No DHL rates available for that destination.', true);
+                return;
+            }
+
+            // Show the cheapest 3 services
+            const top = products
+                .map(p => ({
+                    name: p.productName || p.productCode || 'DHL Express',
+                    price: p.totalPrice && p.totalPrice[0] ? Number(p.totalPrice[0].price) : null,
+                    days: p.deliveryCapabilities && p.deliveryCapabilities.totalTransitDays || null
+                }))
+                .filter(p => p.price !== null)
+                .sort((a, b) => a.price - b.price)
+                .slice(0, 3);
+
+            if (!top.length) {
+                setResult('No DHL rates available for that destination.', true);
+                return;
+            }
+
+            const from = top[0];
+            const rest = top.slice(1).map(p => `
+                <div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px dashed rgba(255,204,0,.35);font-size:.74rem;color:#68717a;">
+                    <span>${esc(p.name)}${p.days ? ' · ' + p.days + ' day(s)' : ''}</span>
+                    <strong style="color:#161a1f;">${fmtUsd(p.price)}</strong>
+                </div>
+            `).join('');
+
+            setResult(`
+                <strong>From ${fmtKes(from.price)} <span class="gpd-estimate-green">· ${fmtUsd(from.price)}</span></strong>
+                <small>${esc(from.name)}${from.days ? ' · ' + from.days + ' day(s) transit' : ''}</small>
+                ${rest}
+                <p class="gpd-estimate-hint" style="margin-top:8px;">
+                    Indicative rate for 1 unit to ${esc(country)}. Final cost confirmed at checkout.
+                </p>
+            `);
+        } catch (err) {
+            console.error(err);
+            setResult('Shipping estimate is temporarily unavailable.', true);
+        } finally {
+            $btn.disabled = false;
+            $btn.textContent = 'Get estimate';
+        }
+    });
+
+    // Restore previous country entry
+    try {
+        const saved = JSON.parse(sessionStorage.getItem('fabs_cart_shipping') || '{}');
+        if (saved && saved.country && !$input.value) {
+            $input.value = saved.country;
+        }
+    } catch (e) { /* ignore */ }
+})();
+</script>
 {% endblock %}

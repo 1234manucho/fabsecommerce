@@ -8,22 +8,11 @@ from functools import wraps
 
 from dotenv import load_dotenv
 from flask import (
-    Flask,
-    abort,
-    flash,
-    jsonify,
-    redirect,
-    render_template,
-    request,
-    session,
-    url_for,
+    Flask, abort, flash, jsonify, redirect, render_template,
+    request, session, url_for,
 )
 from flask_login import (
-    LoginManager,
-    current_user,
-    login_required,
-    login_user,
-    logout_user,
+    LoginManager, current_user, login_required, login_user, logout_user,
 )
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
@@ -31,26 +20,11 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
 from forms import (
-    CheckoutForm,
-    ContactForm,
-    GameForm,
-    GameInquiryForm,
-    LoginForm,
-    RegisterForm,
+    CheckoutForm, ContactForm, GameForm, GameInquiryForm, LoginForm, RegisterForm,
 )
 from models import (
-    AuditLog,
-    ContactMessage,
-    DigitalEntitlement,
-    Game,
-    GameInquiry,
-    Order,
-    OrderItem,
-    PaymentTransaction,
-    Quote,
-    User,
-    WebhookEvent,
-    db,
+    Address, AuditLog, ContactMessage, DigitalEntitlement, Game, GameInquiry,
+    Order, OrderItem, PaymentTransaction, Quote, User, WebhookEvent, db,
 )
 from seed import seed_catalogue
 from services.dpo import DPOGateway, PaymentConfigurationError
@@ -81,14 +55,12 @@ migrate = Migrate()
 DEFAULT_USD_KES_RATE = Decimal("130.00")
 CATALOGUE_PAGE_SIZE = 8
 
-# Origin address used for DHL rate quotes
 DEFAULT_SHIP_ORIGIN_COUNTRY = os.getenv("DHL_ORIGIN_COUNTRY", "KE")
 DEFAULT_SHIP_ORIGIN_CITY = os.getenv("DHL_ORIGIN_CITY", "Nairobi")
 DEFAULT_SHIP_ORIGIN_POSTAL = os.getenv("DHL_ORIGIN_POSTAL", "00100")
 
 
 def _positive_decimal(value, default=DEFAULT_USD_KES_RATE):
-    """Return a positive finite Decimal or a safe fallback value."""
     try:
         number = Decimal(str(value))
     except (InvalidOperation, TypeError, ValueError):
@@ -181,7 +153,6 @@ def audit(action, entity_type, entity_id=None, detail=None):
 
 
 def _compute_order_shipping_dims(order) -> dict:
-    """Compute total weight and package dimensions for an order."""
     total_weight = 0.0
     max_length = 0.0
     max_width = 0.0
@@ -209,7 +180,6 @@ def _compute_order_shipping_dims(order) -> dict:
 
 
 def _compute_cart_shipping_dims(items) -> dict:
-    """Compute shipping dims from a list of Game objects (cart items)."""
     total_weight = 0.0
     max_length = 30.0
     max_width = 20.0
@@ -436,9 +406,6 @@ def register_routes(app):
             form.phone.data = current_user.phone
 
         if form.validate_on_submit():
-            # ------------------------------------------------------------------
-            # Parse the DHL shipping quote posted from the checkout page
-            # ------------------------------------------------------------------
             shipping_cost = Decimal("0.00")
             shipping_currency = "USD"
             raw_quote = (form.shipping_quote.data or "").strip()
@@ -453,9 +420,6 @@ def register_routes(app):
 
             grand_total = (subtotal + shipping_cost).quantize(Decimal("0.01"))
 
-            # ------------------------------------------------------------------
-            # Create the order
-            # ------------------------------------------------------------------
             order = Order(
                 reference=make_reference("GM"),
                 user_id=current_user.id if current_user.is_authenticated else None,
@@ -496,12 +460,7 @@ def register_routes(app):
             session["last_order_reference"] = order.reference
             return redirect(url_for("start_payment", order_id=order.id))
 
-        return render_template(
-            "checkout.html",
-            form=form,
-            items=items,
-            total=subtotal,
-        )
+        return render_template("checkout.html", form=form, items=items, total=subtotal)
 
     # ================================================================
     # DHL SHIPPING — RATE QUOTES
@@ -590,8 +549,6 @@ def register_routes(app):
     # ================================================================
     # DHL SHIPPING — EXTENDED APIs
     # ================================================================
-
-    # -------- 4. Electronic Proof of Delivery --------
     @app.get("/api/shipping/<tracking_number>/pod")
     def api_proof_of_delivery(tracking_number):
         try:
@@ -605,7 +562,6 @@ def register_routes(app):
             return jsonify({"error": "Could not fetch proof of delivery."}), 502
         return jsonify(result)
 
-    # -------- 7. Address Validation --------
     @app.post("/api/shipping/validate-address")
     def api_validate_address():
         data = request.get_json(silent=True) or {}
@@ -628,7 +584,6 @@ def register_routes(app):
             return jsonify({"error": "Could not validate address."}), 502
         return jsonify(result)
 
-    # -------- 8. Landing Cost --------
     @app.post("/api/shipping/landing-cost")
     def api_landing_cost():
         data = request.get_json(silent=True) or {}
@@ -693,7 +648,6 @@ def register_routes(app):
             return jsonify({"error": "Could not estimate landing cost."}), 502
         return jsonify(result)
 
-    # -------- 9. Product List --------
     @app.get("/api/shipping/products")
     def api_shipping_products():
         country = (request.args.get("country") or DEFAULT_SHIP_ORIGIN_COUNTRY).strip().upper()
@@ -708,7 +662,6 @@ def register_routes(app):
             return jsonify({"error": "Could not fetch products."}), 502
         return jsonify(result)
 
-    # -------- 11. Download Shipment Documents --------
     @app.get("/api/shipping/<tracking_number>/documents")
     def api_shipping_documents(tracking_number):
         doc_type = (request.args.get("type") or "label").strip()
@@ -723,7 +676,6 @@ def register_routes(app):
             return jsonify({"error": "Could not fetch documents."}), 502
         return jsonify(result)
 
-    # -------- 13. Country Reference List --------
     @app.get("/api/shipping/countries")
     def api_shipping_countries():
         try:
@@ -737,7 +689,6 @@ def register_routes(app):
             return jsonify({"error": "Could not fetch countries."}), 502
         return jsonify(result)
 
-    # -------- 14. Service Points Finder --------
     @app.get("/api/shipping/service-points")
     def api_service_points():
         country = (request.args.get("country") or "").strip().upper()
@@ -760,7 +711,7 @@ def register_routes(app):
         return jsonify(result)
 
     # ================================================================
-    # DHL SHIPPING — ADMIN: CREATE SHIPMENT + TRACKING + PICKUP
+    # DHL SHIPPING — ADMIN
     # ================================================================
     @app.post("/admin/orders/<int:order_id>/create-shipment")
     @admin_required
@@ -867,7 +818,6 @@ def register_routes(app):
 
         return jsonify(result)
 
-    # -------- 5. Create Pickup (Admin) --------
     @app.post("/admin/orders/<int:order_id>/request-pickup")
     @admin_required
     def admin_request_pickup(order_id):
@@ -905,7 +855,6 @@ def register_routes(app):
             flash("Could not request pickup. See logs.", "danger")
         return redirect(url_for("admin_orders"))
 
-    # -------- 6. Cancel Pickup (Admin) --------
     @app.post("/admin/pickups/<pickup_id>/cancel")
     @admin_required
     def admin_cancel_pickup(pickup_id):
@@ -922,7 +871,6 @@ def register_routes(app):
             flash("Could not cancel pickup. See logs.", "danger")
         return redirect(url_for("admin_orders"))
 
-    # -------- 10. Update Shipment (Admin) --------
     @app.post("/admin/orders/<int:order_id>/update-shipment")
     @admin_required
     def admin_update_shipment(order_id):
@@ -1138,7 +1086,7 @@ def register_routes(app):
         return redirect(url_for("inquiry"), code=303 if request.method == "POST" else 302)
 
     # ================================================================
-    # CONTACT / AUTH / ACCOUNT
+    # CONTACT / AUTH
     # ================================================================
     @app.route("/contact", methods=["GET", "POST"])
     def contact():
@@ -1203,15 +1151,126 @@ def register_routes(app):
         flash("You have signed out.", "info")
         return redirect(url_for("index"))
 
+    # ================================================================
+    # ACCOUNT + ADDRESS BOOK
+    # ================================================================
     @app.get("/account")
     @login_required
     def account():
+        addresses = (
+            Address.query
+            .filter_by(user_id=current_user.id)
+            .order_by(Address.is_default.desc(), Address.created_at.desc())
+            .all()
+        )
         return render_template(
             "account.html",
+            addresses=addresses,
             orders=Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all(),
-            quotes=[],
+            quotes=Quote.query.filter_by(user_id=current_user.id).order_by(Quote.created_at.desc()).all(),
             inquiries=GameInquiry.query.filter_by(user_id=current_user.id).order_by(GameInquiry.created_at.desc()).all(),
         )
+
+    @app.post("/account/addresses/new")
+    @login_required
+    def address_create():
+        label          = (request.form.get("label") or "Home").strip()[:80] or "Home"
+        full_name      = (request.form.get("full_name") or "").strip()
+        company        = (request.form.get("company") or "").strip() or None
+        phone          = (request.form.get("phone") or "").strip() or None
+        country        = (request.form.get("country") or "").strip().upper()
+        city           = (request.form.get("city") or "").strip()
+        postal_code    = (request.form.get("postal_code") or "").strip()
+        address_line1  = (request.form.get("address_line1") or "").strip()
+        address_line2  = (request.form.get("address_line2") or "").strip() or None
+        is_default     = request.form.get("is_default") == "on"
+
+        if not (full_name and country and city and postal_code and address_line1):
+            flash("Please fill in the required address fields.", "danger")
+            return redirect(url_for("account") + "#addresses")
+
+        existing_count = Address.query.filter_by(user_id=current_user.id).count()
+        if existing_count == 0:
+            is_default = True
+
+        if is_default:
+            Address.query.filter_by(user_id=current_user.id).update({"is_default": False})
+
+        db.session.add(Address(
+            user_id=current_user.id,
+            label=label, full_name=full_name, company=company, phone=phone,
+            country=country, city=city, postal_code=postal_code,
+            address_line1=address_line1, address_line2=address_line2,
+            is_default=is_default,
+        ))
+        audit("address_created", "address", detail=label)
+        db.session.commit()
+        flash("Address saved.", "success")
+        return redirect(url_for("account") + "#addresses")
+
+    @app.post("/account/addresses/<int:address_id>/edit")
+    @login_required
+    def address_update(address_id):
+        address = Address.query.filter_by(id=address_id, user_id=current_user.id).first_or_404()
+
+        address.label         = (request.form.get("label") or address.label).strip()[:80] or "Home"
+        address.full_name     = (request.form.get("full_name") or address.full_name).strip()
+        address.company       = (request.form.get("company") or "").strip() or None
+        address.phone         = (request.form.get("phone") or "").strip() or None
+        address.country       = (request.form.get("country") or address.country).strip().upper()
+        address.city          = (request.form.get("city") or address.city).strip()
+        address.postal_code   = (request.form.get("postal_code") or address.postal_code).strip()
+        address.address_line1 = (request.form.get("address_line1") or address.address_line1).strip()
+        address.address_line2 = (request.form.get("address_line2") or "").strip() or None
+
+        if request.form.get("is_default") == "on":
+            Address.query.filter_by(user_id=current_user.id).update({"is_default": False})
+            address.is_default = True
+
+        audit("address_updated", "address", address_id, address.label)
+        db.session.commit()
+        flash("Address updated.", "success")
+        return redirect(url_for("account") + "#addresses")
+
+    @app.post("/account/addresses/<int:address_id>/delete")
+    @login_required
+    def address_delete(address_id):
+        address = Address.query.filter_by(id=address_id, user_id=current_user.id).first_or_404()
+        was_default = address.is_default
+        label = address.label
+        db.session.delete(address)
+
+        if was_default:
+            remaining = Address.query.filter_by(user_id=current_user.id).order_by(Address.created_at.desc()).first()
+            if remaining:
+                remaining.is_default = True
+
+        audit("address_deleted", "address", address_id, label)
+        db.session.commit()
+        flash("Address removed.", "info")
+        return redirect(url_for("account") + "#addresses")
+
+    @app.post("/account/addresses/<int:address_id>/default")
+    @login_required
+    def address_set_default(address_id):
+        address = Address.query.filter_by(id=address_id, user_id=current_user.id).first_or_404()
+        Address.query.filter_by(user_id=current_user.id).update({"is_default": False})
+        address.is_default = True
+        audit("address_default_changed", "address", address_id, address.label)
+        db.session.commit()
+        flash("Default address updated.", "success")
+        return redirect(url_for("account") + "#addresses")
+
+    @app.get("/api/account/addresses")
+    @login_required
+    def api_list_addresses():
+        addresses = (
+            Address.query
+            .filter_by(user_id=current_user.id)
+            .order_by(Address.is_default.desc(), Address.created_at.desc())
+            .all()
+        )
+        return jsonify([a.to_dict() for a in addresses])
 
     # ================================================================
     # STATIC CONTENT PAGES

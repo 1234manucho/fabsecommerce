@@ -5,605 +5,159 @@
 {% block head %}
 <style>
     .cart-page {
-        --cart-red: #ff0000;
-        --cart-red-dark: #cc0000;
-        --cart-green: #21842a;
-        --cart-ink: #161a1f;
-        --cart-muted: #68717a;
-        --cart-line: #e0e3e6;
-        --cart-soft: #f4f5f6;
-        min-height: 70vh;
-        background: var(--cart-soft);
-        color: var(--cart-ink);
+        --cart-red: #ff0000; --cart-red-dark: #cc0000; --cart-green: #21842a;
+        --cart-ink: #161a1f; --cart-muted: #68717a; --cart-line: #e0e3e6;
+        --cart-soft: #f4f5f6; --dhl-yellow: #ffcc00; --dhl-red: #d40511; --dhl-amber: #b45309;
+        min-height: 70vh; background: var(--cart-soft); color: var(--cart-ink);
     }
-
-    .cart-shell {
-        width: min(1180px, calc(100% - 40px));
-        margin-inline: auto;
-    }
-
-    .cart-hero {
-        position: relative;
-        overflow: hidden;
-        padding: clamp(54px, 8vw, 92px) 0;
-        background:
-            radial-gradient(circle at 88% 20%, rgba(237, 49, 56, 0.16), transparent 28%),
-            linear-gradient(135deg, #11161b 0%, #1d242b 100%);
-        color: #fff;
-    }
-
-    .cart-hero::after {
-        content: "";
-        position: absolute;
-        right: -80px;
-        bottom: -130px;
-        width: 330px;
-        height: 330px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 50%;
-    }
-
-    .cart-kicker {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 15px;
-        color: #ff7479;
-        font-size: 0.72rem;
-        font-weight: 900;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-    }
-
-    .cart-kicker::before {
-        content: "";
-        width: 24px;
-        height: 2px;
-        background: currentColor;
-    }
-
-    .cart-hero h1 {
-        max-width: 760px;
-        margin: 0;
-        font-size: clamp(2.5rem, 6vw, 4.7rem);
-        letter-spacing: -0.055em;
-        line-height: 0.98;
-    }
-
-    .cart-hero p {
-        max-width: 680px;
-        margin: 18px 0 0;
-        color: #bdc5cc;
-        font-size: clamp(0.95rem, 2vw, 1.08rem);
-        line-height: 1.7;
-    }
-
-    .cart-section {
-        padding: clamp(38px, 6vw, 74px) 0 86px;
-    }
-
-    .cart-layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
-        align-items: start;
-        gap: 28px;
-    }
-
-    .cart-list {
-        display: grid;
-        gap: 14px;
-        min-width: 0;
-    }
-
-    .cart-item {
-        display: grid;
-        grid-template-columns: 150px minmax(0, 1fr) minmax(145px, auto);
-        align-items: center;
-        gap: 22px;
-        padding: 18px;
-        background: #fff;
-        border: 1px solid var(--cart-line);
-        box-shadow: 0 10px 30px rgba(17, 24, 39, 0.04);
-        transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
-    }
-
-    .cart-item:hover {
-        border-color: #cfd4d8;
-        box-shadow: 0 16px 42px rgba(17, 24, 39, 0.07);
-        transform: translateY(-1px);
-    }
-
-    .cart-item-media {
-        display: grid;
-        place-items: center;
-        width: 150px;
-        aspect-ratio: 1 / 1;
-        overflow: hidden;
-        background: #f0f2f3;
-    }
-
-    .cart-item-media img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-    }
-
-    .cart-item-copy {
-        min-width: 0;
-    }
-
-    .cart-item-meta {
-        display: block;
-        margin-bottom: 7px;
-        color: var(--cart-green);
-        font-size: 0.68rem;
-        font-weight: 900;
-        letter-spacing: 0.07em;
-        line-height: 1.45;
-        text-transform: uppercase;
-    }
-
-    .cart-item h2 {
-        margin: 0;
-        font-size: clamp(1.1rem, 2vw, 1.38rem);
-        letter-spacing: -0.025em;
-        line-height: 1.2;
-    }
-
-    .cart-item-edition {
-        margin: 7px 0 14px;
-        color: var(--cart-muted);
-        font-size: 0.82rem;
-    }
-
-    .cart-remove-form {
-        margin: 0;
-    }
-
-    .cart-remove {
-        padding: 0;
-        border: 0;
-        border-bottom: 1px solid transparent;
-        background: transparent;
-        color: #8a9198;
-        font: inherit;
-        font-size: 0.7rem;
-        font-weight: 850;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        cursor: pointer;
-    }
-
-    .cart-remove:hover,
-    .cart-remove:focus-visible {
-        border-bottom-color: var(--cart-red);
-        color: var(--cart-red);
-    }
-
-    .cart-item-price {
-        min-width: 0;
-        padding-left: 18px;
-        border-left: 1px solid var(--cart-line);
-        text-align: right;
-    }
-
-    .cart-item-price strong,
-    .cart-item-price span {
-        display: block;
-        white-space: nowrap;
-    }
-
-    .cart-item-price strong {
-        font-size: 1.1rem;
-        letter-spacing: -0.02em;
-    }
-
-    .cart-item-price span {
-        margin-top: 5px;
-        color: var(--cart-green);
-        font-size: 0.78rem;
-        font-weight: 800;
-    }
-
-    .cart-summary {
-        position: sticky;
-        top: 120px;
-        padding: 28px;
-        background: #fff;
-        border: 1px solid var(--cart-line);
-        box-shadow: 0 18px 55px rgba(17, 24, 39, 0.07);
-    }
-
-    .cart-summary h2 {
-        margin: 0 0 20px;
-        font-size: 1.7rem;
-        letter-spacing: -0.035em;
-    }
-
-    .cart-summary dl {
-        margin: 0;
-    }
-
-    .cart-summary-row {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: start;
-        gap: 16px;
-        padding: 15px 0;
-        border-top: 1px solid var(--cart-line);
-    }
-
-    .cart-summary dt {
-        color: var(--cart-muted);
-        font-size: 0.82rem;
-        font-weight: 750;
-    }
-
-    .cart-summary dd {
-        margin: 0;
-        text-align: right;
-    }
-
-    .cart-money-kes,
-    .cart-money-usd {
-        display: block;
-        white-space: nowrap;
-    }
-
-    .cart-money-kes {
-        color: var(--cart-ink);
-        font-size: 0.92rem;
-        font-weight: 900;
-    }
-
-    .cart-money-usd {
-        margin-top: 4px;
-        color: var(--cart-green);
-        font-size: 0.72rem;
-        font-weight: 800;
-    }
+    .cart-shell { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+    .cart-hero { position: relative; overflow: hidden; padding: clamp(54px, 8vw, 92px) 0;
+        background: radial-gradient(circle at 88% 20%, rgba(237, 49, 56, 0.16), transparent 28%),
+                    linear-gradient(135deg, #11161b 0%, #1d242b 100%); color: #fff; }
+    .cart-hero::after { content: ""; position: absolute; right: -80px; bottom: -130px; width: 330px;
+        height: 330px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 50%; }
+    .cart-kicker { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 15px;
+        color: #ff7479; font-size: 0.72rem; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
+    .cart-kicker::before { content: ""; width: 24px; height: 2px; background: currentColor; }
+    .cart-hero h1 { max-width: 760px; margin: 0; font-size: clamp(2.5rem, 6vw, 4.7rem);
+        letter-spacing: -0.055em; line-height: 0.98; }
+    .cart-hero p { max-width: 680px; margin: 18px 0 0; color: #bdc5cc;
+        font-size: clamp(0.95rem, 2vw, 1.08rem); line-height: 1.7; }
+    .cart-section { padding: clamp(38px, 6vw, 74px) 0 86px; }
+    .cart-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+        align-items: start; gap: 28px; }
+    .cart-list { display: grid; gap: 14px; min-width: 0; }
+    .cart-item { display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(145px, auto);
+        align-items: center; gap: 22px; padding: 18px; background: #fff; border: 1px solid var(--cart-line);
+        box-shadow: 0 10px 30px rgba(17, 24, 39, 0.04); transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
+    .cart-item:hover { border-color: #cfd4d8; box-shadow: 0 16px 42px rgba(17, 24, 39, 0.07); transform: translateY(-1px); }
+    .cart-item-media { display: grid; place-items: center; width: 150px; aspect-ratio: 1 / 1;
+        overflow: hidden; background: #f0f2f3; }
+    .cart-item-media img { width: 100%; height: 100%; object-fit: contain; }
+    .cart-item-copy { min-width: 0; }
+    .cart-item-meta { display: block; margin-bottom: 7px; color: var(--cart-green);
+        font-size: 0.68rem; font-weight: 900; letter-spacing: 0.07em; line-height: 1.45; text-transform: uppercase; }
+    .cart-item h2 { margin: 0; font-size: clamp(1.1rem, 2vw, 1.38rem); letter-spacing: -0.025em; line-height: 1.2; }
+    .cart-item-edition { margin: 7px 0 14px; color: var(--cart-muted); font-size: 0.82rem; }
+    .cart-remove { padding: 0; border: 0; border-bottom: 1px solid transparent; background: transparent;
+        color: #8a9198; font: inherit; font-size: 0.7rem; font-weight: 850; letter-spacing: 0.05em;
+        text-transform: uppercase; cursor: pointer; }
+    .cart-remove:hover, .cart-remove:focus-visible { border-bottom-color: var(--cart-red); color: var(--cart-red); }
+    .cart-item-price { min-width: 0; padding-left: 18px; border-left: 1px solid var(--cart-line); text-align: right; }
+    .cart-item-price strong, .cart-item-price span { display: block; white-space: nowrap; }
+    .cart-item-price strong { font-size: 1.1rem; letter-spacing: -0.02em; }
+    .cart-item-price span { margin-top: 5px; color: var(--cart-green); font-size: 0.78rem; font-weight: 800; }
+    .cart-summary { position: sticky; top: 120px; padding: 28px; background: #fff;
+        border: 1px solid var(--cart-line); box-shadow: 0 18px 55px rgba(17, 24, 39, 0.07); }
+    .cart-summary h2 { margin: 0 0 20px; font-size: 1.7rem; letter-spacing: -0.035em; }
+    .cart-summary dl { margin: 0; }
+    .cart-summary-row { display: grid; grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start; gap: 16px; padding: 15px 0; border-top: 1px solid var(--cart-line); }
+    .cart-summary dt { color: var(--cart-muted); font-size: 0.82rem; font-weight: 750; }
+    .cart-summary dd { margin: 0; text-align: right; }
+    .cart-money-kes, .cart-money-usd { display: block; white-space: nowrap; }
+    .cart-money-kes { color: var(--cart-ink); font-size: 0.92rem; font-weight: 900; }
+    .cart-money-usd { margin-top: 4px; color: var(--cart-green); font-size: 0.72rem; font-weight: 800; }
 
     /* ---------- Shipping estimator ---------- */
-    .cart-shipping-block {
-        padding: 15px 0;
-        border-top: 1px solid var(--cart-line);
-    }
+    .cart-shipping-block { padding: 15px 0; border-top: 1px solid var(--cart-line); }
+    .cart-shipping-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+    .cart-shipping-row input { width: 100%; min-height: 44px; padding: 8px 12px;
+        border: 1px solid #cfd4d8; background: #fff; color: var(--cart-ink); font: inherit;
+        font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase;
+        transition: border-color 160ms ease, box-shadow 160ms ease; }
+    .cart-shipping-row input:focus { border-color: var(--cart-red);
+        box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.12); outline: none; }
+    .cart-shipping-row button { min-height: 44px; padding: 0 16px; border: 1px solid var(--cart-ink);
+        background: var(--cart-ink); color: #fff; font: inherit; font-size: 0.7rem; font-weight: 900;
+        letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
+        transition: background-color 160ms ease, border-color 160ms ease; }
+    .cart-shipping-row button:hover { background: #000; border-color: #000; }
+    .cart-shipping-rates { display: none; grid-gap: 8px; margin-top: 12px; }
+    .cart-shipping-rates.is-visible { display: grid; }
+    .cart-shipping-option { display: block; cursor: pointer; }
+    .cart-shipping-option input { position: absolute; opacity: 0; pointer-events: none; }
+    .cart-shipping-card { display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; padding: 12px 14px; background: #fff; border: 1px solid var(--cart-line);
+        transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease; }
+    .cart-shipping-option input:checked + .cart-shipping-card { border-color: var(--cart-red);
+        background: #fff7f7; box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.12); }
+    .cart-shipping-card strong { display: block; font-size: 0.84rem; line-height: 1.25; color: var(--cart-ink); }
+    .cart-shipping-card small { display: block; margin-top: 4px; color: var(--cart-muted);
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+    .cart-shipping-card .cart-shipping-price { text-align: right; white-space: nowrap; }
+    .cart-shipping-card .cart-shipping-price strong { font-size: 0.88rem; }
+    .cart-shipping-card .cart-shipping-price span { display: block; margin-top: 3px;
+        color: var(--cart-green); font-size: 0.72rem; font-weight: 800; }
+    .cart-shipping-status { margin: 8px 0 0; color: var(--cart-muted); font-size: 0.7rem; line-height: 1.55; }
+    .cart-shipping-status.is-error { color: #b91c1c; }
+    .cart-shipping-hint { margin: 10px 0 0; color: #7a828a; font-size: 0.68rem; line-height: 1.5; }
 
-    .cart-shipping-block dt {
-        margin-bottom: 10px;
-    }
+    /* ---------- Duties & taxes preview ---------- */
+    .cart-duties-panel { margin-top: 12px; border: 1px solid var(--cart-line);
+        border-left: 3px solid var(--dhl-yellow); background: #fffdf3; }
+    .cart-duties-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 10px; align-items: center; padding: 12px 14px; }
+    .cart-duties-mark { display: grid; place-items: center; min-width: 42px; height: 22px;
+        padding: 0 6px; background: var(--dhl-yellow); color: var(--dhl-red);
+        font-weight: 900; font-size: 11px; letter-spacing: -0.02em; border-radius: 2px; }
+    .cart-duties-head strong { display: block; font-size: 0.8rem; color: var(--cart-ink); }
+    .cart-duties-head small { display: block; margin-top: 2px; color: var(--cart-muted);
+        font-size: 0.62rem; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 700; }
+    .cart-duties-amount { color: var(--cart-ink); font-size: 0.92rem; font-weight: 900;
+        letter-spacing: -0.02em; white-space: nowrap; }
+    .cart-duties-note { margin: 0; padding: 6px 14px 10px; color: #7a5410; font-size: 0.62rem; line-height: 1.5; }
 
-    .cart-shipping-row {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 8px;
-    }
+    .cart-summary-row.total { align-items: center; padding: 20px 0;
+        border-bottom: 1px solid var(--cart-line); }
+    .cart-summary-row.total dt { color: var(--cart-ink); font-size: 0.95rem; font-weight: 900; text-transform: uppercase; }
+    .cart-summary-row.total .cart-money-kes { font-size: 1.45rem; letter-spacing: -0.035em; }
+    .cart-summary-row.total .cart-money-usd { font-size: 0.82rem; }
+    .cart-summary-row.duties-row dt { color: #7a5410; font-weight: 850; }
+    .cart-summary-row.duties-row .cart-money-kes { color: #7a5410; }
+    .cart-summary-row.duties-row .cart-money-usd { color: var(--dhl-amber); }
 
-    .cart-shipping-row input {
-        width: 100%;
-        min-height: 44px;
-        padding: 8px 12px;
-        border: 1px solid #cfd4d8;
-        background: #fff;
-        color: var(--cart-ink);
-        font: inherit;
-        font-size: 0.82rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        transition: border-color 160ms ease, box-shadow 160ms ease;
-    }
+    .cart-checkout { display: flex; align-items: center; justify-content: center; width: 100%;
+        min-height: 56px; padding: 13px 18px; margin-top: 22px; border: 1px solid #ff0000;
+        background: #ff0000; color: #fff; font-size: 0.76rem; font-weight: 900;
+        letter-spacing: 0.05em; line-height: 1.25; text-align: center; text-decoration: none;
+        text-transform: uppercase; transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
+    .cart-checkout:hover { background: #cc0000; border-color: #cc0000; transform: translateY(-1px);
+        box-shadow: 0 10px 25px rgba(255, 0, 0, 0.28); }
+    .cart-checkout:active { transform: translateY(0); box-shadow: none; }
+    .cart-checkout:focus-visible { outline: 3px solid rgba(255, 0, 0, 0.35); outline-offset: 3px; }
+    .cart-security-note, .cart-rate-note { color: #7a828a; font-size: 0.7rem; line-height: 1.6; }
+    .cart-security-note { display: flex; gap: 8px; margin: 16px 0 0; }
+    .cart-security-note::before { content: "✓"; flex: 0 0 auto; color: var(--cart-green); font-weight: 900; }
+    .cart-rate-note { padding-top: 15px; margin: 15px 0 0; border-top: 1px solid var(--cart-line); }
 
-    .cart-shipping-row input:focus {
-        border-color: var(--cart-red);
-        box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.12);
-        outline: none;
-    }
+    .cart-empty { padding: clamp(45px, 8vw, 82px) 28px; background: #fff;
+        border: 1px solid var(--cart-line); text-align: center; }
+    .cart-empty-icon { display: grid; place-items: center; width: 64px; height: 64px;
+        margin: 0 auto 20px; background: #f7e9ea; color: var(--cart-red); border-radius: 50%; font-size: 1.6rem; }
+    .cart-empty h2 { margin: 0; font-size: clamp(1.65rem, 3vw, 2.25rem); letter-spacing: -0.035em; }
+    .cart-empty p { margin: 12px 0 24px; color: var(--cart-muted); }
+    .cart-browse { display: inline-flex; align-items: center; justify-content: center;
+        min-height: 52px; padding: 12px 22px; border: 1px solid #ff0000; background: #ff0000;
+        color: #fff; font-size: 0.76rem; font-weight: 900; letter-spacing: 0.05em;
+        text-decoration: none; text-transform: uppercase; transition: background-color 160ms ease, border-color 160ms ease; }
+    .cart-browse:hover { background: #cc0000; border-color: #cc0000; }
 
-    .cart-shipping-row button {
-        min-height: 44px;
-        padding: 0 16px;
-        border: 1px solid var(--cart-ink);
-        background: var(--cart-ink);
-        color: #fff;
-        font: inherit;
-        font-size: 0.7rem;
-        font-weight: 900;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: background-color 160ms ease, border-color 160ms ease;
-    }
-
-    .cart-shipping-row button:hover {
-        background: #000;
-        border-color: #000;
-    }
-
-    .cart-shipping-rates {
-        display: none;
-        grid-gap: 8px;
-        margin-top: 12px;
-    }
-
-    .cart-shipping-rates.is-visible {
-        display: grid;
-    }
-
-    .cart-shipping-option {
-        display: block;
-        cursor: pointer;
-    }
-
-    .cart-shipping-option input {
-        position: absolute;
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    .cart-shipping-card {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 12px 14px;
-        background: #fff;
-        border: 1px solid var(--cart-line);
-        transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
-    }
-
-    .cart-shipping-option input:checked + .cart-shipping-card {
-        border-color: var(--cart-red);
-        background: #fff7f7;
-        box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.12);
-    }
-
-    .cart-shipping-card strong {
-        display: block;
-        font-size: 0.84rem;
-        line-height: 1.25;
-        color: var(--cart-ink);
-    }
-
-    .cart-shipping-card small {
-        display: block;
-        margin-top: 4px;
-        color: var(--cart-muted);
-        font-size: 0.68rem;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-    }
-
-    .cart-shipping-card .cart-shipping-price {
-        text-align: right;
-        white-space: nowrap;
-    }
-
-    .cart-shipping-card .cart-shipping-price strong {
-        font-size: 0.88rem;
-    }
-
-    .cart-shipping-card .cart-shipping-price span {
-        display: block;
-        margin-top: 3px;
-        color: var(--cart-green);
-        font-size: 0.72rem;
-        font-weight: 800;
-    }
-
-    .cart-shipping-status {
-        margin: 8px 0 0;
-        color: var(--cart-muted);
-        font-size: 0.7rem;
-        line-height: 1.55;
-    }
-
-    .cart-shipping-status.is-error {
-        color: #b91c1c;
-    }
-
-    .cart-shipping-hint {
-        margin: 10px 0 0;
-        color: #7a828a;
-        font-size: 0.68rem;
-        line-height: 1.5;
-    }
-
-    .cart-summary-row.total {
-        align-items: center;
-        padding: 20px 0;
-        border-bottom: 1px solid var(--cart-line);
-    }
-
-    .cart-summary-row.total dt {
-        color: var(--cart-ink);
-        font-size: 0.95rem;
-        font-weight: 900;
-        text-transform: uppercase;
-    }
-
-    .cart-summary-row.total .cart-money-kes {
-        font-size: 1.45rem;
-        letter-spacing: -0.035em;
-    }
-
-    .cart-summary-row.total .cart-money-usd {
-        font-size: 0.82rem;
-    }
-
-    /* ---------- Pure red checkout button ---------- */
-    .cart-checkout {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        min-height: 56px;
-        padding: 13px 18px;
-        margin-top: 22px;
-        border: 1px solid #ff0000;
-        background: #ff0000;
-        color: #fff;
-        font-size: 0.76rem;
-        font-weight: 900;
-        letter-spacing: 0.05em;
-        line-height: 1.25;
-        text-align: center;
-        text-decoration: none;
-        text-transform: uppercase;
-        transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
-    }
-
-    .cart-checkout:hover {
-        background: #cc0000;
-        border-color: #cc0000;
-        transform: translateY(-1px);
-        box-shadow: 0 10px 25px rgba(255, 0, 0, 0.28);
-    }
-
-    .cart-checkout:active {
-        transform: translateY(0);
-        box-shadow: none;
-    }
-
-    .cart-checkout:focus-visible {
-        outline: 3px solid rgba(255, 0, 0, 0.35);
-        outline-offset: 3px;
-    }
-
-    .cart-security-note,
-    .cart-rate-note {
-        color: #7a828a;
-        font-size: 0.7rem;
-        line-height: 1.6;
-    }
-
-    .cart-security-note {
-        display: flex;
-        gap: 8px;
-        margin: 16px 0 0;
-    }
-
-    .cart-security-note::before {
-        content: "✓";
-        flex: 0 0 auto;
-        color: var(--cart-green);
-        font-weight: 900;
-    }
-
-    .cart-rate-note {
-        padding-top: 15px;
-        margin: 15px 0 0;
-        border-top: 1px solid var(--cart-line);
-    }
-
-    .cart-empty {
-        padding: clamp(45px, 8vw, 82px) 28px;
-        background: #fff;
-        border: 1px solid var(--cart-line);
-        text-align: center;
-    }
-
-    .cart-empty-icon {
-        display: grid;
-        place-items: center;
-        width: 64px;
-        height: 64px;
-        margin: 0 auto 20px;
-        background: #f7e9ea;
-        color: var(--cart-red);
-        border-radius: 50%;
-        font-size: 1.6rem;
-    }
-
-    .cart-empty h2 {
-        margin: 0;
-        font-size: clamp(1.65rem, 3vw, 2.25rem);
-        letter-spacing: -0.035em;
-    }
-
-    .cart-empty p {
-        margin: 12px 0 24px;
-        color: var(--cart-muted);
-    }
-
-    .cart-browse {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 52px;
-        padding: 12px 22px;
-        border: 1px solid #ff0000;
-        background: #ff0000;
-        color: #fff;
-        font-size: 0.76rem;
-        font-weight: 900;
-        letter-spacing: 0.05em;
-        text-decoration: none;
-        text-transform: uppercase;
-        transition: background-color 160ms ease, border-color 160ms ease;
-    }
-
-    .cart-browse:hover {
-        background: #cc0000;
-        border-color: #cc0000;
-    }
-
-    @media (max-width: 900px) {
-        .cart-layout {
-            grid-template-columns: 1fr;
-        }
-
-        .cart-summary {
-            position: static;
-        }
-    }
-
+    @media (max-width: 900px) { .cart-layout { grid-template-columns: 1fr; } .cart-summary { position: static; } }
     @media (max-width: 650px) {
-        .cart-shell {
-            width: min(100% - 24px, 1180px);
-        }
-
-        .cart-item {
-            grid-template-columns: 104px minmax(0, 1fr);
-            align-items: start;
-            gap: 16px;
-            padding: 14px;
-        }
-
-        .cart-item-media {
-            width: 104px;
-        }
-
-        .cart-item-price {
-            grid-column: 2;
-            padding: 12px 0 0;
-            border-top: 1px solid var(--cart-line);
-            border-left: 0;
-            text-align: left;
-        }
-
-        .cart-item-price strong,
-        .cart-item-price span {
-            white-space: normal;
-        }
+        .cart-shell { width: min(100% - 24px, 1180px); }
+        .cart-item { grid-template-columns: 104px minmax(0, 1fr); align-items: start; gap: 16px; padding: 14px; }
+        .cart-item-media { width: 104px; }
+        .cart-item-price { grid-column: 2; padding: 12px 0 0; border-top: 1px solid var(--cart-line);
+            border-left: 0; text-align: left; }
+        .cart-item-price strong, .cart-item-price span { white-space: normal; }
     }
-
     @media (max-width: 420px) {
-        .cart-item {
-            grid-template-columns: 84px minmax(0, 1fr);
-        }
-
-        .cart-item-media {
-            width: 84px;
-        }
-
-        .cart-summary {
-            padding: 22px 18px;
-        }
-
-        .cart-summary-row {
-            gap: 10px;
-        }
+        .cart-item { grid-template-columns: 84px minmax(0, 1fr); }
+        .cart-item-media { width: 84px; }
+        .cart-summary { padding: 22px 18px; }
+        .cart-summary-row { gap: 10px; }
+        .cart-duties-head { grid-template-columns: 1fr; gap: 6px; }
     }
 </style>
 {% endblock %}
@@ -614,10 +168,7 @@
         <div class="cart-shell">
             <span class="cart-kicker">Secure order</span>
             <h1>Your inquiry cart.</h1>
-            <p>
-                Review each product's application, region and edition before continuing to
-                secure checkout.
-            </p>
+            <p>Review each product's application, region and edition before continuing to secure checkout.</p>
         </div>
     </section>
 
@@ -627,32 +178,17 @@
                 {% for item in items %}
                 <article class="cart-item">
                     <div class="cart-item-media">
-                        <img
-                            src="{{ item.image_url }}"
-                            alt="{{ item.title }} product image"
-                            loading="lazy"
-                            decoding="async"
-                            referrerpolicy="no-referrer"
-                        >
+                        <img src="{{ item.image_url }}" alt="{{ item.title }} product image" loading="lazy" decoding="async" referrerpolicy="no-referrer">
                     </div>
-
                     <div class="cart-item-copy">
                         <small class="cart-item-meta">{{ item.platform }} · {{ item.region }}</small>
                         <h2>{{ item.title }}</h2>
                         <p class="cart-item-edition">{{ item.edition }}</p>
-
-                        <form
-                            class="cart-remove-form"
-                            method="post"
-                            action="{{ url_for('remove_from_cart', game_id=item.id) }}"
-                        >
+                        <form class="cart-remove-form" method="post" action="{{ url_for('remove_from_cart', game_id=item.id) }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button class="cart-remove" type="submit" aria-label="Remove {{ item.title }} from cart">
-                                Remove item
-                            </button>
+                            <button class="cart-remove" type="submit" aria-label="Remove {{ item.title }} from cart">Remove item</button>
                         </form>
                     </div>
-
                     <div class="cart-item-price" aria-label="Item price">
                         <strong>{{ item.price|money_kes }}</strong>
                         <span>{{ item.price|money_usd }}</span>
@@ -673,6 +209,9 @@
                 <span class="cart-kicker">Order summary</span>
                 <h2 id="cart-summary-title">Cart totals</h2>
 
+                <!-- Country autocomplete suggestions from DHL -->
+                <datalist id="cart-country-datalist"></datalist>
+
                 <dl>
                     <div class="cart-summary-row">
                         <dt>Subtotal</dt>
@@ -682,32 +221,46 @@
                         </dd>
                     </div>
 
-                    <!-- ================== DHL SHIPPING ESTIMATOR ================== -->
+                    <!-- ============ DHL SHIPPING ESTIMATOR ============ -->
                     <div class="cart-shipping-block">
-                        <dt>Delivery</dt>
+                        <dt>Delivery (DHL Express)</dt>
                         <dd>
                             <div class="cart-shipping-row">
-                                <input
-                                    id="cart-shipping-country"
-                                    type="text"
-                                    maxlength="2"
-                                    placeholder="Country code (e.g. US)"
-                                    autocomplete="country"
-                                    aria-label="Destination country code"
-                                >
-                                <button id="cart-shipping-quote-btn" type="button">
-                                    Get rates
-                                </button>
+                                <input id="cart-shipping-country" type="text" maxlength="2"
+                                       placeholder="Country code (e.g. US)" autocomplete="country"
+                                       list="cart-country-datalist" aria-label="Destination country code">
+                                <button id="cart-shipping-quote-btn" type="button">Get rates</button>
                             </div>
 
                             <div id="cart-shipping-rates" class="cart-shipping-rates" aria-live="polite"></div>
                             <p id="cart-shipping-status" class="cart-shipping-status" hidden></p>
-                            <p class="cart-shipping-hint">
-                                Enter your 2-letter country code to see DHL Express options.
-                            </p>
+                            <p class="cart-shipping-hint">Enter your 2-letter country code to see DHL Express options.</p>
+
+                            <!-- Duties & taxes preview -->
+                            <div id="cart-duties-panel" class="cart-duties-panel" hidden>
+                                <div class="cart-duties-head">
+                                    <span class="cart-duties-mark">DHL</span>
+                                    <div>
+                                        <strong>Estimated duties &amp; taxes</strong>
+                                        <small>Customs clearance at destination</small>
+                                    </div>
+                                    <strong class="cart-duties-amount" id="cart-duties-amount">—</strong>
+                                </div>
+                                <p class="cart-duties-note">
+                                    Estimate only. Final duties are determined by destination customs.
+                                </p>
+                            </div>
                         </dd>
                     </div>
-                    <!-- ============================================================ -->
+                    <!-- ================================================ -->
+
+                    <div class="cart-summary-row duties-row" id="cart-summary-duties-row" hidden>
+                        <dt>Duties &amp; taxes</dt>
+                        <dd>
+                            <strong id="cart-summary-duties-kes" class="cart-money-kes">KES 0.00</strong>
+                            <span id="cart-summary-duties-usd" class="cart-money-usd">USD 0.00</span>
+                        </dd>
+                    </div>
 
                     <div class="cart-summary-row total">
                         <dt>Total</dt>
@@ -718,18 +271,15 @@
                     </div>
                 </dl>
 
-                <a class="cart-checkout" href="{{ url_for('checkout') }}">
-                    Continue to secure checkout
-                </a>
+                <a class="cart-checkout" href="{{ url_for('checkout') }}">Continue to secure checkout</a>
 
                 <p class="cart-security-note">
                     Card details are entered and processed through the approved secure checkout.
                 </p>
                 <p class="cart-rate-note">
-                    KES is displayed first for local convenience. USD is the catalogue base
-                    currency. Indicative conversion: 1 USD = KES
-                    {{ '{:,.2f}'.format(usd_kes_rate) }}. The final payable amount and exchange
-                    rate are confirmed at checkout.
+                    KES is displayed first for local convenience. USD is the catalogue base currency.
+                    Indicative conversion: 1 USD = KES {{ '{:,.2f}'.format(usd_kes_rate) }}. The final
+                    payable amount and exchange rate are confirmed at checkout.
                 </p>
             </aside>
             {% endif %}
@@ -740,49 +290,135 @@
 {% if items %}
 <script>
 (function () {
-    const USD_KES        = Number({{ usd_kes_rate|float }});
-    const SUBTOTAL_USD   = Number({{ total }});
+    const USD_KES      = Number({{ usd_kes_rate|float }});
+    const SUBTOTAL_USD = Number({{ total }});
 
     const $input   = document.getElementById('cart-shipping-country');
     const $btn     = document.getElementById('cart-shipping-quote-btn');
     const $rates   = document.getElementById('cart-shipping-rates');
     const $status  = document.getElementById('cart-shipping-status');
+    const $datalist = document.getElementById('cart-country-datalist');
+
+    const $dutiesPanel = document.getElementById('cart-duties-panel');
+    const $dutiesAmt   = document.getElementById('cart-duties-amount');
+    const $sumDutyK    = document.getElementById('cart-summary-duties-kes');
+    const $sumDutyU    = document.getElementById('cart-summary-duties-usd');
+    const $sumDutyRow  = document.getElementById('cart-summary-duties-row');
+
     const $totalK  = document.getElementById('cart-total-kes');
     const $totalU  = document.getElementById('cart-total-usd');
 
     if (!$btn) return;
 
-    const fmtUsd = v => 'US$ ' + Number(v).toLocaleString('en-US', {
-        minimumFractionDigits: 2, maximumFractionDigits: 2
-    });
+    const state = { country: '', shipping: 0, duties: 0, product: null };
+
+    const fmtUsd = v => 'US$ ' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const fmtKes = v => 'KES ' + Math.round(Number(v) * USD_KES).toLocaleString('en-KE');
+    const esc = s => String(s == null ? '' : s).replace(/[<>]/g, '');
 
     const setStatus = (msg, isError) => {
-        if (!msg) {
-            $status.hidden = true;
-            $status.textContent = '';
-            return;
-        }
-        $status.hidden = false;
-        $status.textContent = msg;
+        if (!msg) { $status.hidden = true; $status.textContent = ''; return; }
+        $status.hidden = false; $status.textContent = msg;
         $status.classList.toggle('is-error', Boolean(isError));
     };
 
-    const applyShipping = (costUsd) => {
-        const cost = Number(costUsd) || 0;
-        $totalK.textContent = fmtKes(SUBTOTAL_USD + cost);
-        $totalU.textContent = fmtUsd(SUBTOTAL_USD + cost);
+    const updateTotals = () => {
+        const shipping = Number(state.shipping) || 0;
+        const duties   = Number(state.duties)   || 0;
+        const total    = SUBTOTAL_USD + shipping + duties;
 
-        // Persist chosen rate so the checkout page can reuse it
+        $totalK.textContent = fmtKes(total);
+        $totalU.textContent = fmtUsd(total);
+
+        if (duties > 0) {
+            $sumDutyK.textContent = fmtKes(duties);
+            $sumDutyU.textContent = fmtUsd(duties);
+            $sumDutyRow.hidden = false;
+        } else {
+            $sumDutyRow.hidden = true;
+        }
+
+        // Persist for checkout
         try {
             sessionStorage.setItem('fabs_cart_shipping', JSON.stringify({
-                cost_usd: cost,
-                country: ($input.value || '').trim().toUpperCase()
+                country: state.country,
+                cost_usd: shipping + duties,
+                cost_shipping: shipping,
+                cost_duties: duties
             }));
         } catch (e) { /* ignore */ }
     };
 
-    const renderRates = (products) => {
+    // ============ COUNTRY AUTOCOMPLETE ============
+    (async () => {
+        try {
+            const cached = sessionStorage.getItem('fabs_dhl_countries');
+            if (cached) applyCountryList(JSON.parse(cached));
+            const res = await fetch('/api/shipping/countries', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+            if (!res.ok) return;
+            const data = await res.json();
+            const list = Array.isArray(data) ? data : (data.countries || data.data || []);
+            if (list?.length) {
+                applyCountryList(list);
+                sessionStorage.setItem('fabs_dhl_countries', JSON.stringify(list));
+            }
+        } catch (e) { /* silent */ }
+    })();
+
+    function applyCountryList(list) {
+        if (!$datalist) return;
+        $datalist.innerHTML = '';
+        list.slice(0, 300).forEach(c => {
+            const code = c.countryCode || c.code || '';
+            const name = c.countryName || c.name || code;
+            if (!code || !name) return;
+            const opt = document.createElement('option');
+            opt.value = code;      // user types code
+            opt.label = `${name} (${code})`;
+            $datalist.appendChild(opt);
+        });
+    }
+
+    // ============ DUTIES PREVIEW ============
+    async function loadDuties(country) {
+        if (!country || country.length !== 2) {
+            $dutiesPanel.hidden = true;
+            state.duties = 0;
+            updateTotals();
+            return;
+        }
+        try {
+            const res = await fetch(`/api/shipping/landing-cost/cart?country=${encodeURIComponent(country)}`, {
+                headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+            });
+            const data = await res.json();
+            if (!res.ok) { $dutiesPanel.hidden = true; state.duties = 0; updateTotals(); return; }
+
+            const total = pickNumber(data, ['totalPrice.0.price','totalPrice.price','totalCharge.0.price','totalCharge.price','totalAmount','total']) || 0;
+            if (total <= 0) { $dutiesPanel.hidden = true; state.duties = 0; updateTotals(); return; }
+
+            state.duties = total;
+            $dutiesAmt.textContent = fmtUsd(total);
+            $dutiesPanel.hidden = false;
+            updateTotals();
+        } catch (e) {
+            $dutiesPanel.hidden = true;
+            state.duties = 0;
+            updateTotals();
+        }
+    }
+
+    function pickNumber(obj, paths) {
+        for (const path of paths) {
+            const v = path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
+            if (typeof v === 'number' && v > 0) return v;
+            if (typeof v === 'string' && !isNaN(parseFloat(v)) && parseFloat(v) > 0) return parseFloat(v);
+        }
+        return 0;
+    }
+
+    // ============ RENDER RATES ============
+    function renderRates(products, country) {
         $rates.innerHTML = '';
         const top = products.slice(0, 5);
 
@@ -795,11 +431,10 @@
             const label = document.createElement('label');
             label.className = 'cart-shipping-option';
             label.innerHTML = `
-                <input type="radio" name="cart_shipping_rate" id="${id}"
-                       value="${price !== null ? price : ''}" ${idx === 0 ? 'checked' : ''}>
+                <input type="radio" name="cart_shipping_rate" id="${id}" value="${price !== null ? price : ''}" ${idx === 0 ? 'checked' : ''}>
                 <div class="cart-shipping-card">
                     <div>
-                        <strong>${name}</strong>
+                        <strong>${esc(name)}</strong>
                         <small>${days ? days + ' day(s) transit' : 'Transit time on request'}</small>
                     </div>
                     <div class="cart-shipping-price">
@@ -815,64 +450,79 @@
 
         $rates.querySelectorAll('input[type="radio"]').forEach(radio => {
             radio.addEventListener('change', () => {
-                if (radio.value !== '') applyShipping(Number(radio.value));
+                const cost = Number(radio.value || 0);
+                state.shipping = cost;
+                state.product = top.find(p => Number(p.totalPrice?.[0]?.price || 0) === cost) || null;
+                state.duties = 0;   // reset duties for new selection
+                updateTotals();
+                loadDuties(country);
             });
         });
 
         const first = top[0];
-        const firstPrice = first.totalPrice && first.totalPrice[0]
-            ? Number(first.totalPrice[0].price) : 0;
-        applyShipping(firstPrice);
-    };
+        const firstPrice = first.totalPrice && first.totalPrice[0] ? Number(first.totalPrice[0].price) : 0;
+        state.shipping = firstPrice;
+        state.product = first;
+        state.duties = 0;
+        updateTotals();
+        loadDuties(country);
+    }
 
+    // ============ MAIN FLOW ============
     $btn.addEventListener('click', async () => {
         const country = ($input.value || '').trim().toUpperCase();
 
         if (country.length !== 2) {
             setStatus('Please enter a 2-letter country code (e.g. US, KE, GB).', true);
             $rates.classList.remove('is-visible');
-            applyShipping(0);
+            state.country = ''; state.shipping = 0; state.duties = 0;
+            $dutiesPanel.hidden = true;
+            updateTotals();
             return;
         }
+
+        state.country = country;
+        $input.value = country;
 
         $btn.disabled = true;
         $btn.textContent = 'Loading…';
         setStatus('Fetching DHL Express rates…');
         $rates.classList.remove('is-visible');
         $rates.innerHTML = '';
+        $dutiesPanel.hidden = true;
 
         try {
             const res = await fetch(`/api/shipping/rates/cart?country=${encodeURIComponent(country)}`, {
-                headers: { 'Accept': 'application/json' },
-                credentials: 'same-origin'
+                headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
             });
             const data = await res.json();
-
             if (!res.ok) throw new Error(data.error || 'Could not fetch shipping rates.');
 
             const products = Array.isArray(data.products) ? data.products : [];
             if (!products.length) {
                 setStatus('No DHL rates returned for that destination.');
-                applyShipping(0);
+                state.shipping = 0; state.duties = 0;
+                updateTotals();
                 return;
             }
 
             setStatus('');
-            renderRates(products);
+            renderRates(products, country);
         } catch (err) {
             console.error(err);
             setStatus(err.message || 'Could not fetch shipping rates.', true);
-            applyShipping(0);
+            state.shipping = 0; state.duties = 0;
+            updateTotals();
         } finally {
             $btn.disabled = false;
             $btn.textContent = 'Get rates';
         }
     });
 
-    // Auto-detect a previously stored country and prefill
+    // Restore previous country
     try {
         const saved = JSON.parse(sessionStorage.getItem('fabs_cart_shipping') || '{}');
-        if (saved && saved.country) $input.value = saved.country;
+        if (saved?.country) $input.value = saved.country;
     } catch (e) { /* ignore */ }
 })();
 </script>
