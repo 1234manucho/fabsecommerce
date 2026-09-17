@@ -3,7 +3,7 @@ import os
 import re
 import requests
 from requests.auth import HTTPBasicAuth
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 
 DHL_API_KEY = os.getenv("DHL_API_KEY")
@@ -32,9 +32,6 @@ TRACKING_STATUS_MAP = {
 }
 
 
-# ----------------------------------------------------------------------
-# Country defaults for rate estimation when only a country code is known.
-# ----------------------------------------------------------------------
 DEFAULT_CITY_BY_COUNTRY = {
     "KE": "Nairobi",       "NG": "Lagos",         "ZA": "Johannesburg",
     "EG": "Cairo",         "TZ": "Dar es Salaam", "UG": "Kampala",
@@ -119,12 +116,26 @@ DEFAULT_POSTAL_BY_COUNTRY = {
 }
 
 
-# Default phone fallback used when receiver/shipper phone is missing.
 DEFAULT_PHONE_FALLBACK = os.getenv("DHL_FALLBACK_PHONE", "+254729004000")
 
 
+def _dhl_now(hours_ahead=2):
+    """
+    Return a DHL-compliant planned shipping datetime string.
+
+    DHL requires:
+      - ISO-8601 with an offset formatted as +HH:MM (colon required)
+      - A time in the near future
+
+    Example output: '2026-09-17T14:30:00 GMT+00:00'
+    """
+    dt = datetime.now(timezone.utc) + timedelta(hours=hours_ahead)
+    offset = dt.strftime("%z")                     # "+0000"
+    offset_colon = offset[:3] + ":" + offset[3:]   # "+00:00"
+    return dt.strftime("%Y-%m-%dT%H:%M:%S") + " GMT" + offset_colon
+
+
 def _resolve_destination(country_code, city, postal_code):
-    """Return (city, postal_code) with defaults filled in from the country map."""
     cc = (country_code or "").upper()
     if not city:
         city = DEFAULT_CITY_BY_COUNTRY.get(cc) or cc
@@ -134,14 +145,12 @@ def _resolve_destination(country_code, city, postal_code):
 
 
 def _parse_dt(value):
-    """Best-effort ISO-8601 parse → aware datetime (UTC fallback). Returns None on failure."""
     if not value:
         return None
     if isinstance(value, datetime):
         return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
 
-    text = str(value).strip()
-    text = text.replace(" GMT", "").replace("Z", "+00:00")
+    text = str(value).strip().replace(" GMT", "").replace("Z", "+00:00")
 
     if re.fullmatch(r"\d{14}", text):
         try:
@@ -159,13 +168,8 @@ def _clean_payload(value):
     """
     Recursively remove empty values from a payload before sending it to DHL.
 
-    DHL treats an empty string as a validation failure even for optional
-    fields — addressLine2: "" is rejected with:
-        "expected minLength: 1, actual: 0"
-        "string [] does not match pattern .*\\S+.*"
-
-    The correct behaviour is to omit the key entirely. We also drop empty
-    lists (e.g. value_added_services: []) since DHL rejects some of those.
+    DHL rejects empty strings even for optional fields:
+        addressLine2: "" -> "expected minLength: 1, actual: 0"
     """
     if isinstance(value, dict):
         cleaned = {}
@@ -191,7 +195,6 @@ class DHLConfigurationError(Exception):
 
 
 class DHLAPIError(Exception):
-    """Raised when the DHL API returns a non-2xx response."""
     def __init__(self, message, status_code=None, response_body=None):
         super().__init__(message)
         self.status_code = status_code
@@ -199,24 +202,6 @@ class DHLAPIError(Exception):
 
 
 class DHLService:
-    """
-    DHL Express MyDHL API client.
-
-    Covers:
-      1. Rate quote
-      2. Create shipment
-      3. Track shipment (normalised)
-      4. Electronic proof of delivery (ePOD)
-      5. Create pickup
-      6. Cancel pickup
-      7. Validate address
-      8. Landing cost (duties & taxes estimate)
-      9. List products (services)
-      10. Update shipment
-      11. Download shipment documents
-      12. Country reference list
-      13. Service point finder
-    """
 
     def __init__(self):
         if not all([DHL_API_KEY, DHL_API_SECRET, DHL_ACCOUNT_NUMBER]):
@@ -224,17 +209,10 @@ class DHLService:
                 "DHL_API_KEY, DHL_API_SECRET and DHL_ACCOUNT_NUMBER must be set"
             )
 
-    # ------------------------------------------------------------------
-    # Configuration helpers
-    # ------------------------------------------------------------------
     @classmethod
     def is_configured(cls):
-        """True if the minimum env vars are present (used at boot-time)."""
         return all([DHL_API_KEY, DHL_API_SECRET, DHL_ACCOUNT_NUMBER])
 
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
     def _auth(self):
         return HTTPBasicAuth(DHL_API_KEY, DHL_API_SECRET)
 
@@ -344,7 +322,7 @@ class DHLService:
             "productCode": "P",
             "localProductCode": "P",
             "valueAddedServices": [],
-            "plannedShippingDateAndTime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S GMT%z"),
+            "plannedShippingDateAndTime": _dhl_now(hours_ahead=2),
             "unitOfMeasurement": "metric",
             "isCustomsDeclarable": is_international,
             "monetaryAmount": [
@@ -363,20 +341,8 @@ class DHLService:
     # 2. CREATE SHIPMENT
     # ==================================================================
     def create_shipment(self, order_data):
-        """
-        Create a DHL Express shipment.
-
-        `order_data` keys (from admin_create_shipment in app.py):
-            order_reference, receiver_full_name, receiver_email, receiver_phone,
-            receiver_company, receiver_address_line1, receiver_address_line2,
-            receiver_city, receiver_postal_code, receiver_country,
-            package_weight_kg, package_length_cm, package_width_cm,
-            package_height_cm, declared_value, currency, package_description
-        """
-        # 1. Pre-flight validation
         self._validate_create_shipment_payload(order_data)
 
-        # 2. Resolve shipper & receiver contact info (with fallbacks)
         shipper_phone = os.getenv("DHL_ORIGIN_PHONE") or DEFAULT_PHONE_FALLBACK
         shipper_email = os.getenv("DHL_ORIGIN_EMAIL", "shipping@fabstrading.com")
         shipper_company = os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading Global E-Commerce")
@@ -396,7 +362,6 @@ class DHLService:
         declared_value = float(order_data.get("declared_value") or 100.0)
         currency = (order_data.get("currency") or "USD").upper()
 
-        # 3. Build packages
         package_block = {
             "weight": weight,
             "dimensions": {
@@ -407,7 +372,6 @@ class DHLService:
             "description": package_desc,
         }
 
-        # 4. Build content block
         content_block = {
             "packages": [package_block],
             "isCustomsDeclarable": is_international,
@@ -438,9 +402,8 @@ class DHLService:
                 },
             }
 
-        # 5. Build full payload
         payload = {
-            "plannedShippingDateAndTime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S GMT%z"),
+            "plannedShippingDateAndTime": _dhl_now(hours_ahead=2),
             "pickup": {"isRequested": False},
             "productCode": order_data.get("product_code", "P"),
             "localProductCode": order_data.get("product_code", "P"),
@@ -489,15 +452,10 @@ class DHLService:
             "content": content_block,
         }
 
-        # _post() runs _clean_payload() and strips any empty values before sending
         return self._post("/shipments", payload)
 
     @staticmethod
     def _validate_create_shipment_payload(order_data):
-        """
-        Pre-flight validation so we fail with a readable message instead of
-        DHL's 422 "additionalDetails" array.
-        """
         required = {
             "receiver_full_name": "Receiver full name",
             "receiver_address_line1": "Receiver address line 1",
@@ -529,16 +487,13 @@ class DHLService:
     # 3. TRACK SHIPMENT (normalised)
     # ==================================================================
     def track_shipment(self, tracking_number):
-        """Fetch DHL tracking for a shipment and return a NORMALISED dict."""
         raw = self.track_shipment_raw(tracking_number)
         return self._normalise_tracking(tracking_number, raw)
 
     def track_shipment_raw(self, tracking_number):
-        """Return DHL's raw tracking JSON — use only for debugging."""
         return self._get(f"/shipments/{tracking_number}/tracking")
 
     def _normalise_tracking(self, tracking_number, raw):
-        """Convert whatever DHL returned into our flat tracking shape."""
         if not isinstance(raw, dict):
             return self._empty_tracking(tracking_number, raw)
 
@@ -583,7 +538,6 @@ class DHLService:
 
     @staticmethod
     def _extract_location(block):
-        """Return (city, ISO-country-code) from a DHL location block."""
         if not isinstance(block, dict):
             return "", ""
         addr = block.get("address") or {}
@@ -618,18 +572,12 @@ class DHLService:
     # 4. ELECTRONIC PROOF OF DELIVERY (ePOD)
     # ==================================================================
     def get_proof_of_delivery(self, tracking_number):
-        """Return signed delivery proof, receiver name, delivery image URL."""
         return self._get(f"/shipments/{tracking_number}/proof-of-delivery")
 
     # ==================================================================
     # 5. CREATE PICKUP
     # ==================================================================
     def create_pickup(self, pickup_data):
-        """
-        pickup_data keys:
-          planned_pickup_date, close_time, ready_time,
-          weight_kg, length_cm, width_cm, height_cm, pieces
-        """
         shipper_phone = os.getenv("DHL_ORIGIN_PHONE") or DEFAULT_PHONE_FALLBACK
         shipper_email = os.getenv("DHL_ORIGIN_EMAIL", "shipping@fabstrading.com")
         shipper_company = os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading Global E-Commerce")
@@ -637,8 +585,7 @@ class DHLService:
 
         payload = {
             "plannedPickupDateAndTime": pickup_data.get(
-                "planned_pickup_date",
-                datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S GMT%z"),
+                "planned_pickup_date", _dhl_now(hours_ahead=4)
             ),
             "closeTime": pickup_data.get("close_time", "18:00"),
             "location": "reception",
@@ -702,9 +649,6 @@ class DHLService:
     # 7. ADDRESS VALIDATION
     # ==================================================================
     def validate_address(self, country_code, city_name=None, postal_code=None, address_line1=None):
-        """
-        DHL Address Validation API — GET /address-validate with query params.
-        """
         cc = (country_code or "").upper()
         if not cc:
             raise DHLConfigurationError("country_code is required for address validation")
@@ -724,7 +668,7 @@ class DHLService:
         return self._get("/address-validate", params=params)
 
     # ==================================================================
-    # 8. LANDING COST (Duties & Taxes estimate)
+    # 8. LANDING COST
     # ==================================================================
     def estimate_landing_cost(
         self,
@@ -753,7 +697,7 @@ class DHLService:
             "accounts": [{"typeCode": "shipper", "number": DHL_ACCOUNT_NUMBER}],
             "productCode": "P",
             "localProductCode": "P",
-            "plannedShippingDateAndTime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S GMT%z"),
+            "plannedShippingDateAndTime": _dhl_now(hours_ahead=2),
             "unitOfMeasurement": "metric",
             "isCustomsDeclarable": is_customs_declarable,
             "currency": currency,
@@ -795,7 +739,6 @@ class DHLService:
     # 11. DOWNLOAD SHIPMENT DOCUMENTS
     # ==================================================================
     def get_shipment_documents(self, shipment_tracking_number, doc_type="label"):
-        """doc_type: 'label' | 'invoice' | 'waybillDoc' | 'receipt'"""
         return self._get(
             f"/shipments/{shipment_tracking_number}/documents",
             params={"typeCode": doc_type, "encodingFormat": "pdf"},
@@ -805,7 +748,6 @@ class DHLService:
     # 12. COUNTRY REFERENCE LIST
     # ==================================================================
     def list_countries(self):
-        """Return DHL's country reference list as flat dicts."""
         raw = self._get("/reference-data", params={"datasetName": "country"})
 
         entries = []
