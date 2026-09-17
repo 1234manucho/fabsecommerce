@@ -17,10 +17,10 @@
   .fh-trust-badges{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:flex-end}
   .fh-trust-badge{display:inline-flex;align-items:center;gap:12px;padding:11px 16px;background:#16191d;border:1px solid rgba(255,255,255,.08);border-radius:4px;text-decoration:none;color:#fff;min-height:56px}
   .fh-trust-badge:hover{border-color:rgba(255,204,0,.5);background:#1b1f24}
-  .fh-trust-mark{display:grid;place-items:center;min-width:54px;height:28px;padding:0 8px;background:var(--dhl-yellow);color:var(--dhl-red);font-weight:900;font-size:13px;letter-spacing:-.02em;border-radius:3px}
-  .fh-trust-mark.fh-trust-mark-dpo{background:#fff;color:#121a3f;font-size:11px;letter-spacing:.02em}
-  .fh-trust-mark.fh-trust-mark-pci{background:linear-gradient(135deg,#1e5cd7,#0f2f80);color:#fff;font-size:10px;letter-spacing:.02em}
-  .fh-trust-mark.fh-trust-mark-3ds{background:#121a3f;color:#fff;font-size:11px;letter-spacing:.02em}
+  /* Official logo images inside trust badges */
+  .fh-trust-logo{display:block;max-width:74px;max-height:36px;width:auto;height:auto;object-fit:contain}
+  .fh-trust-logo.is-dhl{max-width:82px;max-height:32px}
+  .fh-trust-logo.is-dpo{max-width:88px;max-height:32px}
   .fh-trust-text{display:flex;flex-direction:column;text-align:left;line-height:1.2}
   .fh-trust-text strong{font-size:11px;font-weight:900;letter-spacing:.02em;color:#fff}
   .fh-trust-text small{font-size:8px;color:#8a9096;letter-spacing:.06em;text-transform:uppercase;margin-top:3px;font-weight:700}
@@ -59,6 +59,10 @@
   .fh-official-partner-mark{display:grid;place-items:center;min-width:74px;height:36px;padding:0 12px;font-weight:900;font-size:15px;letter-spacing:-.02em;border-radius:4px}
   .fh-official-partner.is-dhl .fh-official-partner-mark{background:var(--dhl-yellow);color:var(--dhl-red)}
   .fh-official-partner.is-dpo .fh-official-partner-mark{background:#fff;border:2px solid #1e5cd7;color:#1e5cd7;font-size:12px;letter-spacing:.04em}
+  /* Official logo images inside the partner cards */
+  .fh-official-partner-logo{display:block;max-width:120px;max-height:42px;width:auto;height:auto;object-fit:contain}
+  .fh-official-partner-logo.is-dhl{max-width:130px;max-height:38px}
+  .fh-official-partner-logo.is-dpo{max-width:140px;max-height:40px}
   .fh-official-partner-copy strong{display:block;font-size:15px;color:var(--ink);letter-spacing:-.02em}
   .fh-official-partner-copy small{display:block;margin-top:4px;color:#68717a;font-size:9px;letter-spacing:.08em;text-transform:uppercase;font-weight:800}
   .fh-official-partner-copy p{margin:8px 0 0;color:#69727a;font-size:11px;line-height:1.6}
@@ -70,7 +74,7 @@
 
   @media(max-width:1100px){.fh-hero-layout{grid-template-columns:1fr}.fh-network{position:absolute;right:-220px;bottom:-120px;opacity:.55}.fh-copy{position:relative;z-index:10}.fh-gallery-grid{grid-template-columns:1fr 1fr}.fh-gallery-card.featured{grid-row:auto;grid-column:1/-1}.fh-about-layout{gap:45px}.fh-service-grid{grid-template-columns:1fr 1fr}.fh-logo-wall,.fh-kenya-wall{grid-template-columns:repeat(2,1fr)}.fh-story-stage{grid-template-columns:1fr 340px}.fh-trust-inner{grid-template-columns:1fr;gap:22px}.fh-trust-badges{justify-content:flex-start}.fh-official-partners{grid-template-columns:1fr}}
   @media(max-width:760px){.home-shell{width:min(100% - 30px,1440px)}.fh-hero,.fh-hero-layout{min-height:720px}.fh-copy h1{font-size:52px}.fh-copy>p{font-size:13px}.fh-network{transform:scale(.72);right:-280px;bottom:-170px}.fh-product{margin-top:38px}.fh-metrics>div{grid-template-columns:1fr 1fr}.fh-metrics article:nth-child(2){border-right:0}.fh-metrics article{border-bottom:1px solid #e5e7e9}.fh-section{padding:74px 0}.fh-section-head{align-items:flex-start;flex-direction:column}.fh-gallery-grid{display:grid;grid-template-columns:1fr;grid-template-rows:repeat(5,310px)}.fh-gallery-card.featured{grid-column:auto}.fh-about-layout{grid-template-columns:1fr}.fh-about-image{height:480px}.fh-service-grid,.fh-logo-wall,.fh-kenya-wall,.fh-sp-grid,.fh-official-partners{grid-template-columns:1fr}.fh-partner-ribbon{grid-template-columns:1fr}.fh-partner-ribbon img{width:185px}.fh-kenya-head{align-items:flex-start;flex-direction:column}.fh-venue{min-height:250px}.fh-faq-layout{grid-template-columns:1fr;gap:35px}.fh-story-stage{grid-template-columns:1fr}.fh-story-media{height:280px}.fh-story-copy{padding:35px}.fh-final>div{align-items:flex-start;flex-direction:column}.fh-final-links{width:100%;flex-direction:column}.fh-final-links a{text-align:center}.fh-services-cta{align-items:flex-start;flex-direction:column}.fh-services-cta a{width:100%;text-align:center}.fh-trust-badge{width:100%}.fh-official-partner{grid-template-columns:auto minmax(0,1fr)}.fh-official-partner-copy b{grid-column:2}}
-  @media(max-width:520px){.fh-trust-badge{padding:9px 12px;gap:8px}.fh-trust-mark{min-width:44px;height:24px;font-size:11px}.fh-trust-text strong{font-size:10px}.fh-trust-text small{font-size:7px}.fh-actions a.fh-actions-dhl{width:100%;justify-content:center}}
+  @media(max-width:520px){.fh-trust-badge{padding:9px 12px;gap:8px}.fh-trust-logo{max-width:60px;max-height:28px}.fh-trust-text strong{font-size:10px}.fh-trust-text small{font-size:7px}.fh-actions a.fh-actions-dhl{width:100%;justify-content:center}}
   @media(prefers-reduced-motion:reduce){.fh-ring,.fh-node{animation:none!important}.fh-slide{transition:none}}
 </style>
 {% endblock %}
@@ -93,16 +97,16 @@
       </div>
       <div class="fh-trust-badges">
         <a class="fh-trust-badge" href="{{ url_for('games') }}#games-shipping-country" title="Official DHL Express shipping partner">
-          <span class="fh-trust-mark">DHL</span>
+          <img class="fh-trust-logo is-dhl" src="https://upload.wikimedia.org/wikipedia/commons/a/a9/DHL_Express_logo.svg" alt="DHL Express official logo" loading="lazy" decoding="async">
           <span class="fh-trust-text">
             <strong>DHL Express</strong>
             <small>Official shipping partner</small>
           </span>
         </a>
-        <a class="fh-trust-badge" href="{{ url_for('games') }}" title="DPO · 3G Direct Pay">
-          <span class="fh-trust-mark fh-trust-mark-dpo">DPO</span>
+        <a class="fh-trust-badge" href="{{ url_for('compliance') }}" title="DPO · 3G Direct Pay secure payment partner">
+          <img class="fh-trust-logo is-dpo" src="https://payment.dpo.co.tz/assets/main-brand-logo-wider.005a3964.png" alt="DPO Group · 3G Direct Pay official logo" loading="lazy" decoding="async">
           <span class="fh-trust-text">
-            <strong>3G Direct Pay</strong>
+            <strong>DPO · 3G Direct Pay</strong>
             <small>Secure card checkout</small>
           </span>
         </a>
@@ -144,7 +148,7 @@
         <!-- DHL card -->
         <article class="fh-sp-card is-dhl">
           <div class="fh-sp-head">
-            <span class="fh-sp-mark">DHL</span>
+            <img class="fh-trust-logo is-dhl" src="https://upload.wikimedia.org/wikipedia/commons/a/a9/DHL_Express_logo.svg" alt="DHL Express official logo" loading="lazy" decoding="async" style="max-width:82px;max-height:32px;">
             <small>Official shipping partner</small>
           </div>
           <h3>Worldwide delivery via DHL Express</h3>
@@ -161,7 +165,7 @@
         <!-- DPO card -->
         <article class="fh-sp-card is-dpo">
           <div class="fh-sp-head">
-            <span class="fh-sp-mark">DPO</span>
+            <img class="fh-trust-logo is-dpo" src="https://payment.dpo.co.tz/assets/main-brand-logo-wider.005a3964.png" alt="DPO Group · 3G Direct Pay official logo" loading="lazy" decoding="async" style="max-width:88px;max-height:32px;">
             <small>Secure payment provider</small>
           </div>
           <h3>Card payments via DPO · 3G Direct Pay</h3>
@@ -186,7 +190,9 @@
   <!-- ============ OFFICIAL FABS PARTNERS (DHL + DPO) ============ -->
   <div class="fh-official-partners" aria-label="Official FABS shipping and payment partners">
     <article class="fh-official-partner is-dhl">
-      <span class="fh-official-partner-mark">DHL</span>
+      <span class="fh-official-partner-mark">
+        <img class="fh-official-partner-logo is-dhl" src="https://upload.wikimedia.org/wikipedia/commons/a/a9/DHL_Express_logo.svg" alt="DHL Express official logo" loading="lazy" decoding="async">
+      </span>
       <div class="fh-official-partner-copy">
         <strong>DHL Express</strong>
         <small>Official shipping partner</small>
@@ -196,7 +202,9 @@
     </article>
 
     <article class="fh-official-partner is-dpo">
-      <span class="fh-official-partner-mark">DPO</span>
+      <span class="fh-official-partner-mark">
+        <img class="fh-official-partner-logo is-dpo" src="https://payment.dpo.co.tz/assets/main-brand-logo-wider.005a3964.png" alt="DPO Group · 3G Direct Pay official logo" loading="lazy" decoding="async">
+      </span>
       <div class="fh-official-partner-copy">
         <strong>DPO · 3G Direct Pay</strong>
         <small>Secure payment provider</small>
