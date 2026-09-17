@@ -151,7 +151,6 @@ class DHLService:
             "accounts": [{"typeCode": "shipper", "number": DHL_ACCOUNT_NUMBER}],
             "productCode": "P",
             "localProductCode": "P",
-            "getRateEstimates": True,
             "valueAddedServices": [],
             "plannedShippingDateAndTime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S GMT%z"),
             "unitOfMeasurement": "metric",
@@ -177,7 +176,6 @@ class DHLService:
             "pickup": {"isRequested": False},
             "productCode": order_data.get("product_code", "P"),
             "localProductCode": order_data.get("product_code", "P"),
-            "getRateEstimates": True,
             "accounts": [{"typeCode": "shipper", "number": DHL_ACCOUNT_NUMBER}],
             "valueAddedServices": order_data.get("value_added_services", []),
             "outputImageProperties": {
