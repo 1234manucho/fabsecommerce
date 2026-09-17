@@ -208,6 +208,30 @@ def _compute_cart_shipping_dims(items) -> dict:
     }
 
 
+# ============ FIX: Friendly handling for DHL "unquotable destination" ============
+# DHL returns 400 / 420505 for destinations it cannot quote from our origin
+# (e.g. unmapped codes like AG, or domestic KE). These are informational, not
+# server errors, so we surface a friendly message with a 200 response. This
+# pairs with the amber "is-info" styling added to the shipping widgets in
+# cart.html, games.html and game_detail.html.
+_DHL_UNQUOTABLE_MARKERS = ("420505", "destination location is invalid")
+
+
+def _is_dhl_unquotable(exc) -> bool:
+    """True when a DHLAPIError is the 'destination not servable' case."""
+    blob = f"{exc} {getattr(exc, 'response_body', '') or ''}".lower()
+    return any(marker in blob for marker in _DHL_UNQUOTABLE_MARKERS)
+
+
+def _friendly_shipping_fallback(country_code: str) -> str:
+    """Friendly plain-text message for destinations DHL cannot quote."""
+    code = (country_code or "").strip().upper()
+    if code == DEFAULT_SHIP_ORIGIN_COUNTRY:
+        return "Domestic Kenya delivery — quoted separately."
+    return "Shipping to this destination is quoted on request."
+# ===============================================================================
+
+
 def register_routes(app):
     # ================================================================
     # PUBLIC PAGES
@@ -493,6 +517,19 @@ def register_routes(app):
                 declared_value=float(data.get("declared_value") or 100.0),
                 currency=(data.get("currency") or "USD").upper(),
             )
+        # ============ FIX: DHLAPIError with friendly fallback ============
+        except DHLAPIError as exc:
+            if _is_dhl_unquotable(exc):
+                app.logger.info(
+                    "DHL cannot quote destination %s — returning friendly message", country
+                )
+                return jsonify({
+                    "products": [],
+                    "message": _friendly_shipping_fallback(country),
+                }), 200
+            app.logger.exception("DHL rate lookup failed: %s", exc)
+            return jsonify({"error": "Could not fetch shipping rates."}), 502
+        # =================================================================
         except Exception as exc:
             app.logger.exception("DHL rate lookup failed: %s", exc)
             return jsonify({"error": "Could not fetch shipping rates."}), 502
@@ -537,6 +574,19 @@ def register_routes(app):
         except DHLConfigurationError as exc:
             app.logger.error("DHL configuration: %s", exc)
             return jsonify({"error": "Shipping rates are temporarily unavailable."}), 503
+        # ============ FIX: DHLAPIError with friendly fallback ============
+        except DHLAPIError as exc:
+            if _is_dhl_unquotable(exc):
+                app.logger.info(
+                    "DHL cannot quote cart destination %s — returning friendly message", country
+                )
+                return jsonify({
+                    "products": [],
+                    "message": _friendly_shipping_fallback(country),
+                }), 200
+            app.logger.exception("DHL cart rates failed: %s", exc)
+            return jsonify({"error": "Could not fetch shipping rates."}), 502
+        # =================================================================
         except Exception as exc:
             app.logger.exception("DHL cart rates failed: %s", exc)
             return jsonify({"error": "Could not fetch shipping rates."}), 502
