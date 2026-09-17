@@ -120,7 +120,6 @@ DEFAULT_POSTAL_BY_COUNTRY = {
 
 
 # Default phone fallback used when receiver/shipper phone is missing.
-# DHL validates phone format loosely but requires a non-empty value.
 DEFAULT_PHONE_FALLBACK = os.getenv("DHL_FALLBACK_PHONE", "+254729004000")
 
 
@@ -154,6 +153,37 @@ def _parse_dt(value):
         return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
     except (TypeError, ValueError):
         return None
+
+
+def _clean_payload(value):
+    """
+    Recursively remove empty values from a payload before sending it to DHL.
+
+    DHL treats an empty string as a validation failure even for optional
+    fields — addressLine2: "" is rejected with:
+        "expected minLength: 1, actual: 0"
+        "string [] does not match pattern .*\\S+.*"
+
+    The correct behaviour is to omit the key entirely. We also drop empty
+    lists (e.g. value_added_services: []) since DHL rejects some of those.
+    """
+    if isinstance(value, dict):
+        cleaned = {}
+        for k, v in value.items():
+            v2 = _clean_payload(v)
+            if v2 is None:
+                continue
+            if isinstance(v2, str) and not v2.strip():
+                continue
+            if isinstance(v2, (list, dict)) and len(v2) == 0:
+                continue
+            cleaned[k] = v2
+        return cleaned
+
+    if isinstance(value, list):
+        return [_clean_payload(v) for v in value]
+
+    return value
 
 
 class DHLConfigurationError(Exception):
@@ -210,6 +240,7 @@ class DHLService:
 
     def _post(self, path, payload):
         url = f"{DHL_API_BASE_URL}{path}"
+        payload = _clean_payload(payload)
         resp = requests.post(
             url,
             json=payload,
@@ -244,6 +275,7 @@ class DHLService:
 
     def _patch(self, path, payload):
         url = f"{DHL_API_BASE_URL}{path}"
+        payload = _clean_payload(payload)
         resp = requests.patch(
             url,
             json=payload,
@@ -341,14 +373,10 @@ class DHLService:
             package_weight_kg, package_length_cm, package_width_cm,
             package_height_cm, declared_value, currency, package_description
         """
-        # ------------------------------------------------------------
-        # 1. Pre-flight validation — DHL returns opaque errors otherwise
-        # ------------------------------------------------------------
+        # 1. Pre-flight validation
         self._validate_create_shipment_payload(order_data)
 
-        # ------------------------------------------------------------
         # 2. Resolve shipper & receiver contact info (with fallbacks)
-        # ------------------------------------------------------------
         shipper_phone = os.getenv("DHL_ORIGIN_PHONE") or DEFAULT_PHONE_FALLBACK
         shipper_email = os.getenv("DHL_ORIGIN_EMAIL", "shipping@fabstrading.com")
         shipper_company = os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading Global E-Commerce")
@@ -368,9 +396,7 @@ class DHLService:
         declared_value = float(order_data.get("declared_value") or 100.0)
         currency = (order_data.get("currency") or "USD").upper()
 
-        # ------------------------------------------------------------
         # 3. Build packages
-        # ------------------------------------------------------------
         package_block = {
             "weight": weight,
             "dimensions": {
@@ -381,24 +407,18 @@ class DHLService:
             "description": package_desc,
         }
 
-        # ------------------------------------------------------------
-        # 4. Build content block (this is where the 422 came from)
-        # ------------------------------------------------------------
+        # 4. Build content block
         content_block = {
             "packages": [package_block],
             "isCustomsDeclarable": is_international,
-            # Required regardless of destination
             "description": package_desc,
             "unitOfMeasurement": "metric",
             "declaredValue": declared_value,
             "declaredValueCurrency": currency,
         }
 
-        # Incoterm is required when customs declaration is needed.
-        # DAP = Delivered At Place — best default for our use case.
         if is_international:
             content_block["incoterm"] = order_data.get("incoterm", "DAP")
-
             content_block["exportDeclaration"] = {
                 "lineItems": [{
                     "number": 1,
@@ -418,9 +438,7 @@ class DHLService:
                 },
             }
 
-        # ------------------------------------------------------------
         # 5. Build full payload
-        # ------------------------------------------------------------
         payload = {
             "plannedShippingDateAndTime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S GMT%z"),
             "pickup": {"isRequested": False},
@@ -471,6 +489,7 @@ class DHLService:
             "content": content_block,
         }
 
+        # _post() runs _clean_payload() and strips any empty values before sending
         return self._post("/shipments", payload)
 
     @staticmethod
@@ -510,9 +529,7 @@ class DHLService:
     # 3. TRACK SHIPMENT (normalised)
     # ==================================================================
     def track_shipment(self, tracking_number):
-        """
-        Fetch DHL tracking for a shipment and return a NORMALISED dict.
-        """
+        """Fetch DHL tracking for a shipment and return a NORMALISED dict."""
         raw = self.track_shipment_raw(tracking_number)
         return self._normalise_tracking(tracking_number, raw)
 
