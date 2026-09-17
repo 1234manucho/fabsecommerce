@@ -68,7 +68,7 @@ class DHLService:
         )
         if not resp.ok:
             raise DHLAPIError(
-                f"DHL POST {path} failed: {resp.status_code}",
+                f"DHL POST {path} failed: {resp.status_code} — {resp.text[:300]}",
                 status_code=resp.status_code,
                 response_body=resp.text,
             )
@@ -85,7 +85,7 @@ class DHLService:
         )
         if not resp.ok:
             raise DHLAPIError(
-                f"DHL GET {path} failed: {resp.status_code}",
+                f"DHL GET {path} failed: {resp.status_code} — {resp.text[:300]}",
                 status_code=resp.status_code,
                 response_body=resp.text,
             )
@@ -102,7 +102,7 @@ class DHLService:
         )
         if not resp.ok:
             raise DHLAPIError(
-                f"DHL PATCH {path} failed: {resp.status_code}",
+                f"DHL PATCH {path} failed: {resp.status_code} — {resp.text[:300]}",
                 status_code=resp.status_code,
                 response_body=resp.text,
             )
@@ -118,7 +118,7 @@ class DHLService:
         )
         if not resp.ok:
             raise DHLAPIError(
-                f"DHL DELETE {path} failed: {resp.status_code}",
+                f"DHL DELETE {path} failed: {resp.status_code} — {resp.text[:300]}",
                 status_code=resp.status_code,
                 response_body=resp.text,
             )
@@ -135,18 +135,28 @@ class DHLService:
         weight_kg=1.0, length_cm=30, width_cm=20, height_cm=10,
         declared_value=100.0, currency="USD",
     ):
+        # Build shipper block — only include city/postal when actually provided.
+        shipper = {"countryCode": origin_country.upper()}
+        if origin_city:
+            shipper["cityName"] = origin_city
+        if origin_postal_code:
+            shipper["postalCode"] = origin_postal_code
+
+        # Build receiver block — DHL rejects placeholder values like
+        # "Unknown" and "00000", so only include these keys when we truly have them.
+        receiver = {"countryCode": destination_country.upper()}
+        if destination_city:
+            receiver["cityName"] = destination_city
+        if destination_postal_code:
+            receiver["postalCode"] = destination_postal_code
+
+        # Customs declarations only apply to cross-border shipments.
+        is_international = origin_country.upper() != destination_country.upper()
+
         payload = {
             "customerDetails": {
-                "shipperDetails": {
-                    "postalCode": origin_postal_code or "00100",
-                    "cityName": origin_city or "Nairobi",
-                    "countryCode": origin_country.upper(),
-                },
-                "receiverDetails": {
-                    "postalCode": destination_postal_code or "00000",
-                    "cityName": destination_city or "Unknown",
-                    "countryCode": destination_country.upper(),
-                },
+                "shipperDetails": shipper,
+                "receiverDetails": receiver,
             },
             "accounts": [{"typeCode": "shipper", "number": DHL_ACCOUNT_NUMBER}],
             "productCode": "P",
@@ -154,7 +164,7 @@ class DHLService:
             "valueAddedServices": [],
             "plannedShippingDateAndTime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S GMT%z"),
             "unitOfMeasurement": "metric",
-            "isCustomsDeclarable": True,
+            "isCustomsDeclarable": is_international,
             "monetaryAmount": [
                 {"typeCode": "declaredValue", "value": declared_value, "currency": currency}
             ],
@@ -432,20 +442,8 @@ class DHLService:
     def list_countries(self):
         """Return DHL's country reference list as flat dicts.
 
-        DHL returns:
-            {
-              "referenceData": [{
-                "datasetName": "country",
-                "data": [
-                  [ {"attribute": "countryCode", "value": "AL"},
-                    {"attribute": "countryName", "value": "ALBANIA"},
-                    ... ],
-                  ...
-                ]
-              }]
-            }
-
-        This method flattens it to:
+        DHL returns a nested attribute/value structure. This method
+        flattens it into:
             [{"countryCode": "AL", "countryName": "ALBANIA", ...}, ...]
         """
         raw = self._get("/reference-data", params={"datasetName": "country"})
