@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 DHL_API_KEY = os.getenv("DHL_API_KEY")
 DHL_API_SECRET = os.getenv("DHL_API_SECRET")
 DHL_ACCOUNT_NUMBER = os.getenv("DHL_ACCOUNT_NUMBER")
-# Your Render env exposes DHL_API_BASE_URL (legacy alias DHL_API_BASE is also accepted)
 DHL_API_BASE_URL = (
     os.getenv("DHL_API_BASE_URL")
     or os.getenv("DHL_API_BASE")
@@ -22,9 +21,6 @@ DEFAULT_TIMEOUT = 30
 # ======================================================================
 # TRACKING — status code mapping
 # ======================================================================
-# DHL returns status codes like "transit", "delivered", "failure",
-# "pre-transit", "unknown". We keep the raw code but also expose a short
-# canonical label so our Shipment.status can be one of a fixed set.
 TRACKING_STATUS_MAP = {
     "pre-transit": "pre-transit",
     "pretransit":  "pre-transit",
@@ -38,17 +34,8 @@ TRACKING_STATUS_MAP = {
 
 # ----------------------------------------------------------------------
 # Country defaults for rate estimation when only a country code is known.
-# DHL requires BOTH cityName and postalCode for the receiver, but the
-# cart and checkout pages only ask for a country. We use the country's
-# main commercial hub as a stand-in destination — the returned rate is a
-# valid zone-based estimate.
-#
-# NOTE: these defaults are used ONLY by get_rates() and
-# estimate_landing_cost(). validate_address() intentionally does NOT use
-# them — see the docstring there for why.
 # ----------------------------------------------------------------------
 DEFAULT_CITY_BY_COUNTRY = {
-    # Africa
     "KE": "Nairobi",       "NG": "Lagos",         "ZA": "Johannesburg",
     "EG": "Cairo",         "TZ": "Dar es Salaam", "UG": "Kampala",
     "GH": "Accra",         "ET": "Addis Ababa",   "MA": "Casablanca",
@@ -57,14 +44,12 @@ DEFAULT_CITY_BY_COUNTRY = {
     "ZW": "Harare",        "MW": "Lilongwe",      "MZ": "Maputo",
     "AO": "Luanda",        "CM": "Douala",        "CI": "Abidjan",
     "SN": "Dakar",         "MU": "Port Louis",    "MG": "Antananarivo",
-    # Americas
     "US": "New York",      "CA": "Toronto",       "MX": "Mexico City",
     "BR": "Sao Paulo",     "AR": "Buenos Aires",  "CL": "Santiago",
     "CO": "Bogota",        "PE": "Lima",          "VE": "Caracas",
     "EC": "Quito",         "UY": "Montevideo",    "PY": "Asuncion",
     "BO": "La Paz",        "CR": "San Jose",      "PA": "Panama City",
     "CU": "Havana",        "DO": "Santo Domingo", "JM": "Kingston",
-    # Europe
     "GB": "London",        "DE": "Berlin",        "FR": "Paris",
     "IT": "Rome",          "ES": "Madrid",        "NL": "Amsterdam",
     "BE": "Brussels",      "CH": "Zurich",        "AT": "Vienna",
@@ -76,7 +61,6 @@ DEFAULT_CITY_BY_COUNTRY = {
     "HR": "Zagreb",        "SK": "Bratislava",    "SI": "Ljubljana",
     "RS": "Belgrade",      "LT": "Vilnius",       "LV": "Riga",
     "EE": "Tallinn",       "IS": "Reykjavik",     "LU": "Luxembourg",
-    # Asia
     "CN": "Beijing",       "JP": "Tokyo",         "KR": "Seoul",
     "IN": "Mumbai",        "SG": "Singapore",     "MY": "Kuala Lumpur",
     "TH": "Bangkok",       "VN": "Hanoi",         "PH": "Manila",
@@ -88,14 +72,12 @@ DEFAULT_CITY_BY_COUNTRY = {
     "IR": "Tehran",        "AF": "Kabul",         "NP": "Kathmandu",
     "LK": "Colombo",       "MM": "Yangon",        "KH": "Phnom Penh",
     "MN": "Ulaanbaatar",   "KZ": "Almaty",        "UZ": "Tashkent",
-    # Oceania
     "AU": "Sydney",        "NZ": "Auckland",      "FJ": "Suva",
     "PG": "Port Moresby",
 }
 
 
 DEFAULT_POSTAL_BY_COUNTRY = {
-    # Africa
     "KE": "00100",         "NG": "100001",        "ZA": "2000",
     "EG": "11511",         "TZ": "11101",         "UG": "00100",
     "GH": "GA-100",        "ET": "1000",          "MA": "20000",
@@ -104,14 +86,12 @@ DEFAULT_POSTAL_BY_COUNTRY = {
     "ZW": "00263",         "MW": "207201",        "MZ": "1100",
     "AO": "1000",          "CM": "00237",         "CI": "00225",
     "SN": "00221",         "MU": "11324",         "MG": "101",
-    # Americas
     "US": "10001",         "CA": "M5V 2T6",       "MX": "06000",
     "BR": "01310-100",     "AR": "C1001",         "CL": "8320000",
     "CO": "110111",        "PE": "15001",         "VE": "1010",
     "EC": "170150",        "UY": "11000",         "PY": "1209",
     "BO": "0001",          "CR": "10101",         "PA": "0801",
     "CU": "10400",         "DO": "10101",         "JM": "00000",
-    # Europe
     "GB": "SW1A 1AA",      "DE": "10115",         "FR": "75001",
     "IT": "00118",         "ES": "28001",         "NL": "1011",
     "BE": "1000",          "CH": "8001",          "AT": "1010",
@@ -123,7 +103,6 @@ DEFAULT_POSTAL_BY_COUNTRY = {
     "HR": "10000",         "SK": "811 01",        "SI": "1000",
     "RS": "11000",         "LT": "01100",         "LV": "1010",
     "EE": "10111",         "IS": "101",           "LU": "1111",
-    # Asia
     "CN": "100000",        "JP": "100-0001",      "KR": "03043",
     "IN": "110001",        "SG": "018956",        "MY": "50000",
     "TH": "10110",         "VN": "100000",        "PH": "1000",
@@ -135,24 +114,18 @@ DEFAULT_POSTAL_BY_COUNTRY = {
     "IR": "11155",         "AF": "1001",          "NP": "44600",
     "LK": "00100",         "MM": "11181",         "KH": "120101",
     "MN": "15160",         "KZ": "050000",        "UZ": "100000",
-    # Oceania
     "AU": "2000",          "NZ": "1010",          "FJ": "00000",
     "PG": "121",           "NC": "98800",
 }
 
 
+# Default phone fallback used when receiver/shipper phone is missing.
+# DHL validates phone format loosely but requires a non-empty value.
+DEFAULT_PHONE_FALLBACK = os.getenv("DHL_FALLBACK_PHONE", "+254729004000")
+
+
 def _resolve_destination(country_code, city, postal_code):
-    """
-    Return (city, postal_code) with defaults filled in from the country map.
-
-    Used by get_rates() and estimate_landing_cost() — DHL /rates requires
-    both values, so when the caller only has a country code (e.g. from the
-    cart page) we substitute the country's main commercial hub to obtain
-    a valid zone-based estimate.
-
-    Do NOT use this for address validation — the whole point there is to
-    check what the user actually typed, not a substituted default.
-    """
+    """Return (city, postal_code) with defaults filled in from the country map."""
     cc = (country_code or "").upper()
     if not city:
         city = DEFAULT_CITY_BY_COUNTRY.get(cc) or cc
@@ -169,9 +142,8 @@ def _parse_dt(value):
         return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
 
     text = str(value).strip()
-    # Normalise common variants: "2024-06-01T12:00:00 GMT+0000", "20240601120000"
     text = text.replace(" GMT", "").replace("Z", "+00:00")
-    # Compact DHL form: YYYYMMDDHHMMSS
+
     if re.fullmatch(r"\d{14}", text):
         try:
             return datetime.strptime(text, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
@@ -247,7 +219,7 @@ class DHLService:
         )
         if not resp.ok:
             raise DHLAPIError(
-                f"DHL POST {path} failed: {resp.status_code} — {resp.text[:300]}",
+                f"DHL POST {path} failed: {resp.status_code} — {resp.text[:500]}",
                 status_code=resp.status_code,
                 response_body=resp.text,
             )
@@ -264,7 +236,7 @@ class DHLService:
         )
         if not resp.ok:
             raise DHLAPIError(
-                f"DHL GET {path} failed: {resp.status_code} — {resp.text[:300]}",
+                f"DHL GET {path} failed: {resp.status_code} — {resp.text[:500]}",
                 status_code=resp.status_code,
                 response_body=resp.text,
             )
@@ -281,7 +253,7 @@ class DHLService:
         )
         if not resp.ok:
             raise DHLAPIError(
-                f"DHL PATCH {path} failed: {resp.status_code} — {resp.text[:300]}",
+                f"DHL PATCH {path} failed: {resp.status_code} — {resp.text[:500]}",
                 status_code=resp.status_code,
                 response_body=resp.text,
             )
@@ -297,7 +269,7 @@ class DHLService:
         )
         if not resp.ok:
             raise DHLAPIError(
-                f"DHL DELETE {path} failed: {resp.status_code} — {resp.text[:300]}",
+                f"DHL DELETE {path} failed: {resp.status_code} — {resp.text[:500]}",
                 status_code=resp.status_code,
                 response_body=resp.text,
             )
@@ -314,26 +286,21 @@ class DHLService:
         weight_kg=1.0, length_cm=30, width_cm=20, height_cm=10,
         declared_value=100.0, currency="USD",
     ):
-        # Fill in missing destination details from the country lookup.
         destination_city, destination_postal_code = _resolve_destination(
             destination_country, destination_city, destination_postal_code
         )
 
-        # Shipper block — origin defaults.
         shipper = {
             "countryCode": origin_country.upper(),
             "cityName": origin_city or os.getenv("DHL_ORIGIN_CITY", "Nairobi"),
             "postalCode": origin_postal_code or os.getenv("DHL_ORIGIN_POSTAL", "00100"),
         }
-
-        # Receiver block — always has city + postal now.
         receiver = {
             "countryCode": destination_country.upper(),
             "cityName": destination_city,
             "postalCode": destination_postal_code,
         }
 
-        # Customs only for cross-border shipments.
         is_international = origin_country.upper() != destination_country.upper()
 
         payload = {
@@ -364,6 +331,96 @@ class DHLService:
     # 2. CREATE SHIPMENT
     # ==================================================================
     def create_shipment(self, order_data):
+        """
+        Create a DHL Express shipment.
+
+        `order_data` keys (from admin_create_shipment in app.py):
+            order_reference, receiver_full_name, receiver_email, receiver_phone,
+            receiver_company, receiver_address_line1, receiver_address_line2,
+            receiver_city, receiver_postal_code, receiver_country,
+            package_weight_kg, package_length_cm, package_width_cm,
+            package_height_cm, declared_value, currency, package_description
+        """
+        # ------------------------------------------------------------
+        # 1. Pre-flight validation — DHL returns opaque errors otherwise
+        # ------------------------------------------------------------
+        self._validate_create_shipment_payload(order_data)
+
+        # ------------------------------------------------------------
+        # 2. Resolve shipper & receiver contact info (with fallbacks)
+        # ------------------------------------------------------------
+        shipper_phone = os.getenv("DHL_ORIGIN_PHONE") or DEFAULT_PHONE_FALLBACK
+        shipper_email = os.getenv("DHL_ORIGIN_EMAIL", "shipping@fabstrading.com")
+        shipper_company = os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading Global E-Commerce")
+        shipper_contact = os.getenv("DHL_ORIGIN_CONTACT", "FABS Shipping")
+
+        receiver_phone = order_data.get("receiver_phone") or DEFAULT_PHONE_FALLBACK
+        receiver_email = order_data.get("receiver_email") or "no-reply@fabstrading.com"
+        receiver_company = order_data.get("receiver_company") or ""
+        receiver_name = order_data.get("receiver_full_name") or "Receiver"
+
+        origin_country = (os.getenv("DHL_ORIGIN_COUNTRY", "KE")).upper()
+        destination_country = (order_data.get("receiver_country") or "").upper()
+        is_international = origin_country != destination_country
+
+        package_desc = order_data.get("package_description") or "Gaming products"
+        weight = float(order_data.get("package_weight_kg") or 1.0)
+        declared_value = float(order_data.get("declared_value") or 100.0)
+        currency = (order_data.get("currency") or "USD").upper()
+
+        # ------------------------------------------------------------
+        # 3. Build packages
+        # ------------------------------------------------------------
+        package_block = {
+            "weight": weight,
+            "dimensions": {
+                "length": float(order_data.get("package_length_cm") or 30.0),
+                "width":  float(order_data.get("package_width_cm") or 20.0),
+                "height": float(order_data.get("package_height_cm") or 10.0),
+            },
+            "description": package_desc,
+        }
+
+        # ------------------------------------------------------------
+        # 4. Build content block (this is where the 422 came from)
+        # ------------------------------------------------------------
+        content_block = {
+            "packages": [package_block],
+            "isCustomsDeclarable": is_international,
+            # Required regardless of destination
+            "description": package_desc,
+            "unitOfMeasurement": "metric",
+            "declaredValue": declared_value,
+            "declaredValueCurrency": currency,
+        }
+
+        # Incoterm is required when customs declaration is needed.
+        # DAP = Delivered At Place — best default for our use case.
+        if is_international:
+            content_block["incoterm"] = order_data.get("incoterm", "DAP")
+
+            content_block["exportDeclaration"] = {
+                "lineItems": [{
+                    "number": 1,
+                    "description": package_desc,
+                    "price": declared_value,
+                    "quantity": {"value": 1, "unitOfMeasurement": "PCS"},
+                    "weight": {
+                        "netValue": weight,
+                        "grossValue": weight,
+                    },
+                    "manufacturerCountry": origin_country,
+                    "exportReasonType": "permanent",
+                }],
+                "invoice": {
+                    "number": order_data.get("order_reference", "FABS-ORDER"),
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                },
+            }
+
+        # ------------------------------------------------------------
+        # 5. Build full payload
+        # ------------------------------------------------------------
         payload = {
             "plannedShippingDateAndTime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S GMT%z"),
             "pickup": {"isRequested": False},
@@ -384,97 +441,77 @@ class DHLService:
                     "postalAddress": {
                         "postalCode": os.getenv("DHL_ORIGIN_POSTAL", "00100"),
                         "cityName": os.getenv("DHL_ORIGIN_CITY", "Nairobi"),
-                        "countryCode": os.getenv("DHL_ORIGIN_COUNTRY", "KE"),
+                        "countryCode": origin_country,
                         "addressLine1": os.getenv("DHL_ORIGIN_ADDRESS", "FABS Trading Warehouse"),
                         "addressLine2": os.getenv("DHL_ORIGIN_ADDRESS2", ""),
                     },
                     "contactInformation": {
-                        "email": os.getenv("DHL_ORIGIN_EMAIL", "shipping@fabstrading.com"),
-                        "phone": os.getenv("DHL_ORIGIN_PHONE", "+254700000000"),
-                        "companyName": os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading"),
-                        "fullName": os.getenv("DHL_ORIGIN_CONTACT", "FABS Shipping"),
+                        "email": shipper_email,
+                        "phone": shipper_phone,
+                        "companyName": shipper_company,
+                        "fullName": shipper_contact,
                     },
                 },
                 "receiverDetails": {
                     "postalAddress": {
                         "postalCode": order_data.get("receiver_postal_code", ""),
                         "cityName": order_data.get("receiver_city", ""),
-                        "countryCode": order_data.get("receiver_country", ""),
+                        "countryCode": destination_country,
                         "addressLine1": order_data.get("receiver_address_line1", ""),
                         "addressLine2": order_data.get("receiver_address_line2", ""),
                     },
                     "contactInformation": {
-                        "email": order_data.get("receiver_email", ""),
-                        "phone": order_data.get("receiver_phone", ""),
-                        "companyName": order_data.get("receiver_company", ""),
-                        "fullName": order_data.get("receiver_full_name", ""),
+                        "email": receiver_email,
+                        "phone": receiver_phone,
+                        "companyName": receiver_company,
+                        "fullName": receiver_name,
                     },
                 },
             },
-            "content": {
-                "packages": [{
-                    "weight": order_data.get("package_weight_kg", 1.0),
-                    "dimensions": {
-                        "length": order_data.get("package_length_cm", 30),
-                        "width": order_data.get("package_width_cm", 20),
-                        "height": order_data.get("package_height_cm", 10),
-                    },
-                    "description": order_data.get("package_description", "Gaming products"),
-                }],
-                "isCustomsDeclarable": True,
-                "declaredValue": order_data.get("declared_value", 100.0),
-                "declaredValueCurrency": order_data.get("currency", "USD"),
-                "exportDeclaration": {
-                    "lineItems": [{
-                        "number": 1,
-                        "description": order_data.get("package_description", "Gaming products"),
-                        "price": order_data.get("declared_value", 100.0),
-                        "quantity": {"value": 1, "unitOfMeasurement": "PCS"},
-                        "weight": {
-                            "netValue": order_data.get("package_weight_kg", 1.0),
-                            "grossValue": order_data.get("package_weight_kg", 1.0),
-                        },
-                        "manufacturerCountry": os.getenv("DHL_ORIGIN_COUNTRY", "KE"),
-                        "exportReasonType": "permanent",
-                    }],
-                    "invoice": {
-                        "number": order_data.get("order_reference", "FABS-ORDER"),
-                        "date": datetime.now().strftime("%Y-%m-%d"),
-                    },
-                },
-            },
+            "content": content_block,
         }
+
         return self._post("/shipments", payload)
+
+    @staticmethod
+    def _validate_create_shipment_payload(order_data):
+        """
+        Pre-flight validation so we fail with a readable message instead of
+        DHL's 422 "additionalDetails" array.
+        """
+        required = {
+            "receiver_full_name": "Receiver full name",
+            "receiver_address_line1": "Receiver address line 1",
+            "receiver_city": "Receiver city",
+            "receiver_postal_code": "Receiver postal code",
+            "receiver_country": "Receiver country (ISO-2)",
+        }
+        missing = [label for key, label in required.items() if not order_data.get(key)]
+
+        if missing:
+            raise DHLConfigurationError(
+                "Missing required shipment fields: " + ", ".join(missing)
+            )
+
+        country = (order_data.get("receiver_country") or "").upper()
+        if len(country) != 2:
+            raise DHLConfigurationError(
+                f"receiver_country must be ISO-2 (got {country!r})"
+            )
+
+        try:
+            weight = float(order_data.get("package_weight_kg") or 0)
+            if weight <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            raise DHLConfigurationError("package_weight_kg must be a positive number")
 
     # ==================================================================
     # 3. TRACK SHIPMENT (normalised)
     # ==================================================================
     def track_shipment(self, tracking_number):
         """
-        Fetch DHL tracking for a shipment and return a NORMALISED dict:
-
-            {
-              "tracking_number": str,
-              "status":          str,   # canonical: pre-transit|transit|delivered|failure|unknown
-              "status_code":     str,   # raw code from DHL
-              "description":     str,
-              "location":        str,
-              "country":         str,
-              "estimated_delivery": iso8601 | None,
-              "events": [
-                  {
-                    "timestamp": iso8601,
-                    "status_code": str,
-                    "status": str,
-                    "description": str,
-                    "location": str,
-                    "country": str,
-                    "raw": dict,
-                  },
-                  ...
-              ],
-              "raw": <original DHL JSON>,
-            }
+        Fetch DHL tracking for a shipment and return a NORMALISED dict.
         """
         raw = self.track_shipment_raw(tracking_number)
         return self._normalise_tracking(tracking_number, raw)
@@ -484,18 +521,10 @@ class DHLService:
         return self._get(f"/shipments/{tracking_number}/tracking")
 
     def _normalise_tracking(self, tracking_number, raw):
-        """
-        Convert whatever DHL returned into our flat tracking shape.
-
-        Handles:
-          - GET /shipments/{n}/tracking response
-          - Push webhook payloads that embed a similar structure
-          - Empty or malformed responses
-        """
+        """Convert whatever DHL returned into our flat tracking shape."""
         if not isinstance(raw, dict):
             return self._empty_tracking(tracking_number, raw)
 
-        # DHL wraps shipments in a list; webhook payloads may pass a single one.
         shipments = raw.get("shipments") or []
         if isinstance(shipments, dict):
             shipments = [shipments]
@@ -537,7 +566,7 @@ class DHLService:
 
     @staticmethod
     def _extract_location(block):
-        """Return (city, ISO-country-code) from a DHL location block (or empty strings)."""
+        """Return (city, ISO-country-code) from a DHL location block."""
         if not isinstance(block, dict):
             return "", ""
         addr = block.get("address") or {}
@@ -584,6 +613,11 @@ class DHLService:
           planned_pickup_date, close_time, ready_time,
           weight_kg, length_cm, width_cm, height_cm, pieces
         """
+        shipper_phone = os.getenv("DHL_ORIGIN_PHONE") or DEFAULT_PHONE_FALLBACK
+        shipper_email = os.getenv("DHL_ORIGIN_EMAIL", "shipping@fabstrading.com")
+        shipper_company = os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading Global E-Commerce")
+        shipper_contact = os.getenv("DHL_ORIGIN_CONTACT", "FABS Shipping")
+
         payload = {
             "plannedPickupDateAndTime": pickup_data.get(
                 "planned_pickup_date",
@@ -603,10 +637,10 @@ class DHLService:
                         "addressLine2": os.getenv("DHL_ORIGIN_ADDRESS2", ""),
                     },
                     "contactInformation": {
-                        "email": os.getenv("DHL_ORIGIN_EMAIL", "shipping@fabstrading.com"),
-                        "phone": os.getenv("DHL_ORIGIN_PHONE", "+254700000000"),
-                        "companyName": os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading"),
-                        "fullName": os.getenv("DHL_ORIGIN_CONTACT", "FABS Shipping"),
+                        "email": shipper_email,
+                        "phone": shipper_phone,
+                        "companyName": shipper_company,
+                        "fullName": shipper_contact,
                     },
                 },
                 "pickupDetails": {
@@ -617,10 +651,10 @@ class DHLService:
                         "addressLine1": os.getenv("DHL_ORIGIN_ADDRESS", "FABS Trading Warehouse"),
                     },
                     "contactInformation": {
-                        "email": os.getenv("DHL_ORIGIN_EMAIL", "shipping@fabstrading.com"),
-                        "phone": os.getenv("DHL_ORIGIN_PHONE", "+254700000000"),
-                        "companyName": os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading"),
-                        "fullName": os.getenv("DHL_ORIGIN_CONTACT", "FABS Shipping"),
+                        "email": shipper_email,
+                        "phone": shipper_phone,
+                        "companyName": shipper_company,
+                        "fullName": shipper_contact,
                     },
                 },
             },
@@ -653,25 +687,6 @@ class DHLService:
     def validate_address(self, country_code, city_name=None, postal_code=None, address_line1=None):
         """
         DHL Address Validation API — GET /address-validate with query params.
-
-        DHL uses this endpoint to check serviceability (can DHL pick up or
-        deliver at this address) and to suggest corrections for city or
-        postal code. It is not a full postal-address verification service.
-
-        Required query params:
-          type        : "pickup" or "delivery"
-          countryCode : ISO 3166-1 alpha-2
-
-        Optional: cityName, postalCode, countyName, addressLine1..3,
-        strictValidation.
-
-        IMPORTANT: this method passes ONLY the values the caller provides.
-        It does NOT substitute the country-default city/postal from
-        DEFAULT_CITY_BY_COUNTRY / DEFAULT_POSTAL_BY_COUNTRY. Those defaults
-        are appropriate for rate estimation (where we need any valid
-        destination), but for address validation we must check exactly what
-        the user typed — otherwise we could falsely "verify" an address
-        against a default the user never entered.
         """
         cc = (country_code or "").upper()
         if not cc:
@@ -701,7 +716,6 @@ class DHLService:
         declared_value=100.0, currency="USD",
         is_customs_declarable=True,
     ):
-        # Same default-fill treatment as get_rates.
         destination_city, destination_postal_code = _resolve_destination(
             destination_country, None, None
         )
