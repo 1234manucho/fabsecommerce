@@ -432,10 +432,10 @@ class DHLService:
     def list_countries(self):
         """Return DHL's country reference list.
 
-        DHL moved this from /reference-data/countries to
-        /reference-data?datasetName=countries.
+        DHL's current endpoint is:
+            GET /reference-data?datasetName=country
         """
-        return self._get("/reference-data", params={"datasetName": "countries"})
+        return self._get("/reference-data", params={"datasetName": "country"})
 
     # ==================================================================
     # 14. SERVICE POINT FINDER
