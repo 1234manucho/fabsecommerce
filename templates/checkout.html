@@ -427,6 +427,10 @@
         color: #b91c1c;
     }
 
+    .checkout-shipping-status.is-info {
+        color: #7a5410;
+    }
+
     /* ---------- Duties & taxes panel (DHL yellow accent) ---------- */
     .checkout-duties-panel {
         margin: 0 0 22px;
@@ -767,9 +771,6 @@
         accent-color: var(--checkout-red);
     }
 
-    /* ============================================================
-       Pure red checkout button
-       ============================================================ */
     .checkout-submit {
         display: flex;
         align-items: center;
@@ -967,7 +968,6 @@
         font-weight: 900;
     }
 
-    /* ---------- what-happens-next steps ---------- */
     .checkout-steps {
         margin: 20px 0 0;
         padding: 0;
@@ -1099,10 +1099,8 @@
                 {{ form.hidden_tag() }}
                 <input type="hidden" name="shipping_quote" id="checkout-shipping-quote" value="">
 
-                <!-- Country autocomplete suggestions (populated from DHL) -->
                 <datalist id="checkout-country-datalist"></datalist>
 
-                <!-- ================== CUSTOMER DETAILS ================== -->
                 <header class="checkout-card-header">
                     <span class="checkout-kicker">Customer details</span>
                     <h2>Complete your order information.</h2>
@@ -1118,7 +1116,6 @@
                     {{ field(form.country, extra_class='checkout-span-2', placeholder='Country (e.g. Kenya, United States)') }}
                 </div>
 
-                <!-- ================== DELIVERY ADDRESS ================== -->
                 <header class="checkout-card-header">
                     <span class="checkout-kicker">Delivery address</span>
                     <h2>Where should we ship?</h2>
@@ -1129,7 +1126,6 @@
                 </header>
 
                 {% if current_user.is_authenticated %}
-                <!-- ============ SAVED ADDRESS PICKER ============ -->
                 <div class="checkout-saved-address" id="checkout-saved-address-wrap">
                     <label for="checkout-saved-address-select">Use a saved address</label>
                     <select id="checkout-saved-address-select" aria-label="Choose a saved address">
@@ -1140,7 +1136,6 @@
                         <a href="{{ url_for('account') }}#addresses" target="_blank" rel="noopener">My Account</a>.
                     </small>
                 </div>
-                <!-- ============================================ -->
                 {% endif %}
 
                 <div class="checkout-form-grid">
@@ -1159,7 +1154,6 @@
                     <p id="checkout-verify-status" class="checkout-verify-status" hidden></p>
                 </div>
 
-                <!-- ================== DHL SHIPPING METHOD ================== -->
                 <header class="checkout-card-header">
                     <span class="checkout-kicker">Shipping method</span>
                     <h2>Choose a DHL Express service.</h2>
@@ -1184,7 +1178,6 @@
                 <p id="checkout-shipping-status" class="checkout-shipping-status" hidden></p>
                 <div id="checkout-shipping-options" class="checkout-shipping-options" aria-live="polite"></div>
 
-                <!-- ============ Duties & Taxes (DHL landing cost) ============ -->
                 <div id="checkout-duties-panel" class="checkout-duties-panel" hidden>
                     <div class="checkout-duties-head">
                         <span class="checkout-duties-mark">DHL</span>
@@ -1201,7 +1194,6 @@
                     </p>
                 </div>
 
-                <!-- ============ Nearby DHL service points ============ -->
                 <div class="checkout-service-points">
                     <button
                         type="button"
@@ -1218,7 +1210,6 @@
                     </div>
                 </div>
 
-                <!-- ================== DPO PAYMENT ================== -->
                 <div class="checkout-payment-box">
                     <span class="checkout-payment-icon" aria-hidden="true">✓</span>
                     <div class="checkout-payment-copy">
@@ -1267,7 +1258,6 @@
                 </p>
             </form>
 
-            <!-- ================== ORDER SUMMARY ================== -->
             <aside class="checkout-summary" aria-labelledby="checkout-summary-title">
                 <span class="checkout-kicker">Order summary</span>
                 <h2 id="checkout-summary-title">Your order</h2>
@@ -1304,7 +1294,6 @@
                         </dd>
                     </div>
 
-                    <!-- Duties & taxes row — hidden until landing cost returns -->
                     <div class="checkout-total-row duties-row" id="summary-duties-row" hidden>
                         <dt>Duties &amp; taxes</dt>
                         <dd>
@@ -1349,15 +1338,9 @@
 
 <script>
 (function () {
-    // ================================================================
-    // CONFIG
-    // ================================================================
     const USD_KES      = Number({{ usd_kes_rate|float }});
     const SUBTOTAL_USD = Number({{ total }});
 
-    // ================================================================
-    // DOM REFS
-    // ================================================================
     const $countryInput = document.querySelector('input[name="country"], select[name="country"]');
     const $toolbarInput = document.getElementById('checkout-shipping-country');
     const $btn          = document.getElementById('checkout-shipping-quote-btn');
@@ -1390,14 +1373,8 @@
 
     if (!$btn) return;
 
-    // ================================================================
-    // FIELD GETTERS (safe — forms may or may not have these fields)
-    // ================================================================
     const fieldEl = (name) => document.querySelector(`#checkout-form [name="${name}"]`);
 
-    // ================================================================
-    // STATE
-    // ================================================================
     const state = {
         country: '',
         shipping: 0,
@@ -1406,18 +1383,12 @@
         servicePointsLoaded: false,
     };
 
-    // ================================================================
-    // FORMATTERS
-    // ================================================================
     const fmtUsd = v => 'US$ ' + Number(v).toLocaleString('en-US', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
     });
     const fmtKes = v => 'KES ' + Math.round(Number(v) * USD_KES).toLocaleString('en-KE');
     const esc = s => String(s == null ? '' : s).replace(/[<>]/g, '');
 
-    // ================================================================
-    // SUMMARY UPDATER
-    // ================================================================
     const updateSummary = () => {
         const shipping = Number(state.shipping) || 0;
         const duties   = Number(state.duties)   || 0;
@@ -1449,14 +1420,13 @@
         }
     };
 
-    // ================================================================
-    // STATUS HELPERS
-    // ================================================================
-    const setStatus = (msg, isError) => {
+    const setStatus = (msg, kind) => {
         if (!msg) { $status.hidden = true; $status.textContent = ''; return; }
         $status.hidden = false;
         $status.textContent = msg;
-        $status.classList.toggle('is-error', Boolean(isError));
+        $status.classList.remove('is-error', 'is-info');
+        if (kind === 'error') $status.classList.add('is-error');
+        else if (kind === 'info') $status.classList.add('is-info');
     };
 
     const setVerifyStatus = (msg, kind) => {
@@ -1474,9 +1444,6 @@
         $spStatus.classList.toggle('is-error', Boolean(isError));
     };
 
-    // ================================================================
-    // SAVED ADDRESSES
-    // ================================================================
     const loadSavedAddresses = async () => {
         if (!$savedSelect) return;
         try {
@@ -1488,7 +1455,6 @@
 
             const list = await res.json();
             if (!Array.isArray(list) || !list.length) {
-                // No saved addresses — hide the picker entirely
                 const wrap = document.getElementById('checkout-saved-address-wrap');
                 if (wrap) wrap.style.display = 'none';
                 return;
@@ -1503,7 +1469,6 @@
                 $savedSelect.appendChild(opt);
             });
 
-            // Auto-select default address (best UX)
             const defaultOpt = Array.from($savedSelect.options).find(o => o.dataset.address && JSON.parse(o.dataset.address).is_default);
             if (defaultOpt) {
                 $savedSelect.value = defaultOpt.value;
@@ -1537,12 +1502,10 @@
         setVal('city', a.city);
         setVal('postal_code', a.postal_code);
 
-        // Sync the shipping country field so rate lookup is preloaded with the right country
         if ($toolbarInput && a.country) {
             $toolbarInput.value = String(a.country).toUpperCase();
         }
 
-        // Clear any previous verification message
         setVerifyStatus('');
     };
 
@@ -1556,9 +1519,6 @@
         }
     });
 
-    // ================================================================
-    // COUNTRY DATALIST — fetched from DHL
-    // ================================================================
     const loadCountryList = async () => {
         try {
             const cached = sessionStorage.getItem('fabs_dhl_countries');
@@ -1609,9 +1569,6 @@
         });
     }
 
-    // ================================================================
-    // ADDRESS VERIFICATION
-    // ================================================================
     $verifyBtn?.addEventListener('click', async () => {
         const country = (($toolbarInput.value || '').trim() ||
                         ($countryInput && $countryInput.value || '').trim()).toUpperCase();
@@ -1676,9 +1633,6 @@
         }
     });
 
-    // ================================================================
-    // DUTIES & TAXES (LANDING COST)
-    // ================================================================
     const loadDuties = async (country) => {
         if (!country || country.length !== 2) {
             $dutiesPanel.hidden = true;
@@ -1775,9 +1729,6 @@
         return out;
     };
 
-    // ================================================================
-    // SERVICE POINTS
-    // ================================================================
     $spToggle?.addEventListener('click', async () => {
         const isOpen = $spToggle.getAttribute('aria-expanded') === 'true';
         const nextOpen = !isOpen;
@@ -1845,9 +1796,6 @@
         }
     });
 
-    // ================================================================
-    // SHIPPING RATES
-    // ================================================================
     try {
         const saved = JSON.parse(sessionStorage.getItem('fabs_cart_shipping') || '{}');
         if (saved && saved.country && $toolbarInput && !$toolbarInput.value) {
@@ -1860,7 +1808,7 @@
                          ($countryInput && $countryInput.value || '').trim()).toUpperCase();
 
         if (country.length !== 2) {
-            setStatus('Please enter your 2-letter country code (e.g. US, KE, GB).', true);
+            setStatus('Please enter your 2-letter country code (e.g. US, KE, GB).', 'error');
             $options.classList.remove('is-visible');
             $options.innerHTML = '';
             state.country = '';
@@ -1894,7 +1842,12 @@
 
             const products = Array.isArray(data.products) ? data.products : [];
             if (!products.length) {
-                setStatus('No DHL rates returned for that destination.');
+                // Backend sends a friendly `message` for unmapped countries or domestic KE.
+                if (data.message) {
+                    setStatus(data.message, 'info');
+                } else {
+                    setStatus('No DHL rates returned for that destination.');
+                }
                 state.shipping = 0;
                 updateSummary();
                 return;
@@ -1904,7 +1857,7 @@
             renderRates(products, country);
         } catch (err) {
             console.error(err);
-            setStatus(err.message || 'Could not fetch shipping rates.', true);
+            setStatus(err.message || 'Could not fetch shipping rates.', 'error');
             state.shipping = 0;
             updateSummary();
         } finally {
@@ -1979,9 +1932,6 @@
         loadDuties(country);
     }
 
-    // ================================================================
-    // BOOTSTRAP
-    // ================================================================
     loadCountryList();
     loadSavedAddresses();
 })();

@@ -16,6 +16,9 @@
     --games-green: #16734a;
     --dhl-yellow: #ffcc00;
     --dhl-red: #d40511;
+    --dhl-amber: #7a5410;
+    --dhl-amber-bg: #fff9ec;
+    --dhl-amber-line: #f0d59a;
   }
 
   .games-page, .games-page * { box-sizing: border-box; }
@@ -69,7 +72,7 @@
   .games-shipping {
     min-height: 84px;
     display: grid;
-    grid-template-columns: auto minmax(180px, 220px) auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(180px, 220px) minmax(0, 340px) minmax(0, 1fr);
     align-items: center;
     gap: 14px;
     padding: 14px 0;
@@ -111,7 +114,6 @@
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 6px;
     width: 100%;
-    max-width: 340px;
   }
   .games-shipping-form input {
     height: 44px;
@@ -163,8 +165,8 @@
     color: var(--games-ink);
     font-size: .78rem;
     line-height: 1.5;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   .games-shipping-result strong {
     font-weight: 900;
@@ -180,11 +182,26 @@
   .games-shipping-result[hidden] {
     display: none;
   }
+  /* NEW: info state (friendly non-error messages, e.g. domestic KE) */
+  .games-shipping-result.is-info {
+    background: var(--dhl-amber-bg);
+    border-color: var(--dhl-amber-line);
+    border-left-color: var(--dhl-amber);
+    color: var(--dhl-amber);
+    font-weight: 700;
+  }
+  /* NEW: hard error state on the container itself (red left rail) */
+  .games-shipping-result.is-error {
+    background: #fff5f5;
+    border-color: #f3c4c4;
+    border-left-color: #d40511;
+    color: #7a1a1a;
+  }
 
-  @media (max-width: 960px) {
+  @media (max-width: 1000px) {
     .games-shipping {
-      grid-template-columns: auto 1fr;
-      row-gap: 10px;
+      grid-template-columns: auto minmax(0, 1fr);
+      row-gap: 12px;
     }
     .games-shipping-form {
       grid-column: 1 / -1;
@@ -194,23 +211,49 @@
       grid-column: 1 / -1;
     }
   }
-  @media (max-width: 520px) {
+  @media (max-width: 640px) {
+    .games-shipping {
+      padding: 16px 0;
+      row-gap: 10px;
+    }
     .games-shipping-mark {
-      min-width: 48px;
-      height: 26px;
-      font-size: 12px;
+      min-width: 52px;
+      height: 28px;
+      font-size: 13px;
     }
     .games-shipping-copy strong {
-      font-size: .76rem;
+      font-size: .78rem;
+      line-height: 1.3;
     }
     .games-shipping-copy small {
-      font-size: .6rem;
+      font-size: .62rem;
     }
     .games-shipping-form {
       grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .games-shipping-form input,
+    .games-shipping-form button {
+      height: 48px;
+      font-size: .82rem;
     }
     .games-shipping-form button {
       width: 100%;
+      font-size: .74rem;
+      letter-spacing: .06em;
+    }
+    .games-shipping-result {
+      padding: 12px 14px;
+      font-size: .76rem;
+      line-height: 1.55;
+    }
+  }
+  @media (max-width: 400px) {
+    .games-shipping-copy small {
+      letter-spacing: .02em;
+    }
+    .games-shipping-result {
+      font-size: .72rem;
     }
   }
   /* ==================================================== */
@@ -464,22 +507,27 @@
   <!-- ================== DHL SHIPPING ESTIMATE BAND ================== -->
   <section class="games-shipping-band" aria-label="DHL shipping estimate">
     <div class="games-shell games-shipping">
-      <span class="games-shipping-mark">DHL</span>
+      <span class="games-shipping-mark" aria-hidden="true">DHL</span>
       <div class="games-shipping-copy">
         <strong>Ships worldwide via DHL Express</strong>
         <small>Official DHL Express partner</small>
       </div>
-      <div class="games-shipping-form">
+      <form class="games-shipping-form" id="games-shipping-form" autocomplete="off" novalidate>
         <input
           id="games-shipping-country"
           type="text"
+          inputmode="latin"
           maxlength="2"
           placeholder="Country code (e.g. US)"
           aria-label="Destination country code"
           autocomplete="country"
+          autocapitalize="characters"
+          autocorrect="off"
+          spellcheck="false"
+          enterkeyhint="go"
         >
         <button type="button" id="games-shipping-btn">Estimate</button>
-      </div>
+      </form>
       <div id="games-shipping-result" class="games-shipping-result" role="status" aria-live="polite" hidden></div>
     </div>
   </section>
@@ -643,6 +691,7 @@
     const cartClear = document.getElementById('clearGamesCart');
     const cartToast = document.getElementById('gamesCartToast');
 
+    const shippingForm   = document.getElementById('games-shipping-form');
     const shippingInput  = document.getElementById('games-shipping-country');
     const shippingBtn    = document.getElementById('games-shipping-btn');
     const shippingResult = document.getElementById('games-shipping-result');
@@ -820,22 +869,33 @@
     // ================================================================
     // DHL SHIPPING ESTIMATE
     // ================================================================
-    const setShippingResult = (html, isError) => {
+    // kind: 'error' | 'info' | undefined (neutral)
+    const setShippingResult = (html, kind) => {
       if (!html) {
         shippingResult.hidden = true;
         shippingResult.innerHTML = '';
+        shippingResult.classList.remove('is-error', 'is-info');
         return;
       }
       shippingResult.hidden = false;
-      shippingResult.innerHTML = isError
-        ? `<span class="games-shipping-error">${html}</span>`
-        : html;
+      shippingResult.classList.remove('is-error', 'is-info');
+
+      if (kind === 'error') {
+        shippingResult.classList.add('is-error');
+        shippingResult.innerHTML = `<span class="games-shipping-error">${html}</span>`;
+      } else if (kind === 'info') {
+        shippingResult.classList.add('is-info');
+        shippingResult.innerHTML = html;
+      } else {
+        shippingResult.innerHTML = html;
+      }
     };
 
-    shippingBtn?.addEventListener('click', async () => {
+    const runEstimate = async () => {
       const country = (shippingInput.value || '').trim().toUpperCase();
       if (country.length !== 2) {
-        setShippingResult('Please enter a 2-letter country code (e.g. US, KE, GB).', true);
+        setShippingResult('Please enter a 2-letter country code (e.g. US, KE, GB).', 'error');
+        shippingInput.focus();
         return;
       }
 
@@ -865,13 +925,17 @@
         const data = await res.json();
 
         if (!res.ok) {
-          setShippingResult(data.error || 'Could not fetch a shipping estimate.', true);
+          setShippingResult(data.error || 'Could not fetch a shipping estimate.', 'error');
           return;
         }
 
         const products = Array.isArray(data.products) ? data.products : [];
         if (!products.length) {
-          setShippingResult('No DHL rates available for that destination.', true);
+          if (data.message) {
+            setShippingResult(data.message, 'info');
+          } else {
+            setShippingResult('No DHL rates returned for that destination.', 'error');
+          }
           return;
         }
 
@@ -885,7 +949,11 @@
           .sort((a, b) => a.price - b.price)[0];
 
         if (!cheapest) {
-          setShippingResult('No DHL rates available for that destination.', true);
+          if (data.message) {
+            setShippingResult(data.message, 'info');
+          } else {
+            setShippingResult('No DHL rates returned for that destination.', 'error');
+          }
           return;
         }
 
@@ -900,11 +968,25 @@
         } catch (e) { /* ignore */ }
       } catch (err) {
         console.error(err);
-        setShippingResult('Shipping estimate is temporarily unavailable.', true);
+        setShippingResult('Shipping estimate is temporarily unavailable.', 'error');
       } finally {
         shippingBtn.disabled = false;
         shippingBtn.textContent = 'Estimate';
       }
+    };
+
+    shippingBtn?.addEventListener('click', runEstimate);
+    // Enter key inside the input triggers the estimate on mobile keyboards
+    shippingInput?.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        runEstimate();
+      }
+    });
+    // Prevent the surrounding form from doing anything on submit
+    shippingForm?.addEventListener('submit', event => {
+      event.preventDefault();
+      runEstimate();
     });
 
     // Prefill from previous session

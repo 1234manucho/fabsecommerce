@@ -91,6 +91,7 @@
         color: var(--cart-green); font-size: 0.72rem; font-weight: 800; }
     .cart-shipping-status { margin: 8px 0 0; color: var(--cart-muted); font-size: 0.7rem; line-height: 1.55; }
     .cart-shipping-status.is-error { color: #b91c1c; }
+    .cart-shipping-status.is-info { color: #7a5410; }
     .cart-shipping-hint { margin: 10px 0 0; color: #7a828a; font-size: 0.68rem; line-height: 1.5; }
 
     /* ---------- Duties & taxes preview ---------- */
@@ -316,10 +317,13 @@
     const fmtKes = v => 'KES ' + Math.round(Number(v) * USD_KES).toLocaleString('en-KE');
     const esc = s => String(s == null ? '' : s).replace(/[<>]/g, '');
 
-    const setStatus = (msg, isError) => {
+    const setStatus = (msg, kind) => {
         if (!msg) { $status.hidden = true; $status.textContent = ''; return; }
-        $status.hidden = false; $status.textContent = msg;
-        $status.classList.toggle('is-error', Boolean(isError));
+        $status.hidden = false;
+        $status.textContent = msg;
+        $status.classList.remove('is-error', 'is-info');
+        if (kind === 'error') $status.classList.add('is-error');
+        else if (kind === 'info') $status.classList.add('is-info');
     };
 
     const updateTotals = () => {
@@ -373,7 +377,7 @@
             const name = c.countryName || c.name || code;
             if (!code || !name) return;
             const opt = document.createElement('option');
-            opt.value = code;      // user types code
+            opt.value = code;
             opt.label = `${name} (${code})`;
             $datalist.appendChild(opt);
         });
@@ -453,7 +457,7 @@
                 const cost = Number(radio.value || 0);
                 state.shipping = cost;
                 state.product = top.find(p => Number(p.totalPrice?.[0]?.price || 0) === cost) || null;
-                state.duties = 0;   // reset duties for new selection
+                state.duties = 0;
                 updateTotals();
                 loadDuties(country);
             });
@@ -473,7 +477,7 @@
         const country = ($input.value || '').trim().toUpperCase();
 
         if (country.length !== 2) {
-            setStatus('Please enter a 2-letter country code (e.g. US, KE, GB).', true);
+            setStatus('Please enter a 2-letter country code (e.g. US, KE, GB).', 'error');
             $rates.classList.remove('is-visible');
             state.country = ''; state.shipping = 0; state.duties = 0;
             $dutiesPanel.hidden = true;
@@ -500,7 +504,13 @@
 
             const products = Array.isArray(data.products) ? data.products : [];
             if (!products.length) {
-                setStatus('No DHL rates returned for that destination.');
+                // Backend sends a friendly `message` for unmapped countries
+                // or domestic KE. Show it if present.
+                if (data.message) {
+                    setStatus(data.message, 'info');
+                } else {
+                    setStatus('No DHL rates returned for that destination.');
+                }
                 state.shipping = 0; state.duties = 0;
                 updateTotals();
                 return;
@@ -510,7 +520,7 @@
             renderRates(products, country);
         } catch (err) {
             console.error(err);
-            setStatus(err.message || 'Could not fetch shipping rates.', true);
+            setStatus(err.message || 'Could not fetch shipping rates.', 'error');
             state.shipping = 0; state.duties = 0;
             updateTotals();
         } finally {

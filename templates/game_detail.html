@@ -14,6 +14,9 @@
         --gpd-soft: #f4f5f6;
         --dhl-yellow: #ffcc00;
         --dhl-red: #d40511;
+        --dhl-amber: #7a5410;
+        --dhl-amber-bg: #fff9ec;
+        --dhl-amber-line: #f0d59a;
         background: var(--gpd-soft);
         color: var(--gpd-ink);
     }
@@ -282,6 +285,11 @@
         font-size: 13px;
         letter-spacing: -0.02em;
         border-radius: 3px;
+        flex: 0 0 auto;
+    }
+
+    .gpd-shipping-head > div {
+        min-width: 0;
     }
 
     .gpd-shipping-head strong {
@@ -293,7 +301,7 @@
     .gpd-shipping-head small {
         display: block;
         margin-top: 2px;
-        color: #7a5410;
+        color: var(--dhl-amber);
         font-size: 0.68rem;
         letter-spacing: 0.04em;
         text-transform: uppercase;
@@ -308,6 +316,7 @@
     }
 
     .gpd-shipping-grid > div {
+        min-width: 0;
         padding: 12px 18px;
         border-right: 1px solid rgba(255, 204, 0, 0.18);
         border-bottom: 1px solid rgba(255, 204, 0, 0.18);
@@ -332,6 +341,7 @@
         color: var(--gpd-ink);
         font-size: 0.82rem;
         line-height: 1.4;
+        overflow-wrap: anywhere;
     }
 
     /* Estimate widget */
@@ -343,7 +353,7 @@
     .gpd-estimate-label {
         display: block;
         margin-bottom: 8px;
-        color: #7a5410;
+        color: var(--dhl-amber);
         font-size: 0.66rem;
         font-weight: 900;
         letter-spacing: 0.06em;
@@ -407,9 +417,12 @@
         padding: 12px 14px;
         background: #fff;
         border: 1px solid rgba(255, 204, 0, 0.4);
+        border-left: 4px solid var(--dhl-yellow);
         font-size: 0.78rem;
         line-height: 1.5;
         color: var(--gpd-ink);
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .gpd-estimate-result.is-visible {
@@ -433,10 +446,53 @@
 
     .gpd-estimate-result .gpd-estimate-error {
         color: #b91c1c;
+        font-weight: 800;
     }
 
     .gpd-estimate-result .gpd-estimate-green {
         color: var(--gpd-green);
+        font-weight: 900;
+    }
+
+    /* NEW: info state for friendly non-error messages (e.g. domestic KE) */
+    .gpd-estimate-result.is-info {
+        background: var(--dhl-amber-bg);
+        border-color: var(--dhl-amber-line);
+        border-left-color: var(--dhl-amber);
+        color: var(--dhl-amber);
+        font-weight: 700;
+    }
+
+    /* NEW: hard error state on the container itself */
+    .gpd-estimate-result.is-error {
+        background: #fff5f5;
+        border-color: #f3c4c4;
+        border-left-color: var(--dhl-red);
+        color: #7a1a1a;
+    }
+
+    /* Alternate service rows inside the result box */
+    .gpd-estimate-alt {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 6px 10px;
+        padding: 8px 0;
+        border-top: 1px dashed rgba(255, 204, 0, 0.35);
+        font-size: 0.74rem;
+        color: var(--gpd-muted);
+    }
+
+    .gpd-estimate-alt span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .gpd-estimate-alt strong {
+        display: inline;
+        color: var(--gpd-ink);
+        font-weight: 900;
+        flex: 0 0 auto;
     }
 
     .gpd-estimate-hint {
@@ -584,6 +640,14 @@
         .gpd-description {
             grid-template-columns: 1fr;
         }
+
+        .gpd-estimate {
+            padding: 14px 16px;
+        }
+
+        .gpd-shipping-grid > div {
+            padding: 12px 14px;
+        }
     }
 
     @media (max-width: 420px) {
@@ -609,6 +673,30 @@
 
         .gpd-estimate-row {
             grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .gpd-estimate-row input,
+        .gpd-estimate-row button {
+            min-height: 48px;
+        }
+
+        .gpd-estimate-row button {
+            width: 100%;
+            font-size: 0.74rem;
+        }
+
+        .gpd-shipping-head strong {
+            font-size: 0.84rem;
+        }
+
+        .gpd-shipping-head small {
+            font-size: 0.62rem;
+        }
+
+        .gpd-estimate-result {
+            font-size: 0.74rem;
+            padding: 11px 12px;
         }
     }
 </style>
@@ -706,7 +794,7 @@
                 <!-- ============ DHL SHIPPING & DELIVERY ============ -->
                 <section class="gpd-shipping" aria-labelledby="shipping-title">
                     <div class="gpd-shipping-head">
-                        <span class="gpd-shipping-mark">DHL</span>
+                        <span class="gpd-shipping-mark" aria-hidden="true">DHL</span>
                         <div>
                             <strong id="shipping-title">Shipping &amp; delivery</strong>
                             <small>Official DHL Express partner</small>
@@ -741,18 +829,23 @@
                         <label class="gpd-estimate-label" for="gpd-estimate-country">
                             Estimate shipping to your country
                         </label>
-                        <div class="gpd-estimate-row">
+                        <form class="gpd-estimate-row" id="gpd-estimate-form" novalidate autocomplete="off">
                             <input
                                 id="gpd-estimate-country"
                                 type="text"
+                                inputmode="latin"
                                 maxlength="2"
                                 placeholder="Country code (e.g. US)"
                                 aria-label="Destination country code"
                                 autocomplete="country"
+                                autocapitalize="characters"
+                                autocorrect="off"
+                                spellcheck="false"
+                                enterkeyhint="go"
                                 value=""
                             >
                             <button type="button" id="gpd-estimate-btn">Get estimate</button>
-                        </div>
+                        </form>
                         <p class="gpd-estimate-hint">
                             Uses DHL Express live rates for 1 unit at this product's weight and dimensions.
                         </p>
@@ -797,6 +890,7 @@
 (function () {
     const USD_KES = Number({{ usd_kes_rate|float }});
 
+    const $form   = document.getElementById('gpd-estimate-form');
     const $input  = document.getElementById('gpd-estimate-country');
     const $btn    = document.getElementById('gpd-estimate-btn');
     const $result = document.getElementById('gpd-estimate-result');
@@ -815,22 +909,32 @@
     const fmtKes = v => 'KES ' + Math.round(Number(v) * USD_KES).toLocaleString('en-KE');
     const esc = s => String(s == null ? '' : s).replace(/[<>]/g, '');
 
-    const setResult = (html, isError) => {
+    // kind: 'error' | 'info' | undefined (neutral)
+    const setResult = (html, kind) => {
         if (!html) {
-            $result.classList.remove('is-visible');
+            $result.classList.remove('is-visible', 'is-error', 'is-info');
             $result.innerHTML = '';
             return;
         }
         $result.classList.add('is-visible');
-        $result.innerHTML = isError
-            ? `<span class="gpd-estimate-error">${esc(html)}</span>`
-            : html;
+        $result.classList.remove('is-error', 'is-info');
+
+        if (kind === 'error') {
+            $result.classList.add('is-error');
+            $result.innerHTML = `<span class="gpd-estimate-error">${esc(html)}</span>`;
+        } else if (kind === 'info') {
+            $result.classList.add('is-info');
+            $result.innerHTML = html;
+        } else {
+            $result.innerHTML = html;
+        }
     };
 
-    $btn.addEventListener('click', async () => {
+    const runEstimate = async () => {
         const country = ($input.value || '').trim().toUpperCase();
         if (country.length !== 2) {
-            setResult('Please enter a 2-letter country code (e.g. US, KE, GB).', true);
+            setResult('Please enter a 2-letter country code (e.g. US, KE, GB).', 'error');
+            $input.focus();
             return;
         }
 
@@ -860,13 +964,17 @@
             const data = await res.json();
 
             if (!res.ok) {
-                setResult(data.error || 'Could not fetch a shipping estimate.', true);
+                setResult(data.error || 'Could not fetch a shipping estimate.', 'error');
                 return;
             }
 
             const products = Array.isArray(data.products) ? data.products : [];
             if (!products.length) {
-                setResult('No DHL rates available for that destination.', true);
+                if (data.message) {
+                    setResult(esc(data.message), 'info');
+                } else {
+                    setResult('No DHL rates returned for that destination.', 'error');
+                }
                 return;
             }
 
@@ -882,15 +990,19 @@
                 .slice(0, 3);
 
             if (!top.length) {
-                setResult('No DHL rates available for that destination.', true);
+                if (data.message) {
+                    setResult(esc(data.message), 'info');
+                } else {
+                    setResult('No DHL rates returned for that destination.', 'error');
+                }
                 return;
             }
 
             const from = top[0];
             const rest = top.slice(1).map(p => `
-                <div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px dashed rgba(255,204,0,.35);font-size:.74rem;color:#68717a;">
+                <div class="gpd-estimate-alt">
                     <span>${esc(p.name)}${p.days ? ' · ' + p.days + ' day(s)' : ''}</span>
-                    <strong style="color:#161a1f;">${fmtUsd(p.price)}</strong>
+                    <strong>${fmtUsd(p.price)}</strong>
                 </div>
             `).join('');
 
@@ -904,11 +1016,23 @@
             `);
         } catch (err) {
             console.error(err);
-            setResult('Shipping estimate is temporarily unavailable.', true);
+            setResult('Shipping estimate is temporarily unavailable.', 'error');
         } finally {
             $btn.disabled = false;
             $btn.textContent = 'Get estimate';
         }
+    };
+
+    $btn.addEventListener('click', runEstimate);
+    $input?.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            runEstimate();
+        }
+    });
+    $form?.addEventListener('submit', event => {
+        event.preventDefault();
+        runEstimate();
     });
 
     // Restore previous country entry
