@@ -1934,7 +1934,7 @@ def register_errors(app):
         db.session.rollback()
         return render_template("error.html", code=500, title="We could not complete that request", message="Please try again or contact support."), 500
 
-
+ 
 app = create_app()
 
 if __name__ == "__main__":
