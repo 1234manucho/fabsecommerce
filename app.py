@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 
+import click
 from dotenv import load_dotenv
 from flask import (
     Flask, abort, flash, jsonify, redirect, render_template,
@@ -246,6 +247,119 @@ def _event_key(tracking_number, occurred_at, status_code, description):
     return hashlib.sha256(blob).hexdigest()[:64]
 
 
+_DHL_DOCUMENT_TYPES = {
+    "label": "label",
+    "waybill": "waybillDoc",
+    "waybilldoc": "waybillDoc",
+    "invoice": "invoice",
+}
+
+
+def _canonical_dhl_document_type(value):
+    """Return the DHL typeCode accepted by the document API, or None."""
+    key = str(value or "").strip().casefold()
+    return _DHL_DOCUMENT_TYPES.get(key)
+
+
+def _dhl_document_candidates(payload):
+    """Extract document dictionaries from DHL create/download response shapes."""
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    if not isinstance(payload, dict):
+        return []
+
+    candidates = []
+    for key in ("documents", "document"):
+        value = payload.get(key)
+        if isinstance(value, list):
+            candidates.extend(item for item in value if isinstance(item, dict))
+        elif isinstance(value, dict):
+            candidates.append(value)
+
+    if any(payload.get(key) for key in ("url", "content", "data")):
+        candidates.append(payload)
+    return candidates
+
+
+def _normalise_dhl_document(payload, doc_type="label"):
+    """Return one DHL document with a stable URL/content response shape."""
+    canonical_type = _canonical_dhl_document_type(doc_type)
+    if not canonical_type:
+        return None
+
+    candidates = _dhl_document_candidates(payload)
+    if not candidates:
+        return None
+
+    wanted = canonical_type.casefold()
+    matching = [
+        item for item in candidates
+        if str(item.get("typeCode") or item.get("type") or "").casefold() == wanted
+    ]
+    # Some DHL document-download responses omit typeCode when only one type was
+    # requested. In that case the single returned document is unambiguous.
+    selected = matching[0] if matching else (candidates[0] if len(candidates) == 1 else None)
+    if not selected:
+        return None
+
+    url = selected.get("url")
+    content = selected.get("content") or selected.get("data")
+    if not url and not content:
+        return None
+
+    document = {
+        "typeCode": selected.get("typeCode") or canonical_type,
+        "format": (
+            selected.get("imageFormat")
+            or selected.get("encodingFormat")
+            or selected.get("format")
+            or "PDF"
+        ),
+    }
+    if url:
+        document["url"] = str(url)
+    if content:
+        document["content"] = str(content)
+    return document
+
+
+def _stored_shipment_document(shipment, doc_type="label"):
+    """Read a document returned at creation time from Shipment.raw_payload."""
+    try:
+        payload = json.loads(shipment.raw_payload or "{}")
+    except (TypeError, ValueError):
+        return None
+
+    if isinstance(payload, dict) and "create" in payload:
+        payload = payload.get("create")
+    return _normalise_dhl_document(payload, doc_type)
+
+
+def _persistable_document_url(document):
+    """Return a real URL that fits the legacy varchar(500) field."""
+    if not isinstance(document, dict):
+        return None
+    url = str(document.get("url") or "").strip()
+    if not url.lower().startswith(("https://", "http://")):
+        return None
+    return url if len(url) <= 500 else None
+
+
+def _shipment_payload_snapshot(shipment):
+    """Load the structured create/tracking snapshot stored for a shipment."""
+    try:
+        existing = json.loads(shipment.raw_payload or "{}")
+    except (TypeError, ValueError):
+        existing = {}
+
+    if not isinstance(existing, dict):
+        return {}
+    if "create" in existing or "tracking" in existing:
+        return existing
+    # Legacy rows stored the raw tracking response directly.
+    return {"tracking": existing} if existing else {}
+
+
 def _persist_tracking(shipment, normalised, source="poll"):
     """
     Upsert Shipment status fields and insert new ShipmentEvent rows.
@@ -317,7 +431,11 @@ def _persist_tracking(shipment, normalised, source="poll"):
 
     shipment.last_synced_at = datetime.now(timezone.utc)
     shipment.last_sync_source = source
-    shipment.raw_payload = json.dumps(normalised.get("raw") or {}, default=str)[:16000]
+    payload_snapshot = _shipment_payload_snapshot(shipment)
+    payload_snapshot["tracking"] = normalised.get("raw") or {}
+    # raw_payload is a Text column. Keep the complete, valid JSON snapshot so
+    # creation-time labels are not destroyed by the first tracking refresh.
+    shipment.raw_payload = json.dumps(payload_snapshot, default=str)
     return changed
 
 
@@ -943,8 +1061,24 @@ def register_routes(app):
         return jsonify(result)
 
     @app.get("/api/shipping/<tracking_number>/documents")
+    @admin_required
     def api_shipping_documents(tracking_number):
-        doc_type = (request.args.get("type") or "label").strip()
+        requested_type = (request.args.get("type") or "label").strip()
+        doc_type = _canonical_dhl_document_type(requested_type)
+        if not doc_type:
+            return jsonify({"error": "Unsupported DHL document type."}), 400
+
+        shipment = Shipment.query.filter_by(
+            tracking_number=tracking_number,
+            is_active=True,
+        ).first()
+        if not shipment:
+            return jsonify({"error": "Shipment not found."}), 404
+
+        stored_document = _stored_shipment_document(shipment, doc_type)
+        if stored_document:
+            return jsonify(stored_document)
+
         try:
             result = DHLService().get_shipment_documents(tracking_number, doc_type=doc_type)
         except DHLConfigurationError:
@@ -954,7 +1088,11 @@ def register_routes(app):
         except Exception as exc:
             app.logger.exception("DHL document download failed: %s", exc)
             return jsonify({"error": "Could not fetch documents."}), 502
-        return jsonify(result)
+
+        document = _normalise_dhl_document(result, doc_type)
+        if not document:
+            return jsonify({"error": f"DHL did not return the requested {doc_type} document."}), 404
+        return jsonify(document)
 
     @app.get("/api/shipping/countries")
     def api_shipping_countries():
@@ -1210,13 +1348,15 @@ def register_routes(app):
             return redirect(url_for("admin_orders"))
 
         tracking_number = None
+        label_document = None
         label_url = None
 
         if result:
             tracking_number = result.get("shipmentTrackingNumber") or result.get("trackingNumber")
-            documents = result.get("documents") or []
-            if documents:
-                label_url = documents[0].get("url") or documents[0].get("content")
+            label_document = _normalise_dhl_document(result, "label")
+            # These columns are deliberately URL fields. DHL normally returns
+            # the label as base64 PDF content, which belongs in raw_payload.
+            label_url = _persistable_document_url(label_document)
 
         if tracking_number:
             now = datetime.now(timezone.utc)
@@ -1250,12 +1390,26 @@ def register_routes(app):
                 destination_country=destination_country,
                 last_synced_at=now,
                 last_sync_source="create",
+                raw_payload=json.dumps({"create": result}, default=str),
             )
-            db.session.add(shipment)
-            db.session.flush()
-
-            audit("dhl_shipment_created", "order", order.id, tracking_number)
-            db.session.commit()
+            try:
+                db.session.add(shipment)
+                db.session.flush()
+                audit("dhl_shipment_created", "order", order.id, tracking_number)
+                db.session.commit()
+            except Exception as exc:
+                db.session.rollback()
+                app.logger.exception(
+                    "DHL shipment %s was created, but local persistence failed: %s",
+                    tracking_number,
+                    exc,
+                )
+                flash(
+                    f"DHL created shipment {tracking_number}, but the local save failed. "
+                    "Do not create it again; attach this tracking number to the order.",
+                    "danger",
+                )
+                return redirect(url_for("admin_orders"))
 
             # --- 3. Immediately pull tracking so events start populating ---
             _refresh_shipment(shipment, source="poll", force=True)
@@ -2033,6 +2187,79 @@ def register_cli(app):
 
         db.session.commit()
         print("Database initialised and catalogue seeded.")
+
+    @app.cli.command("attach-dhl-shipment")
+    @click.argument("order_id", type=int)
+    @click.argument("tracking_number")
+    def attach_dhl_shipment(order_id, tracking_number):
+        """Attach an already-created DHL shipment without creating a duplicate."""
+        order = db.session.get(Order, order_id)
+        if not order:
+            raise click.ClickException(f"Order id {order_id} was not found.")
+
+        tracking_number = str(tracking_number or "").strip()
+        if not tracking_number:
+            raise click.ClickException("A DHL tracking number is required.")
+        if len(tracking_number) > 100:
+            raise click.ClickException("The DHL tracking number is longer than 100 characters.")
+        if order.dhl_tracking_number and order.dhl_tracking_number != tracking_number:
+            raise click.ClickException(
+                f"Order {order.reference} already has tracking number "
+                f"{order.dhl_tracking_number}."
+            )
+
+        shipment = Shipment.query.filter_by(tracking_number=tracking_number).first()
+        if shipment and shipment.order_id != order.id:
+            raise click.ClickException(
+                f"Tracking number {tracking_number} is already attached to order "
+                f"id {shipment.order_id}."
+            )
+
+        try:
+            destination_country = normalize_country_code(
+                order.country,
+                f"Order {order.reference} destination country",
+            )
+        except DHLConfigurationError:
+            destination_country = None
+
+        now = datetime.now(timezone.utc)
+        if not shipment:
+            shipment = Shipment(
+                order_id=order.id,
+                provider="dhl",
+                tracking_number=tracking_number,
+                status="created",
+                status_code="pre-transit",
+                status_description="Shipment created — awaiting pickup",
+                origin_country=DEFAULT_SHIP_ORIGIN_COUNTRY,
+                destination_country=destination_country,
+                last_sync_source="recovery",
+            )
+            db.session.add(shipment)
+        else:
+            shipment.is_active = True
+
+        order.dhl_tracking_number = tracking_number
+        order.shipping_status = shipment.status or "created"
+        order.shipped_at = order.shipped_at or now
+        db.session.add(AuditLog(
+            action="dhl_shipment_attached",
+            entity_type="order",
+            entity_id=str(order.id),
+            detail=tracking_number,
+        ))
+
+        try:
+            db.session.commit()
+        except Exception as exc:
+            db.session.rollback()
+            raise click.ClickException(f"Could not attach the shipment: {exc}") from exc
+
+        click.echo(
+            f"Attached DHL tracking {tracking_number} to "
+            f"{order.reference} (order id {order.id})."
+        )
 
 
 def register_errors(app):
