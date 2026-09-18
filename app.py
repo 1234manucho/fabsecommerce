@@ -186,6 +186,46 @@ def _compute_order_shipping_dims(order) -> dict:
     }
 
 
+def _build_order_export_line_items(order):
+    """Map physical order products to DHL customs declaration line items."""
+    default_hs_code = str(os.getenv("DHL_DEFAULT_HS_CODE") or "").strip()
+    manufacturer_country = str(
+        os.getenv("DHL_DEFAULT_MANUFACTURER_COUNTRY") or ""
+    ).strip()
+    export_items = []
+
+    for item in order.items:
+        game = getattr(item, "game", None)
+        quantity = max(int(item.quantity or 1), 1)
+        unit_weight = float(getattr(game, "weight_kg", None) or 1.0)
+        total_weight = round(unit_weight * quantity, 3)
+        hs_code = str(getattr(game, "hs_code", None) or default_hs_code).strip()
+
+        export_items.append({
+            "description": str(item.title or getattr(game, "title", None) or "Product")[:255],
+            "quantity": quantity,
+            "unit_of_measurement": "PCS",
+            "price": round(float(item.unit_price or 0), 2),
+            "net_weight_kg": total_weight,
+            "gross_weight_kg": total_weight,
+            "hs_code": hs_code,
+            "manufacturer_country": manufacturer_country,
+            "export_reason_type": "permanent",
+            "is_taxes_paid": False,
+        })
+
+    return export_items
+
+
+def _order_customs_description(order):
+    descriptions = [
+        str(item.title or "").strip()
+        for item in order.items
+        if str(item.title or "").strip()
+    ]
+    return "; ".join(descriptions)[:255] or "Software and accessories"
+
+
 def _compute_cart_shipping_dims(items) -> dict:
     total_weight = 0.0
     max_length = 30.0
@@ -1297,17 +1337,23 @@ def register_routes(app):
         city = getattr(order, "city", None)
         postal_code = getattr(order, "postal_code", None)
 
-        if not (address_line1 and city and postal_code):
-            flash("Order is missing shipping address details. Add them before creating a shipment.", "danger")
+        if not (address_line1 and city):
+            flash("Order is missing its street address or city. Add them before creating a shipment.", "danger")
             return redirect(url_for("admin_orders"))
 
         dims = _compute_order_shipping_dims(order)
+        export_line_items = _build_order_export_line_items(order)
+        customs_description = _order_customs_description(order)
+        customs_value = round(sum(
+            float(item["price"]) * int(item["quantity"])
+            for item in export_line_items
+        ), 2)
 
         order_data = {
             "order_reference": order.reference,
             "receiver_full_name": order.full_name,
             "receiver_email": order.email,
-            "receiver_phone": getattr(order, "phone", None) or "+254700000000",
+            "receiver_phone": getattr(order, "phone", None) or "",
             "receiver_company": getattr(order, "company", None) or "",
             "receiver_address_line1": address_line1,
             "receiver_address_line2": getattr(order, "address_line2", None) or "",
@@ -1318,9 +1364,18 @@ def register_routes(app):
             "package_length_cm": dims["length_cm"],
             "package_width_cm": dims["width_cm"],
             "package_height_cm": dims["height_cm"],
-            "declared_value": float(order.total or 0),
+            "declared_value": customs_value or float(order.subtotal or order.total or 0),
             "currency": order.currency or "USD",
-            "package_description": "Gaming products",
+            "package_description": customs_description,
+            "is_document": False,
+            "product_code": "P" if destination_country != DEFAULT_SHIP_ORIGIN_COUNTRY else None,
+            "incoterm": "DAP",
+            "place_of_incoterm": city,
+            "export_reason": "permanent",
+            "export_reason_type": "permanent",
+            "shipment_type": "commercial",
+            "export_line_items": export_line_items,
+            "printer_type": os.getenv("DHL_PRINTER_TYPE", "A4"),
         }
 
         try:

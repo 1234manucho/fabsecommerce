@@ -258,9 +258,9 @@ def _dhl_now(hours_ahead=2):
 def _resolve_destination(country_code, city, postal_code):
     cc = normalize_country_code(country_code, "destination country")
     if not city:
-        city = DEFAULT_CITY_BY_COUNTRY.get(cc) or cc
+        city = DEFAULT_CITY_BY_COUNTRY.get(cc)
     if not postal_code:
-        postal_code = DEFAULT_POSTAL_BY_COUNTRY.get(cc) or cc
+        postal_code = DEFAULT_POSTAL_BY_COUNTRY.get(cc)
     return city, postal_code
 
 
@@ -308,6 +308,119 @@ def _clean_payload(value):
         return [_clean_payload(v) for v in value]
 
     return value
+
+
+def _positive_float(value, field_name):
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise DHLConfigurationError(f"{field_name} must be a positive number") from exc
+    if number <= 0:
+        raise DHLConfigurationError(f"{field_name} must be a positive number")
+    return number
+
+
+def _normalise_hs_code(value, field_name="HS code"):
+    """Return a 6-12 digit customs commodity code."""
+    digits = re.sub(r"\D", "", str(value or ""))
+    if not 6 <= len(digits) <= 12:
+        raise DHLConfigurationError(
+            f"{field_name} is required for international goods and must contain "
+            "6 to 12 digits"
+        )
+    return digits
+
+
+def _build_export_line_items(order_data, origin_country, package_weight, declared_value):
+    """Build and validate DHL customs lineItems from order product data."""
+    raw_items = order_data.get("export_line_items") or [{
+        "description": order_data.get("package_description"),
+        "quantity": 1,
+        "price": declared_value,
+        "net_weight_kg": package_weight,
+        "gross_weight_kg": package_weight,
+        "hs_code": order_data.get("hs_code") or os.getenv("DHL_DEFAULT_HS_CODE"),
+        "manufacturer_country": (
+            order_data.get("manufacturer_country")
+            or os.getenv("DHL_DEFAULT_MANUFACTURER_COUNTRY")
+        ),
+    }]
+
+    if not isinstance(raw_items, list) or not raw_items:
+        raise DHLConfigurationError(
+            "At least one export line item is required for international goods"
+        )
+
+    line_items = []
+    for index, raw_item in enumerate(raw_items, start=1):
+        if not isinstance(raw_item, dict):
+            raise DHLConfigurationError(f"Export line item {index} must be an object")
+
+        description = str(raw_item.get("description") or "").strip()
+        if not description:
+            raise DHLConfigurationError(
+                f"Export line item {index} requires a customs description"
+            )
+
+        try:
+            quantity = int(raw_item.get("quantity") or 0)
+        except (TypeError, ValueError) as exc:
+            raise DHLConfigurationError(
+                f"Export line item {index} quantity must be a positive integer"
+            ) from exc
+        if quantity <= 0:
+            raise DHLConfigurationError(
+                f"Export line item {index} quantity must be a positive integer"
+            )
+
+        price = _positive_float(raw_item.get("price"), f"Export line item {index} price")
+        net_weight = _positive_float(
+            raw_item.get("net_weight_kg") or raw_item.get("weight_kg"),
+            f"Export line item {index} net weight",
+        )
+        gross_weight = _positive_float(
+            raw_item.get("gross_weight_kg") or raw_item.get("weight_kg") or net_weight,
+            f"Export line item {index} gross weight",
+        )
+        if gross_weight < net_weight:
+            raise DHLConfigurationError(
+                f"Export line item {index} gross weight cannot be below its net weight"
+            )
+
+        hs_code = _normalise_hs_code(
+            raw_item.get("hs_code") or os.getenv("DHL_DEFAULT_HS_CODE"),
+            f"Export line item {index} HS code",
+        )
+        manufacturer_country = normalize_country_code(
+            raw_item.get("manufacturer_country")
+            or order_data.get("manufacturer_country")
+            or os.getenv("DHL_DEFAULT_MANUFACTURER_COUNTRY"),
+            f"Export line item {index} manufacturer country",
+        )
+
+        line_items.append({
+            "number": index,
+            "quantity": {
+                "unitOfMeasurement": str(
+                    raw_item.get("unit_of_measurement") or "PCS"
+                ).upper(),
+                "value": quantity,
+            },
+            "price": round(price, 2),
+            "description": description[:255],
+            "weight": {
+                "netValue": round(net_weight, 3),
+                "grossValue": round(gross_weight, 3),
+            },
+            "commodityCodes": [{"typeCode": "inbound", "value": hs_code}],
+            "isTaxesPaid": bool(raw_item.get("is_taxes_paid", False)),
+            "exportReasonType": str(
+                raw_item.get("export_reason_type") or "permanent"
+            ),
+            "manufacturerCountry": manufacturer_country,
+        })
+
+    return line_items
 
 
 class DHLConfigurationError(Exception):
@@ -533,8 +646,8 @@ class DHLService:
         shipper_company = os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading Global E-Commerce")
         shipper_contact = os.getenv("DHL_ORIGIN_CONTACT", "FABS Shipping")
 
-        receiver_phone = order_data.get("receiver_phone") or DEFAULT_PHONE_FALLBACK
-        receiver_email = order_data.get("receiver_email") or "no-reply@fabstrading.com"
+        receiver_phone = str(order_data.get("receiver_phone") or "").strip()
+        receiver_email = str(order_data.get("receiver_email") or "").strip()
         receiver_name = str(order_data.get("receiver_full_name") or "Receiver").strip()
         # DHL requires companyName even when the consignee is an individual.  An
         # empty value would otherwise be removed by _clean_payload(), producing
@@ -549,7 +662,7 @@ class DHLService:
         destination_country = order_data["receiver_country"]
         is_international = origin_country != destination_country
 
-        package_desc = order_data.get("package_description") or "Gaming products"
+        package_desc = order_data.get("package_description") or "Software and accessories"
         order_reference = str(
             order_data.get("order_reference") or "FABS-ORDER"
         ).strip()
@@ -567,10 +680,13 @@ class DHLService:
             "description": package_desc,
         }
 
-        preferred_product = (
+        # DHL Kenya requested product P for its discounted international
+        # shipment service. Do not allow a configured fallback to silently
+        # replace P on international requests.
+        preferred_product = "P" if is_international else (
             order_data.get("product_code")
             or os.getenv("DHL_PRODUCT_CODE")
-            or ("P" if is_international else "N")
+            or "N"
         )
         preferred_local_product = (
             order_data.get("local_product_code")
@@ -616,52 +732,117 @@ class DHLService:
             )
         product_code, local_product_code = selected_product
 
+        if is_international and product_code != "P":
+            raise DHLConfigurationError(
+                "DHL product P is required for international shipments, but it "
+                "was not returned as available for this route/account"
+            )
+
+        is_document = bool(order_data.get("is_document", False))
+        is_customs_declarable = is_international and not is_document
+
         content_block = {
             "packages": [package_block],
-            "isCustomsDeclarable": is_international,
+            "isCustomsDeclarable": is_customs_declarable,
             "description": package_desc,
             "unitOfMeasurement": "metric",
             "declaredValue": declared_value,
             "declaredValueCurrency": currency,
         }
 
-        if is_international:
+        if is_customs_declarable:
+            export_line_items = _build_export_line_items(
+                order_data,
+                origin_country,
+                weight,
+                declared_value,
+            )
+            total_net_weight = round(sum(
+                item["weight"]["netValue"] for item in export_line_items
+            ), 3)
+            total_gross_weight = round(sum(
+                item["weight"]["grossValue"] for item in export_line_items
+            ), 3)
+            export_reason_type = str(
+                order_data.get("export_reason_type") or "permanent"
+            )
             content_block["incoterm"] = order_data.get("incoterm", "DAP")
             content_block["exportDeclaration"] = {
-                "lineItems": [{
-                    "number": 1,
-                    "description": package_desc,
-                    "price": declared_value,
-                    "quantity": {"value": 1, "unitOfMeasurement": "PCS"},
-                    "weight": {
-                        "netValue": weight,
-                        "grossValue": weight,
-                    },
-                    "manufacturerCountry": origin_country,
-                    "exportReasonType": "permanent",
-                }],
+                "lineItems": export_line_items,
+                "exportReason": str(
+                    order_data.get("export_reason") or export_reason_type
+                ),
                 "invoice": {
-                    "number": order_reference,
+                    "number": order_reference[:35],
                     "date": datetime.now(timezone.utc).date().isoformat(),
+                    "totalGrossWeight": total_gross_weight,
+                    "totalNetWeight": total_net_weight,
                 },
+                "placeOfIncoterm": str(
+                    order_data.get("place_of_incoterm")
+                    or order_data.get("receiver_city")
+                    or ""
+                ),
+                "exportReasonType": export_reason_type,
+                "shipmentType": str(
+                    order_data.get("shipment_type") or "commercial"
+                ),
             }
 
         # A DHL-generated commercial invoice is customs documentation.  Asking
         # for it on a domestic shipment (where no exportDeclaration is valid)
         # triggers DHL error 7032.  Keep labels/waybills for every shipment and
         # request the invoice only for customs-declarable shipments.
-        image_options = [
-            {"typeCode": "label", "templateName": "ECOM26_84_001", "isRequested": True},
-            {"typeCode": "waybillDoc", "isRequested": True},
-        ]
-        if is_international:
+        printer_type = str(
+            order_data.get("printer_type")
+            or os.getenv("DHL_PRINTER_TYPE")
+            or "A4"
+        ).strip().casefold()
+        if printer_type in {"a4", "a4-printer", "a4 printer"}:
+            is_a4_printer = True
+            default_label_template = "ECOM26_84_A4_001"
+        elif printer_type in {"label", "label-printer", "label printer", "thermal"}:
+            is_a4_printer = False
+            default_label_template = "ECOM26_84_001"
+        else:
+            raise DHLConfigurationError("DHL_PRINTER_TYPE must be A4 or label")
+
+        label_template = str(
+            order_data.get("label_template")
+            or os.getenv("DHL_LABEL_TEMPLATE")
+            or default_label_template
+        ).strip()
+        label_option = {
+            "typeCode": "label",
+            "templateName": label_template,
+            "languageCode": "eng",
+            "renderDHLLogo": True,
+            "isRequested": True,
+        }
+        if is_a4_printer:
+            label_option["fitLabelsToA4"] = True
+
+        waybill_option = {
+            "typeCode": "waybillDoc",
+            "hideAccountNumber": True,
+            "numberOfCopies": 1,
+            "isRequested": True,
+        }
+        if is_a4_printer:
+            waybill_option["templateName"] = "ECOM26_84_A4_001"
+
+        image_options = [label_option, waybill_option]
+        if is_customs_declarable:
             image_options.append({
                 "typeCode": "invoice",
                 "templateName": "COMMERCIAL_INVOICE_P_10",
+                "invoiceType": "commercial",
+                "languageCode": "eng",
                 "isRequested": True,
             })
 
         payload = {
+            "getOptionalInformation": False,
             "plannedShippingDateAndTime": _dhl_now(hours_ahead=2),
             "pickup": {"isRequested": False},
             "productCode": product_code,
@@ -669,9 +850,15 @@ class DHLService:
             "accounts": [{"typeCode": "shipper", "number": DHL_ACCOUNT_NUMBER}],
             "valueAddedServices": order_data.get("value_added_services", []),
             "outputImageProperties": {
+                "allDocumentsInOneImage": True,
+                "splitInvoiceAndReceipt": True,
+                "splitDocumentsByPages": True,
+                "splitTransportAndWaybillDocLabels": True,
                 "encodingFormat": "pdf",
                 "imageOptions": image_options,
             },
+            "requestOndemandDeliveryURL": True,
+            "getRateEstimates": True,
             "customerDetails": {
                 "shipperDetails": {
                     "postalAddress": {
@@ -684,9 +871,11 @@ class DHLService:
                     "contactInformation": {
                         "email": shipper_email,
                         "phone": shipper_phone,
+                        "mobilePhone": shipper_phone,
                         "companyName": shipper_company,
                         "fullName": shipper_contact,
                     },
+                    "typeCode": "business",
                 },
                 "receiverDetails": {
                     "postalAddress": {
@@ -699,9 +888,11 @@ class DHLService:
                     "contactInformation": {
                         "email": receiver_email,
                         "phone": receiver_phone,
+                        "mobilePhone": receiver_phone,
                         "companyName": receiver_company,
                         "fullName": receiver_name,
                     },
+                    "typeCode": "business" if order_data.get("receiver_company") else "private",
                 },
             },
             "content": content_block,
@@ -713,9 +904,10 @@ class DHLService:
     def _validate_create_shipment_payload(order_data):
         required = {
             "receiver_full_name": "Receiver full name",
+            "receiver_email": "Receiver email",
+            "receiver_phone": "Receiver phone",
             "receiver_address_line1": "Receiver address line 1",
             "receiver_city": "Receiver city",
-            "receiver_postal_code": "Receiver postal code",
             "receiver_country": "Receiver country (ISO-2)",
         }
         missing = [label for key, label in required.items() if not order_data.get(key)]
