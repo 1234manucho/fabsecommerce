@@ -1047,7 +1047,9 @@ def register_routes(app):
                 abort(403)
             if order.user_id != current_user.id and not current_user.is_admin:
                 abort(403)
-        elif session.get("last_order_reference") != order.reference:
+        elif not (
+            current_user.is_authenticated and current_user.is_admin
+        ) and session.get("last_order_reference") != order.reference:
             abort(403)
 
         shipment = Shipment.query.filter_by(order_id=order.id, is_active=True).first()
@@ -1148,7 +1150,7 @@ def register_routes(app):
             app.logger.warning("DHL shipment country validation failed: %s", exc)
             flash(
                 f"Cannot create the DHL shipment: {exc}. "
-                "Update the order country and try again.",
+                "Correct it in the Destination field and try again.",
                 "danger",
             )
             return redirect(url_for("admin_orders"))
@@ -1578,7 +1580,9 @@ def register_routes(app):
                 abort(403)
             if order.user_id != current_user.id and not current_user.is_admin:
                 abort(403)
-        elif session.get("last_order_reference") != order.reference:
+        elif not (
+            current_user.is_authenticated and current_user.is_admin
+        ) and session.get("last_order_reference") != order.reference:
             abort(403)
         return render_template("order_detail.html", order=order)
 
@@ -1921,6 +1925,42 @@ def register_routes(app):
     @admin_required
     def admin_orders():
         return render_template("admin/orders.html", orders=Order.query.order_by(Order.created_at.desc()).all())
+
+    @app.post("/admin/orders/<int:order_id>/destination")
+    @admin_required
+    def admin_update_order_destination(order_id):
+        order = Order.query.get_or_404(order_id)
+
+        if getattr(order, "dhl_tracking_number", None):
+            flash(
+                "The destination cannot be changed after a DHL shipment has been created.",
+                "warning",
+            )
+            return redirect(url_for("admin_orders"))
+
+        raw_country = (request.form.get("country") or "").strip()
+        try:
+            destination_country = normalize_country_code(
+                raw_country, f"Order {order.reference} destination country"
+            )
+        except DHLConfigurationError as exc:
+            flash(str(exc), "danger")
+            return redirect(url_for("admin_orders"))
+
+        previous_country = order.country or ""
+        order.country = destination_country
+        audit(
+            "order_destination_country_updated",
+            "order",
+            order.id,
+            f"{previous_country or 'blank'} -> {destination_country}",
+        )
+        db.session.commit()
+        flash(
+            f"Destination for {order.reference} updated to {destination_country}.",
+            "success",
+        )
+        return redirect(url_for("admin_orders"))
 
     @app.get("/admin/quotes")
     @admin_required

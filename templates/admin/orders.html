@@ -62,6 +62,19 @@
   .admin-pill-btn.outline:hover { border-color: #161a1f; background: #f4f5f6; }
   .admin-pill-btn.ghost { background: transparent; border-color: transparent; color: #68717a; }
   .admin-pill-btn.ghost:hover { color: #161a1f; background: #f4f5f6; }
+  .admin-country-form { display: flex; align-items: stretch; min-width: 150px; }
+  .admin-country-input { width: 106px; min-height: 38px; padding: 0 9px; border: 1px solid #cfd4d8;
+    border-right: 0; border-radius: 0; background: #fff; color: #161a1f; font: inherit;
+    font-size: 0.72rem; font-weight: 850; text-transform: uppercase; outline: none; }
+  .admin-country-input:focus { border-color: var(--dhl-red); box-shadow: inset 0 0 0 1px var(--dhl-red); }
+  .admin-country-save { min-height: 38px; padding: 0 10px; border: 1px solid #161a1f; border-radius: 0;
+    background: #161a1f; color: #fff; cursor: pointer; font-size: 0.62rem; font-weight: 900;
+    letter-spacing: 0.04em; text-transform: uppercase; }
+  .admin-country-save:hover { background: #000; }
+  .admin-country-readonly { display: inline-flex; min-height: 34px; align-items: center; padding: 0 10px;
+    background: #eef1f3; border: 1px solid #d9dde1; color: #161a1f; font-size: 0.72rem; font-weight: 900; }
+  .admin-country-hint { display: block; margin-top: 5px; max-width: 155px; overflow: hidden;
+    color: #8a9198; font-size: 0.65rem; text-overflow: ellipsis; white-space: nowrap; }
   .admin-pill-btn.dhl-primary { min-height: 38px; padding-left: 7px; background: var(--dhl-red); border-color: var(--dhl-red); color: #fff; }
   .admin-pill-btn.dhl-primary:hover { background: #b7040f; border-color: #b7040f; }
   .admin-pill-btn.dhl-pickup { min-height: 38px; padding-left: 7px; background: var(--dhl-yellow); border-color: var(--dhl-yellow); color: #111; }
@@ -114,6 +127,7 @@
             <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Payment</th>
             <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Order</th>
             <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Shipping</th>
+            <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Destination</th>
             <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black"><span class="dhl-heading">{{ dhl_logo('compact', '') }} <span>DHL Tracking</span></span></th>
             <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Date</th>
             <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black text-right">Actions</th>
@@ -132,6 +146,31 @@
             <td class="px-4 py-3.5">{{ status(order.payment_status) }}</td>
             <td class="px-4 py-3.5">{{ status(order.status) }}</td>
             <td class="px-4 py-3.5">{{ status(order.shipping_status or 'pending') }}</td>
+            <td class="px-4 py-3.5">
+              {% if not order.dhl_tracking_number %}
+              <form method="post" action="{{ url_for('admin_update_order_destination', order_id=order.id) }}" class="admin-country-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input
+                  class="admin-country-input"
+                  type="text"
+                  name="country"
+                  value="{{ order.country or '' }}"
+                  maxlength="64"
+                  autocomplete="country"
+                  aria-label="Destination country for {{ order.reference }}"
+                  title="Enter a country name or ISO code, for example United States, US, United Kingdom, GB or KE"
+                  placeholder="US / GB / KE"
+                  required
+                >
+                <button class="admin-country-save" type="submit">Save</button>
+              </form>
+              {% else %}
+              <span class="admin-country-readonly">{{ order.country or '—' }}</span>
+              {% endif %}
+              <span class="admin-country-hint" title="{{ order.city or '' }}{% if order.postal_code %}, {{ order.postal_code }}{% endif %}">
+                {{ order.city or 'City missing' }}{% if order.postal_code %} · {{ order.postal_code }}{% endif %}
+              </span>
+            </td>
             <td class="px-4 py-3.5 whitespace-nowrap">
               {% if order.dhl_tracking_number %}
               <a href="https://www.dhl.com/global-en/home/tracking.html?tracking-id={{ order.dhl_tracking_number }}" target="_blank" rel="noopener" class="font-mono text-[0.78rem] text-[#d40511] hover:underline">
@@ -178,7 +217,7 @@
             </td>
           </tr>
           {% else %}
-          <tr><td colspan="9" class="px-4 py-10 text-center text-[#68717a]">No orders yet.</td></tr>
+          <tr><td colspan="10" class="px-4 py-10 text-center text-[#68717a]">No orders yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>
