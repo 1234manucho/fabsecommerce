@@ -478,8 +478,13 @@ class DHLService:
 
         receiver_phone = order_data.get("receiver_phone") or DEFAULT_PHONE_FALLBACK
         receiver_email = order_data.get("receiver_email") or "no-reply@fabstrading.com"
-        receiver_company = order_data.get("receiver_company") or ""
-        receiver_name = order_data.get("receiver_full_name") or "Receiver"
+        receiver_name = str(order_data.get("receiver_full_name") or "Receiver").strip()
+        # DHL requires companyName even when the consignee is an individual.  An
+        # empty value would otherwise be removed by _clean_payload(), producing
+        # a 422 "required key [companyName] not found" response.
+        receiver_company = str(order_data.get("receiver_company") or "").strip()
+        if not receiver_company:
+            receiver_company = receiver_name
 
         origin_country = normalize_country_code(
             os.getenv("DHL_ORIGIN_COUNTRY", "KE"), "DHL_ORIGIN_COUNTRY"
@@ -488,6 +493,9 @@ class DHLService:
         is_international = origin_country != destination_country
 
         package_desc = order_data.get("package_description") or "Gaming products"
+        order_reference = str(
+            order_data.get("order_reference") or "FABS-ORDER"
+        ).strip()
         weight = float(order_data.get("package_weight_kg") or 1.0)
         declared_value = float(order_data.get("declared_value") or 100.0)
         currency = (order_data.get("currency") or "USD").upper()
@@ -527,10 +535,25 @@ class DHLService:
                     "exportReasonType": "permanent",
                 }],
                 "invoice": {
-                    "number": order_data.get("order_reference", "FABS-ORDER"),
-                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "number": order_reference,
+                    "date": datetime.now(timezone.utc).date().isoformat(),
                 },
             }
+
+        # A DHL-generated commercial invoice is customs documentation.  Asking
+        # for it on a domestic shipment (where no exportDeclaration is valid)
+        # triggers DHL error 7032.  Keep labels/waybills for every shipment and
+        # request the invoice only for customs-declarable shipments.
+        image_options = [
+            {"typeCode": "label", "templateName": "ECOM26_84_001", "isRequested": True},
+            {"typeCode": "waybillDoc", "isRequested": True},
+        ]
+        if is_international:
+            image_options.append({
+                "typeCode": "invoice",
+                "templateName": "COMMERCIAL_INVOICE_P_10",
+                "isRequested": True,
+            })
 
         payload = {
             "plannedShippingDateAndTime": _dhl_now(hours_ahead=2),
@@ -541,11 +564,7 @@ class DHLService:
             "valueAddedServices": order_data.get("value_added_services", []),
             "outputImageProperties": {
                 "encodingFormat": "pdf",
-                "imageOptions": [
-                    {"typeCode": "label", "templateName": "ECOM26_84_001", "isRequested": True},
-                    {"typeCode": "invoice", "isRequested": True},
-                    {"typeCode": "waybillDoc", "isRequested": True},
-                ],
+                "imageOptions": image_options,
             },
             "customerDetails": {
                 "shipperDetails": {
