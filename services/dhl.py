@@ -415,6 +415,7 @@ class DHLService:
         destination_city=None, destination_postal_code=None,
         weight_kg=1.0, length_cm=30, width_cm=20, height_cm=10,
         declared_value=100.0, currency="USD",
+        product_code=None, local_product_code=None,
     ):
         origin_country = normalize_country_code(origin_country, "origin country")
         destination_country = normalize_country_code(
@@ -443,15 +444,10 @@ class DHLService:
                 "receiverDetails": receiver,
             },
             "accounts": [{"typeCode": "shipper", "number": DHL_ACCOUNT_NUMBER}],
-            "productCode": "P",
-            "localProductCode": "P",
             "valueAddedServices": [],
             "plannedShippingDateAndTime": _dhl_now(hours_ahead=2),
             "unitOfMeasurement": "metric",
             "isCustomsDeclarable": is_international,
-            "monetaryAmount": [
-                {"typeCode": "declaredValue", "value": declared_value, "currency": currency}
-            ],
             "packages": [
                 {
                     "weight": weight_kg,
@@ -459,7 +455,68 @@ class DHLService:
                 }
             ],
         }
+        if is_international:
+            payload["monetaryAmount"] = [{
+                "typeCode": "declaredValue",
+                "value": declared_value,
+                "currency": str(currency or "USD").upper(),
+            }]
+
+        # Omitting product codes asks DHL Rating to return every product that
+        # is actually available for this account, route, date and package.
+        # A code can still be supplied by callers that want to quote one
+        # specific product.
+        if product_code:
+            payload["productCode"] = str(product_code).strip().upper()
+            payload["localProductCode"] = str(
+                local_product_code or product_code
+            ).strip().upper()
+
         return self._post("/rates", payload)
+
+    @staticmethod
+    def _select_rate_product(rate_result, preferred_product=None, preferred_local=None):
+        """Return an account-eligible (global code, local code) rate product."""
+        products = rate_result.get("products", []) if isinstance(rate_result, dict) else []
+        products = [
+            product for product in products
+            if isinstance(product, dict)
+            and (product.get("productCode") or product.get("localProductCode"))
+        ]
+
+        if not products:
+            return None
+
+        # Prefer products tied to the customer's DHL agreement.  Some Rating
+        # responses may also contain public products that the payer account is
+        # not enabled to purchase.
+        agreement_products = [
+            product for product in products
+            if product.get("isCustomerAgreement") is True
+        ]
+        candidates = agreement_products or products
+
+        preferred_product = str(preferred_product or "").strip().upper()
+        preferred_local = str(preferred_local or "").strip().upper()
+
+        for product in candidates:
+            global_code = str(product.get("productCode") or "").strip().upper()
+            local_code = str(
+                product.get("localProductCode") or global_code
+            ).strip().upper()
+            global_matches = not preferred_product or global_code == preferred_product
+            local_matches = not preferred_local or local_code == preferred_local
+            if (preferred_product or preferred_local) and global_matches and local_matches:
+                return global_code, local_code
+
+        selected = candidates[0]
+        global_code = str(
+            selected.get("productCode") or selected.get("localProductCode")
+        ).strip().upper()
+        local_code = str(
+            selected.get("localProductCode") or global_code
+        ).strip().upper()
+        return global_code, local_code
 
     # ==================================================================
     # 2. CREATE SHIPMENT
@@ -510,6 +567,55 @@ class DHLService:
             "description": package_desc,
         }
 
+        preferred_product = (
+            order_data.get("product_code")
+            or os.getenv("DHL_PRODUCT_CODE")
+            or ("P" if is_international else "N")
+        )
+        preferred_local_product = (
+            order_data.get("local_product_code")
+            or os.getenv("DHL_LOCAL_PRODUCT_CODE")
+            or None
+        )
+
+        try:
+            rate_result = self.get_rates(
+                origin_country=origin_country,
+                destination_country=destination_country,
+                origin_city=os.getenv("DHL_ORIGIN_CITY", "Nairobi"),
+                origin_postal_code=os.getenv("DHL_ORIGIN_POSTAL", "00100"),
+                destination_city=order_data.get("receiver_city"),
+                destination_postal_code=order_data.get("receiver_postal_code"),
+                weight_kg=weight,
+                length_cm=package_block["dimensions"]["length"],
+                width_cm=package_block["dimensions"]["width"],
+                height_cm=package_block["dimensions"]["height"],
+                declared_value=declared_value,
+                currency=currency,
+            )
+        except DHLAPIError as exc:
+            error_text = f"{exc} {exc.response_body or ''}".lower()
+            if "1001" in error_text or "410138" in error_text:
+                raise DHLConfigurationError(
+                    "DHL has no shipping product enabled for "
+                    f"{origin_country} to {destination_country} on this payer account. "
+                    "Ask DHL to enable the required route/product or use an eligible account."
+                ) from exc
+            raise
+
+        selected_product = self._select_rate_product(
+            rate_result,
+            preferred_product=preferred_product,
+            preferred_local=preferred_local_product,
+        )
+        if not selected_product:
+            raise DHLConfigurationError(
+                "DHL Rating returned no available shipping product for "
+                f"{origin_country} to {destination_country}. "
+                "Verify the destination, package details and DHL account permissions."
+            )
+        product_code, local_product_code = selected_product
+
         content_block = {
             "packages": [package_block],
             "isCustomsDeclarable": is_international,
@@ -558,8 +664,8 @@ class DHLService:
         payload = {
             "plannedShippingDateAndTime": _dhl_now(hours_ahead=2),
             "pickup": {"isRequested": False},
-            "productCode": order_data.get("product_code", "P"),
-            "localProductCode": order_data.get("product_code", "P"),
+            "productCode": product_code,
+            "localProductCode": local_product_code,
             "accounts": [{"typeCode": "shipper", "number": DHL_ACCOUNT_NUMBER}],
             "valueAddedServices": order_data.get("value_added_services", []),
             "outputImageProperties": {
