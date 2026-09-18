@@ -30,7 +30,9 @@ from models import (
 )
 from seed import seed_catalogue
 from services.dpo import DPOGateway, PaymentConfigurationError
-from services.dhl import DHLService, DHLConfigurationError, DHLAPIError
+from services.dhl import (
+    DHLService, DHLConfigurationError, DHLAPIError, normalize_country_code,
+)
 
 MEDIA_PAGES = {
     "industries": {"eyebrow":"Gaming categories", "title":"Gaming products for retail, leisure and commercial venues.", "lead":"FABS connects buyers with carefully presented tabletop, arcade, redemption, racing, sports and immersive gaming products.", "image":"https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1800&q=85", "sections":[("Arcade & redemption","Coin-operated, prize, shooting and interactive cabinets for entertainment venues."),("Racing & simulation","Driving, sports and motion-based simulators for high-engagement experiences."),("Tabletop & recreation","Board, card, educational and recreational games for retail and group use.")]},
@@ -57,7 +59,9 @@ migrate = Migrate()
 DEFAULT_USD_KES_RATE = Decimal("130.00")
 CATALOGUE_PAGE_SIZE = 8
 
-DEFAULT_SHIP_ORIGIN_COUNTRY = os.getenv("DHL_ORIGIN_COUNTRY", "KE")
+DEFAULT_SHIP_ORIGIN_COUNTRY = normalize_country_code(
+    os.getenv("DHL_ORIGIN_COUNTRY", "KE"), "DHL_ORIGIN_COUNTRY"
+)
 DEFAULT_SHIP_ORIGIN_CITY = os.getenv("DHL_ORIGIN_CITY", "Nairobi")
 DEFAULT_SHIP_ORIGIN_POSTAL = os.getenv("DHL_ORIGIN_POSTAL", "00100")
 
@@ -423,6 +427,14 @@ def _friendly_rates_response(country_code: str, logger=None, reason: str = "") -
         "products": [],
         "message": _friendly_shipping_fallback(country_code),
     }), 200
+
+
+def _request_country_code(value, field_name="country"):
+    """Normalise a request country or return a Flask 400 response."""
+    try:
+        return normalize_country_code(value, field_name), None
+    except DHLConfigurationError as exc:
+        return None, (jsonify({"error": str(exc)}), 400)
 # ===========================================================================
 
 
@@ -624,6 +636,19 @@ def register_routes(app):
             form.phone.data = current_user.phone
 
         if form.validate_on_submit():
+            try:
+                destination_country = normalize_country_code(
+                    form.country.data, "Checkout country"
+                )
+            except DHLConfigurationError as exc:
+                form.country.errors.append(str(exc))
+                flash(
+                    "Enter a valid destination country. Use an ISO country code "
+                    "such as KE, US or GB.",
+                    "danger",
+                )
+                return render_template("checkout.html", form=form, items=items, total=subtotal)
+
             shipping_cost = Decimal("0.00")
             shipping_currency = "USD"
             raw_quote = (form.shipping_quote.data or "").strip()
@@ -643,7 +668,7 @@ def register_routes(app):
                 user_id=current_user.id if current_user.is_authenticated else None,
                 email=form.email.data.lower(),
                 full_name=form.full_name.data,
-                country=(form.country.data or "").upper(),
+                country=destination_country,
                 currency=app.config.get("BASE_CURRENCY", "USD"),
                 subtotal=subtotal,
                 total=grand_total,
@@ -686,9 +711,9 @@ def register_routes(app):
     @app.post("/api/shipping/rates")
     def api_shipping_rates():
         data = request.get_json(silent=True) or {}
-        country = (data.get("country") or "").strip().upper()
-        if not country:
-            return jsonify({"error": "country is required"}), 400
+        country, country_error = _request_country_code(data.get("country"))
+        if country_error:
+            return country_error
 
         if country == DEFAULT_SHIP_ORIGIN_COUNTRY:
             return _friendly_rates_response(country, app.logger, reason="domestic origin")
@@ -731,9 +756,9 @@ def register_routes(app):
 
     @app.get("/api/shipping/rates/cart")
     def api_shipping_rates_for_cart():
-        country = (request.args.get("country") or "").strip().upper()
-        if not country:
-            return jsonify({"error": "country is required"}), 400
+        country, country_error = _request_country_code(request.args.get("country"))
+        if country_error:
+            return country_error
 
         if country == DEFAULT_SHIP_ORIGIN_COUNTRY:
             return _friendly_rates_response(country, app.logger, reason="domestic origin cart")
@@ -801,9 +826,9 @@ def register_routes(app):
     @app.post("/api/shipping/validate-address")
     def api_validate_address():
         data = request.get_json(silent=True) or {}
-        country = (data.get("country") or "").strip().upper()
-        if not country:
-            return jsonify({"error": "country is required"}), 400
+        country, country_error = _request_country_code(data.get("country"))
+        if country_error:
+            return country_error
 
         city       = (data.get("city") or "").strip() or None
         postal     = (data.get("postal_code") or "").strip() or None
@@ -838,9 +863,9 @@ def register_routes(app):
     @app.post("/api/shipping/landing-cost")
     def api_landing_cost():
         data = request.get_json(silent=True) or {}
-        country = (data.get("country") or "").strip().upper()
-        if not country:
-            return jsonify({"error": "country is required"}), 400
+        country, country_error = _request_country_code(data.get("country"))
+        if country_error:
+            return country_error
         try:
             result = DHLService().estimate_landing_cost(
                 origin_country=DEFAULT_SHIP_ORIGIN_COUNTRY,
@@ -863,9 +888,9 @@ def register_routes(app):
 
     @app.get("/api/shipping/landing-cost/cart")
     def api_landing_cost_for_cart():
-        country = (request.args.get("country") or "").strip().upper()
-        if not country:
-            return jsonify({"error": "country is required"}), 400
+        country, country_error = _request_country_code(request.args.get("country"))
+        if country_error:
+            return country_error
 
         items = (
             Game.query.filter(
@@ -901,7 +926,11 @@ def register_routes(app):
 
     @app.get("/api/shipping/products")
     def api_shipping_products():
-        country = (request.args.get("country") or DEFAULT_SHIP_ORIGIN_COUNTRY).strip().upper()
+        country, country_error = _request_country_code(
+            request.args.get("country") or DEFAULT_SHIP_ORIGIN_COUNTRY
+        )
+        if country_error:
+            return country_error
         try:
             result = DHLService().list_products(country_code=country)
         except DHLConfigurationError:
@@ -942,9 +971,9 @@ def register_routes(app):
 
     @app.get("/api/shipping/service-points")
     def api_service_points():
-        country = (request.args.get("country") or "").strip().upper()
-        if not country:
-            return jsonify({"error": "country is required"}), 400
+        country, country_error = _request_country_code(request.args.get("country"))
+        if country_error:
+            return country_error
         try:
             result = DHLService().find_service_points(
                 country_code=country,
@@ -1111,6 +1140,19 @@ def register_routes(app):
             flash("A shipment already exists for this order.", "warning")
             return redirect(url_for("admin_orders"))
 
+        try:
+            destination_country = normalize_country_code(
+                order.country, f"Order {order.reference} destination country"
+            )
+        except DHLConfigurationError as exc:
+            app.logger.warning("DHL shipment country validation failed: %s", exc)
+            flash(
+                f"Cannot create the DHL shipment: {exc}. "
+                "Update the order country and try again.",
+                "danger",
+            )
+            return redirect(url_for("admin_orders"))
+
         address_line1 = getattr(order, "address_line1", None)
         city = getattr(order, "city", None)
         postal_code = getattr(order, "postal_code", None)
@@ -1131,7 +1173,7 @@ def register_routes(app):
             "receiver_address_line2": getattr(order, "address_line2", None) or "",
             "receiver_city": city,
             "receiver_postal_code": postal_code,
-            "receiver_country": (order.country or "").upper(),
+            "receiver_country": destination_country,
             "package_weight_kg": dims["weight_kg"],
             "package_length_cm": dims["length_cm"],
             "package_width_cm": dims["width_cm"],
@@ -1145,12 +1187,20 @@ def register_routes(app):
             service = DHLService()
             result = service.create_shipment(order_data)
         except DHLConfigurationError as exc:
-            app.logger.error("DHL configuration: %s", exc)
-            flash("DHL is not configured. Contact support.", "danger")
+            app.logger.error("DHL shipment validation/configuration: %s", exc)
+            flash(f"DHL shipment data error: {exc}", "danger")
             return redirect(url_for("admin_orders"))
         except DHLAPIError as exc:
             app.logger.exception("DHL create shipment failed: %s", exc)
-            flash(f"DHL error: {exc}", "danger")
+            error_blob = f"{exc} {exc.response_body or ''}".lower()
+            if "420502" in error_blob or "destination country code" in error_blob:
+                flash(
+                    f"DHL rejected destination country {destination_country}. "
+                    "Use a valid ISO-2 code such as US, GB, KE or ZA.",
+                    "danger",
+                )
+            else:
+                flash(f"DHL error: {exc}", "danger")
             return redirect(url_for("admin_orders"))
         except Exception as exc:
             app.logger.exception("DHL create shipment failed: %s", exc)
@@ -1178,6 +1228,7 @@ def register_routes(app):
             order.package_length_cm = dims["length_cm"]
             order.package_width_cm  = dims["width_cm"]
             order.package_height_cm = dims["height_cm"]
+            order.country = destination_country
 
             shipment_id = (result or {}).get("shipmentId")
             if shipment_id:
@@ -1194,7 +1245,7 @@ def register_routes(app):
                 status_code="pre-transit",
                 status_description="Shipment created — awaiting pickup",
                 origin_country=DEFAULT_SHIP_ORIGIN_COUNTRY,
-                destination_country=(order.country or "").upper() or None,
+                destination_country=destination_country,
                 last_synced_at=now,
                 last_sync_source="create",
             )
@@ -1588,6 +1639,15 @@ def register_routes(app):
             return redirect(url_for("account"))
         form = RegisterForm()
         if form.validate_on_submit():
+            try:
+                account_country = normalize_country_code(
+                    form.country.data, "Account country"
+                )
+            except DHLConfigurationError as exc:
+                form.country.errors.append(str(exc))
+                flash("Enter a valid country code such as KE, US or GB.", "danger")
+                return render_template("register.html", form=form)
+
             if User.query.filter(db.func.lower(User.email) == form.email.data.lower()).first():
                 flash("An account already exists for that email.", "danger")
             else:
@@ -1596,7 +1656,7 @@ def register_routes(app):
                     email=form.email.data.lower(),
                     company=form.company.data,
                     phone=form.phone.data,
-                    country=form.country.data,
+                    country=account_country,
                 )
                 user.set_password(form.password.data)
                 db.session.add(user)
@@ -1639,15 +1699,21 @@ def register_routes(app):
         full_name      = (request.form.get("full_name") or "").strip()
         company        = (request.form.get("company") or "").strip() or None
         phone          = (request.form.get("phone") or "").strip() or None
-        country        = (request.form.get("country") or "").strip().upper()
+        raw_country    = (request.form.get("country") or "").strip()
         city           = (request.form.get("city") or "").strip()
         postal_code    = (request.form.get("postal_code") or "").strip()
         address_line1  = (request.form.get("address_line1") or "").strip()
         address_line2  = (request.form.get("address_line2") or "").strip() or None
         is_default     = request.form.get("is_default") == "on"
 
-        if not (full_name and country and city and postal_code and address_line1):
+        if not (full_name and raw_country and city and postal_code and address_line1):
             flash("Please fill in the required address fields.", "danger")
+            return redirect(url_for("account") + "#addresses")
+
+        try:
+            country = normalize_country_code(raw_country, "Address country")
+        except DHLConfigurationError as exc:
+            flash(str(exc), "danger")
             return redirect(url_for("account") + "#addresses")
 
         existing_count = Address.query.filter_by(user_id=current_user.id).count()
@@ -1674,11 +1740,20 @@ def register_routes(app):
     def address_update(address_id):
         address = Address.query.filter_by(id=address_id, user_id=current_user.id).first_or_404()
 
+        try:
+            country = normalize_country_code(
+                request.form.get("country") or address.country,
+                "Address country",
+            )
+        except DHLConfigurationError as exc:
+            flash(str(exc), "danger")
+            return redirect(url_for("account") + "#addresses")
+
         address.label         = (request.form.get("label") or address.label).strip()[:80] or "Home"
         address.full_name     = (request.form.get("full_name") or address.full_name).strip()
         address.company       = (request.form.get("company") or "").strip() or None
         address.phone         = (request.form.get("phone") or "").strip() or None
-        address.country       = (request.form.get("country") or address.country).strip().upper()
+        address.country       = country
         address.city          = (request.form.get("city") or address.city).strip()
         address.postal_code   = (request.form.get("postal_code") or address.postal_code).strip()
         address.address_line1 = (request.form.get("address_line1") or address.address_line1).strip()

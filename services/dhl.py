@@ -1,6 +1,7 @@
 # services/dhl.py
 import os
 import re
+import unicodedata
 import requests
 from requests.auth import HTTPBasicAuth
 from datetime import datetime, timedelta, timezone
@@ -119,6 +120,125 @@ DEFAULT_POSTAL_BY_COUNTRY = {
 DEFAULT_PHONE_FALLBACK = os.getenv("DHL_FALLBACK_PHONE", "+254729004000")
 
 
+# DHL requires ISO-3166 alpha-2 country codes.  Checkout data can contain
+# common names or non-standard aliases (for example ``UK``), so every public
+# DHL operation passes through one normaliser before a payload is sent.
+ISO_ALPHA2_COUNTRY_CODES = frozenset("""
+AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ
+BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ
+CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ
+DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR
+GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY
+HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP
+KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY
+MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ
+NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY
+QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ
+TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ
+VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW
+""".split())
+
+
+COUNTRY_CODE_ALIASES = {
+    # Frequently entered non-standard codes.
+    "UK": "GB",
+    "EL": "GR",
+    "UAE": "AE",
+    "KSA": "SA",
+    "DRC": "CD",
+    # Common ISO-3 values seen in imported address data.
+    "KEN": "KE", "USA": "US", "GBR": "GB", "ARE": "AE",
+    "ZAF": "ZA", "NGA": "NG", "UGA": "UG", "TZA": "TZ",
+    "GHA": "GH", "ETH": "ET", "RWA": "RW", "CAN": "CA",
+    "AUS": "AU", "NZL": "NZ", "CHN": "CN", "HKG": "HK",
+    "IND": "IN", "SGP": "SG", "DEU": "DE", "FRA": "FR",
+    "ITA": "IT", "ESP": "ES", "NLD": "NL", "CHE": "CH",
+    "SWE": "SE", "NOR": "NO", "DNK": "DK", "FIN": "FI",
+    "IRL": "IE", "PRT": "PT", "GRC": "GR", "POL": "PL",
+    "CZE": "CZ", "ROU": "RO", "HUN": "HU", "TUR": "TR",
+    "JPN": "JP", "KOR": "KR", "SAU": "SA", "QAT": "QA",
+    "BHR": "BH", "OMN": "OM", "KWT": "KW",
+    # Country names commonly used by FABS buyers.
+    "KENYA": "KE",
+    "UNITED STATES": "US",
+    "UNITED STATES OF AMERICA": "US",
+    "U S": "US",
+    "U S A": "US",
+    "UNITED KINGDOM": "GB",
+    "GREAT BRITAIN": "GB",
+    "BRITAIN": "GB",
+    "ENGLAND": "GB",
+    "SCOTLAND": "GB",
+    "WALES": "GB",
+    "NORTHERN IRELAND": "GB",
+    "UNITED ARAB EMIRATES": "AE",
+    "SOUTH AFRICA": "ZA",
+    "NIGERIA": "NG",
+    "UGANDA": "UG",
+    "TANZANIA": "TZ",
+    "UNITED REPUBLIC OF TANZANIA": "TZ",
+    "GHANA": "GH",
+    "ETHIOPIA": "ET",
+    "RWANDA": "RW",
+    "CANADA": "CA",
+    "AUSTRALIA": "AU",
+    "NEW ZEALAND": "NZ",
+    "CHINA": "CN",
+    "HONG KONG": "HK",
+    "INDIA": "IN",
+    "SINGAPORE": "SG",
+    "GERMANY": "DE",
+    "FRANCE": "FR",
+    "ITALY": "IT",
+    "SPAIN": "ES",
+    "NETHERLANDS": "NL",
+    "SWITZERLAND": "CH",
+    "JAPAN": "JP",
+    "SOUTH KOREA": "KR",
+    "REPUBLIC OF KOREA": "KR",
+    "SAUDI ARABIA": "SA",
+    "COTE D IVOIRE": "CI",
+    "IVORY COAST": "CI",
+    "DEMOCRATIC REPUBLIC OF THE CONGO": "CD",
+    "DEMOCRATIC REPUBLIC OF CONGO": "CD",
+    "REPUBLIC OF THE CONGO": "CG",
+}
+
+
+def normalize_country_code(value, field_name="country"):
+    """Return a validated DHL/ISO alpha-2 country code.
+
+    Accepts ISO-2, common ISO-3 values, country names, and labelled values such
+    as ``US - United States`` or ``United Kingdom (UK)``.  Non-standard ``UK``
+    is converted to the DHL-compatible code ``GB``.
+    """
+    raw = str(value or "").strip()
+    if not raw:
+        raise DHLConfigurationError(f"{field_name} is required")
+
+    ascii_value = unicodedata.normalize("NFKD", raw).encode("ascii", "ignore").decode()
+    token = re.sub(r"[^A-Z0-9]+", " ", ascii_value.upper()).strip()
+    compact = token.replace(" ", "")
+
+    for candidate in (token, compact):
+        code = COUNTRY_CODE_ALIASES.get(candidate, candidate)
+        if code in ISO_ALPHA2_COUNTRY_CODES:
+            return code
+
+    # Handle labelled select values such as "US - United States" and
+    # "United Kingdom (UK)" without accepting an arbitrary invalid code.
+    parts = token.split()
+    for candidate in (parts[0] if parts else "", parts[-1] if parts else ""):
+        code = COUNTRY_CODE_ALIASES.get(candidate, candidate)
+        if code in ISO_ALPHA2_COUNTRY_CODES:
+            return code
+
+    raise DHLConfigurationError(
+        f"{field_name} must be a valid ISO-3166 alpha-2 country code "
+        f"(for example KE, US or GB); got {raw!r}"
+    )
+
+
 def _dhl_now(hours_ahead=2):
     """
     Return a DHL-compliant planned shipping datetime string.
@@ -136,7 +256,7 @@ def _dhl_now(hours_ahead=2):
 
 
 def _resolve_destination(country_code, city, postal_code):
-    cc = (country_code or "").upper()
+    cc = normalize_country_code(country_code, "destination country")
     if not city:
         city = DEFAULT_CITY_BY_COUNTRY.get(cc) or cc
     if not postal_code:
@@ -296,6 +416,10 @@ class DHLService:
         weight_kg=1.0, length_cm=30, width_cm=20, height_cm=10,
         declared_value=100.0, currency="USD",
     ):
+        origin_country = normalize_country_code(origin_country, "origin country")
+        destination_country = normalize_country_code(
+            destination_country, "destination country"
+        )
         destination_city, destination_postal_code = _resolve_destination(
             destination_country, destination_city, destination_postal_code
         )
@@ -341,6 +465,10 @@ class DHLService:
     # 2. CREATE SHIPMENT
     # ==================================================================
     def create_shipment(self, order_data):
+        order_data = dict(order_data or {})
+        order_data["receiver_country"] = normalize_country_code(
+            order_data.get("receiver_country"), "receiver_country"
+        )
         self._validate_create_shipment_payload(order_data)
 
         shipper_phone = os.getenv("DHL_ORIGIN_PHONE") or DEFAULT_PHONE_FALLBACK
@@ -353,8 +481,10 @@ class DHLService:
         receiver_company = order_data.get("receiver_company") or ""
         receiver_name = order_data.get("receiver_full_name") or "Receiver"
 
-        origin_country = (os.getenv("DHL_ORIGIN_COUNTRY", "KE")).upper()
-        destination_country = (order_data.get("receiver_country") or "").upper()
+        origin_country = normalize_country_code(
+            os.getenv("DHL_ORIGIN_COUNTRY", "KE"), "DHL_ORIGIN_COUNTRY"
+        )
+        destination_country = order_data["receiver_country"]
         is_international = origin_country != destination_country
 
         package_desc = order_data.get("package_description") or "Gaming products"
@@ -470,11 +600,7 @@ class DHLService:
                 "Missing required shipment fields: " + ", ".join(missing)
             )
 
-        country = (order_data.get("receiver_country") or "").upper()
-        if len(country) != 2:
-            raise DHLConfigurationError(
-                f"receiver_country must be ISO-2 (got {country!r})"
-            )
+        normalize_country_code(order_data.get("receiver_country"), "receiver_country")
 
         try:
             weight = float(order_data.get("package_weight_kg") or 0)
@@ -602,6 +728,10 @@ class DHLService:
         shipper_company = os.getenv("DHL_ORIGIN_COMPANY", "FABS Trading Global E-Commerce")
         shipper_contact = os.getenv("DHL_ORIGIN_CONTACT", "FABS Shipping")
 
+        origin_country = normalize_country_code(
+            os.getenv("DHL_ORIGIN_COUNTRY", "KE"), "DHL_ORIGIN_COUNTRY"
+        )
+
         payload = {
             "plannedPickupDateAndTime": pickup_data.get(
                 "planned_pickup_date", _dhl_now(hours_ahead=4)
@@ -615,7 +745,7 @@ class DHLService:
                     "postalAddress": {
                         "postalCode": os.getenv("DHL_ORIGIN_POSTAL", "00100"),
                         "cityName": os.getenv("DHL_ORIGIN_CITY", "Nairobi"),
-                        "countryCode": os.getenv("DHL_ORIGIN_COUNTRY", "KE"),
+                        "countryCode": origin_country,
                         "addressLine1": os.getenv("DHL_ORIGIN_ADDRESS", "FABS Trading Warehouse"),
                         "addressLine2": os.getenv("DHL_ORIGIN_ADDRESS2", ""),
                     },
@@ -630,7 +760,7 @@ class DHLService:
                     "postalAddress": {
                         "postalCode": os.getenv("DHL_ORIGIN_POSTAL", "00100"),
                         "cityName": os.getenv("DHL_ORIGIN_CITY", "Nairobi"),
-                        "countryCode": os.getenv("DHL_ORIGIN_COUNTRY", "KE"),
+                        "countryCode": origin_country,
                         "addressLine1": os.getenv("DHL_ORIGIN_ADDRESS", "FABS Trading Warehouse"),
                     },
                     "contactInformation": {
@@ -668,9 +798,7 @@ class DHLService:
     # 7. ADDRESS VALIDATION
     # ==================================================================
     def validate_address(self, country_code, city_name=None, postal_code=None, address_line1=None):
-        cc = (country_code or "").upper()
-        if not cc:
-            raise DHLConfigurationError("country_code is required for address validation")
+        cc = normalize_country_code(country_code, "country_code")
 
         params = {
             "type": "delivery",
@@ -696,6 +824,10 @@ class DHLService:
         declared_value=100.0, currency="USD",
         is_customs_declarable=True,
     ):
+        origin_country = normalize_country_code(origin_country, "origin country")
+        destination_country = normalize_country_code(
+            destination_country, "destination country"
+        )
         destination_city, destination_postal_code = _resolve_destination(
             destination_country, None, None
         )
@@ -745,7 +877,7 @@ class DHLService:
             "accountNumber": account_number or DHL_ACCOUNT_NUMBER,
         }
         if country_code:
-            params["countryCode"] = country_code.upper()
+            params["countryCode"] = normalize_country_code(country_code, "country_code")
         return self._get("/products", params=params)
 
     # ==================================================================
@@ -791,7 +923,7 @@ class DHLService:
     # ==================================================================
     def find_service_points(self, country_code, city=None, postal_code=None, radius_km=10):
         params = {
-            "countryCode": country_code.upper(),
+            "countryCode": normalize_country_code(country_code, "country_code"),
             "radius": radius_km,
         }
         if city:
