@@ -1113,7 +1113,7 @@
                 <div class="checkout-form-grid">
                     {{ field(form.full_name) }}
                     {{ field(form.email) }}
-                    {{ field(form.country, extra_class='checkout-span-2', placeholder='Country (e.g. Kenya, United States)') }}
+                    {{ field(form.country, extra_class='checkout-span-2', placeholder='Official country code (e.g. KE, US, TR)') }}
                 </div>
 
                 <header class="checkout-card-header">
@@ -1346,6 +1346,7 @@
     const USD_KES      = Number({{ usd_kes_rate|float }});
     const SUBTOTAL_USD = Number({{ total }});
 
+    const $form         = document.getElementById('checkout-form');
     const $countryInput = document.querySelector('input[name="country"], select[name="country"]');
     const $toolbarInput = document.getElementById('checkout-shipping-country');
     const $btn          = document.getElementById('checkout-shipping-quote-btn');
@@ -1380,6 +1381,51 @@
 
     const fieldEl = (name) => document.querySelector(`#checkout-form [name="${name}"]`);
 
+    // ISO-3166 alpha-2 codes accepted by DHL. "UN" is intentionally absent:
+    // it is not a destination-country code and must never be stored on an order.
+    const OFFICIAL_ISO_ALPHA2 = new Set(`
+        AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ
+        BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ
+        CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ
+        DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR
+        GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY
+        HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP
+        KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY
+        MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ
+        NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY
+        QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ
+        TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ
+        VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW
+    `.trim().split(/\s+/));
+
+    const countryNameToCode = new Map([
+        ['KENYA', 'KE'],
+        ['UNITED STATES', 'US'],
+        ['UNITED STATES OF AMERICA', 'US'],
+        ['USA', 'US'],
+        ['TURKEY', 'TR'],
+        ['TURKIYE', 'TR'],
+        ['NAMIBIA', 'NA'],
+        ['UNITED KINGDOM', 'GB'],
+        ['UK', 'GB'],
+        ['UNITED ARAB EMIRATES', 'AE'],
+        ['UAE', 'AE']
+    ]);
+
+    const countryToken = value => String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, ' ')
+        .trim();
+
+    const resolveCountryCode = value => {
+        const token = countryToken(value);
+        if (!token) return '';
+        if (OFFICIAL_ISO_ALPHA2.has(token)) return token;
+        return countryNameToCode.get(token) || '';
+    };
+
     const state = {
         country: '',
         shipping: 0,
@@ -1387,6 +1433,31 @@
         product: null,
         servicePointsLoaded: false,
     };
+
+    const selectedCountryCode = () => (
+        resolveCountryCode($toolbarInput?.value) ||
+        resolveCountryCode($countryInput?.value)
+    );
+
+    const syncCountryCode = code => {
+        const officialCode = resolveCountryCode(code);
+        if (!officialCode) return '';
+        if ($countryInput) {
+            $countryInput.value = officialCode;
+            $countryInput.setCustomValidity('');
+        }
+        if ($toolbarInput) $toolbarInput.value = officialCode;
+        state.country = officialCode;
+        return officialCode;
+    };
+
+    if ($countryInput && $countryInput.tagName === 'INPUT') {
+        $countryInput.setAttribute('maxlength', '2');
+        $countryInput.setAttribute('pattern', '[A-Za-z]{2}');
+        $countryInput.setAttribute('autocomplete', 'country');
+        $countryInput.setAttribute('autocapitalize', 'characters');
+        $countryInput.setAttribute('spellcheck', 'false');
+    }
 
     const fmtUsd = v => 'US$ ' + Number(v).toLocaleString('en-US', {
         minimumFractionDigits: 2, maximumFractionDigits: 2
@@ -1499,7 +1570,8 @@
         };
 
         setVal('full_name', a.full_name);
-        setVal('country', a.country);
+        const savedCountryCode = resolveCountryCode(a.country);
+        setVal('country', savedCountryCode);
         setVal('company', a.company);
         setVal('phone', a.phone);
         setVal('address_line1', a.address_line1);
@@ -1507,9 +1579,7 @@
         setVal('city', a.city);
         setVal('postal_code', a.postal_code);
 
-        if ($toolbarInput && a.country) {
-            $toolbarInput.value = String(a.country).toUpperCase();
-        }
+        if (savedCountryCode) syncCountryCode(savedCountryCode);
 
         setVerifyStatus('');
     };
@@ -1550,12 +1620,13 @@
         if (!$datalist) return;
         $datalist.innerHTML = '';
         list.slice(0, 300).forEach(c => {
-            const code  = c.countryCode || c.code || '';
+            const code  = String(c.countryCode || c.code || '').trim().toUpperCase();
             const name  = c.countryName || c.name || code;
-            if (!code || !name) return;
+            if (!OFFICIAL_ISO_ALPHA2.has(code) || !name) return;
+            countryNameToCode.set(countryToken(name), code);
             const opt = document.createElement('option');
-            opt.value = name;
-            opt.label = `${code} — ${name}`;
+            opt.value = code;
+            opt.label = `${name} — ${code}`;
             opt.dataset.code = code;
             $datalist.appendChild(opt);
         });
@@ -1565,12 +1636,12 @@
         $countryInput.setAttribute('list', 'checkout-country-datalist');
         $countryInput.addEventListener('input', () => {
             const v = ($countryInput.value || '').trim();
-            const match = Array.from($datalist.options).find(o => o.value.toLowerCase() === v.toLowerCase());
-            if (match && match.dataset.code) {
-                if (!$toolbarInput.value) $toolbarInput.value = match.dataset.code;
-            } else if (v.length === 2 && !$toolbarInput.value) {
-                $toolbarInput.value = v.toUpperCase();
-            }
+            const code = resolveCountryCode(v);
+            if (code) syncCountryCode(code);
+        });
+        $countryInput.addEventListener('blur', () => {
+            const code = resolveCountryCode($countryInput.value);
+            if (code) syncCountryCode(code);
         });
     }
 
@@ -1582,16 +1653,16 @@
     // We display the normalised address and compare it to the user's input to decide
     // between a green "verified" state and an amber "different address" warning.
     $verifyBtn?.addEventListener('click', async () => {
-        const country = (($toolbarInput.value || '').trim() ||
-                        ($countryInput && $countryInput.value || '').trim()).toUpperCase();
+        const country = selectedCountryCode();
         const city = fieldEl('city')?.value?.trim() || '';
         const postal = fieldEl('postal_code')?.value?.trim() || '';
         const line1  = fieldEl('address_line1')?.value?.trim() || '';
 
-        if (country.length !== 2) {
-            setVerifyStatus('Enter your 2-letter country code first (e.g. US, KE, GB).', 'warning');
+        if (!country) {
+            setVerifyStatus('Select a valid official country code first (e.g. US, KE, TR).', 'warning');
             return;
         }
+        syncCountryCode(country);
         if (!city && !postal && !line1) {
             setVerifyStatus('Fill in at least a city, postal code or street address to verify.', 'warning');
             return;
@@ -1781,12 +1852,12 @@
 
         if (!nextOpen || state.servicePointsLoaded) return;
 
-        const country = (($toolbarInput.value || '').trim() ||
-                        ($countryInput && $countryInput.value || '').trim()).toUpperCase();
-        if (country.length !== 2) {
+        const country = selectedCountryCode();
+        if (!country) {
             setSpStatus('Enter your destination country code first to see nearby DHL points.', true);
             return;
         }
+        syncCountryCode(country);
 
         const city = fieldEl('city')?.value?.trim() || '';
 
@@ -1845,17 +1916,17 @@
 
     try {
         const saved = JSON.parse(sessionStorage.getItem('fabs_cart_shipping') || '{}');
-        if (saved && saved.country && $toolbarInput && !$toolbarInput.value) {
-            $toolbarInput.value = saved.country;
+        const savedCode = resolveCountryCode(saved?.country);
+        if (savedCode && $toolbarInput && !$toolbarInput.value) {
+            syncCountryCode(savedCode);
         }
     } catch (e) { /* ignore */ }
 
     const runRateLookup = async () => {
-        const country = (($toolbarInput.value || '').trim() ||
-                         ($countryInput && $countryInput.value || '').trim()).toUpperCase();
+        const country = selectedCountryCode();
 
-        if (country.length !== 2) {
-            setStatus('Please enter your 2-letter country code (e.g. US, KE, GB).', 'error');
+        if (!country) {
+            setStatus('Please select a valid official country code (e.g. US, KE, TR).', 'error');
             $options.classList.remove('is-visible');
             $options.innerHTML = '';
             state.country = '';
@@ -1866,8 +1937,7 @@
             return;
         }
 
-        state.country = country;
-        $toolbarInput.value = country;
+        syncCountryCode(country);
 
         $btn.disabled = true;
         $btn.textContent = 'Loading…';
@@ -1914,6 +1984,28 @@
     };
 
     $btn.addEventListener('click', runRateLookup);
+    $form?.addEventListener('submit', event => {
+        const country = selectedCountryCode();
+        if (!country) {
+            event.preventDefault();
+            if ($countryInput) {
+                $countryInput.setCustomValidity(
+                    'Select a valid ISO-3166 two-letter country code such as KE, US or TR.'
+                );
+                $countryInput.reportValidity();
+                $countryInput.focus();
+            }
+            setStatus('A valid destination country code is required. UN is not accepted.', 'error');
+            return;
+        }
+        syncCountryCode(country);
+        updateSummary();
+    });
+
+    $toolbarInput?.addEventListener('input', () => {
+        const code = resolveCountryCode($toolbarInput.value);
+        if (code) syncCountryCode(code);
+    });
     // Enter key inside the country input triggers the lookup on mobile keyboards
     $toolbarInput?.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
