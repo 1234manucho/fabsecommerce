@@ -10,13 +10,23 @@ from datetime import datetime, timedelta, timezone
 DHL_API_KEY = os.getenv("DHL_API_KEY")
 DHL_API_SECRET = os.getenv("DHL_API_SECRET")
 DHL_ACCOUNT_NUMBER = os.getenv("DHL_ACCOUNT_NUMBER")
+# Use production for real shipments unless explicitly configured otherwise.
+# Set DHL_ENVIRONMENT=test for DHL's test environment.
+DHL_ENVIRONMENT = str(os.getenv("DHL_ENVIRONMENT", "production")).strip().lower()
+if DHL_ENVIRONMENT not in {"production", "test"}:
+    DHL_ENVIRONMENT = "production"
+
 DHL_API_BASE_URL = (
     os.getenv("DHL_API_BASE_URL")
     or os.getenv("DHL_API_BASE")
-    or "https://express.api.dhl.com/mydhlapi/test"
+    or (
+        "https://express.api.dhl.com/mydhlapi"
+        if DHL_ENVIRONMENT == "production"
+        else "https://express.api.dhl.com/mydhlapi/test"
+    )
 ).rstrip("/")
 
-DEFAULT_TIMEOUT = 30
+DEFAULT_TIMEOUT = int(os.getenv("DHL_TIMEOUT", "30"))
 
 
 # ======================================================================
@@ -449,6 +459,24 @@ class DHLAPIError(Exception):
         self.response_body = response_body
 
 
+def _mask_account(account_number):
+    value = str(account_number or "").strip()
+    if len(value) <= 4:
+        return "*" * len(value)
+    return "*" * (len(value) - 4) + value[-4:]
+
+
+def _is_product_unavailable_error(exc):
+    combined = (
+        f"{exc} {getattr(exc, 'response_body', '') or ''}"
+    ).lower()
+    return (
+        "996" in combined
+        or "product not found" in combined
+        or "requested product(s) not available" in combined
+    )
+
+
 class DHLService:
 
     def __init__(self):
@@ -699,16 +727,14 @@ class DHLService:
             "description": package_desc,
         }
 
-        # IMPORTANT:
-        # Do not hard-code DHL product P for international shipments.
-        # Product availability depends on the account, route, package and
-        # planned shipping date. Rating is therefore the source of truth.
-        preferred_product = (
+        # DHL Rating is the source of truth for the product that this
+        # account/route/date/package can actually use. Do not hard-code P.
+        explicit_product = (
             order_data.get("product_code")
             or os.getenv("DHL_PRODUCT_CODE")
             or None
         )
-        preferred_local_product = (
+        explicit_local_product = (
             order_data.get("local_product_code")
             or os.getenv("DHL_LOCAL_PRODUCT_CODE")
             or None
@@ -720,7 +746,7 @@ class DHLService:
         else:
             planned_shipping_date = _dhl_now(hours_ahead=2)
 
-        def _request_rates(planned_date):
+        def _request_rates(planned_date, product=None, local_product=None):
             return self.get_rates(
                 origin_country=origin_country,
                 destination_country=destination_country,
@@ -734,70 +760,111 @@ class DHLService:
                 height_cm=package_block["dimensions"]["height"],
                 declared_value=declared_value,
                 currency=currency,
-                # Only constrain Rating when the caller explicitly selected
-                # a product. Otherwise DHL returns eligible products.
-                product_code=preferred_product,
-                local_product_code=preferred_local_product,
+                product_code=product,
+                local_product_code=local_product,
                 planned_shipping_date_and_time=planned_date,
             )
 
-        try:
-            rate_result = _request_rates(planned_shipping_date)
-        except DHLAPIError as exc:
-            error_text = f"{exc} {exc.response_body or ''}".lower()
+        rate_result = None
+        rating_errors = []
 
-            if "996" in error_text or "product not found" in error_text:
-                # Error 996 can mean the product is unavailable for the
-                # requested date. Retry Rating for the next calendar day
-                # without a forced product, allowing DHL to return what is
-                # actually available for that date.
-                retry_date = _dhl_now(hours_ahead=10, days_ahead=1)
-                try:
-                    rate_result = self.get_rates(
-                        origin_country=origin_country,
-                        destination_country=destination_country,
-                        origin_city=os.getenv("DHL_ORIGIN_CITY", "Nairobi"),
-                        origin_postal_code=os.getenv("DHL_ORIGIN_POSTAL", "00100"),
-                        destination_city=order_data.get("receiver_city"),
-                        destination_postal_code=order_data.get("receiver_postal_code"),
-                        weight_kg=weight,
-                        length_cm=package_block["dimensions"]["length"],
-                        width_cm=package_block["dimensions"]["width"],
-                        height_cm=package_block["dimensions"]["height"],
-                        declared_value=declared_value,
-                        currency=currency,
-                        product_code=None,
-                        local_product_code=None,
-                        planned_shipping_date_and_time=retry_date,
-                    )
-                    planned_shipping_date = retry_date
-                    preferred_product = None
-                    preferred_local_product = None
-                except DHLAPIError as retry_exc:
-                    retry_text = f"{retry_exc} {retry_exc.response_body or ''}".lower()
-                    if "996" in retry_text or "product not found" in retry_text:
-                        raise DHLConfigurationError(
-                            "DHL Rating returned error 996: no eligible product is "
-                            "available for the requested route/account and pickup date. "
-                            "The system also retried the next day without forcing a "
-                            "product. Check the DHL account's enabled products and "
-                            "pickup schedule."
-                        ) from retry_exc
+        # Try the requested/current date plus the next three calendar days.
+        # This handles days on which DHL has no pickup/product availability.
+        candidate_dates = []
+        for day_offset in range(4):
+            if day_offset == 0 and order_data.get("planned_shipping_date"):
+                candidate = planned_shipping_date
+            else:
+                candidate = _dhl_now(hours_ahead=2, days_ahead=day_offset)
+            if candidate not in candidate_dates:
+                candidate_dates.append(candidate)
+
+        for candidate_date in candidate_dates:
+            try:
+                rate_result = _request_rates(
+                    candidate_date,
+                    explicit_product,
+                    explicit_local_product,
+                )
+                planned_shipping_date = candidate_date
+                break
+            except DHLAPIError as exc:
+                rating_errors.append({
+                    "date": candidate_date,
+                    "product": explicit_product,
+                    "status": exc.status_code,
+                    "body": (exc.response_body or str(exc))[:500],
+                })
+
+                # If a configured product is rejected with 996, immediately
+                # retry the same date without productCode/localProductCode.
+                # That lets DHL return any product actually enabled for the
+                # account and route.
+                if _is_product_unavailable_error(exc) and (
+                    explicit_product or explicit_local_product
+                ):
+                    try:
+                        rate_result = _request_rates(candidate_date, None, None)
+                        planned_shipping_date = candidate_date
+                        explicit_product = None
+                        explicit_local_product = None
+                        break
+                    except DHLAPIError as unforced_exc:
+                        rating_errors.append({
+                            "date": candidate_date,
+                            "product": None,
+                            "status": unforced_exc.status_code,
+                            "body": (unforced_exc.response_body or str(unforced_exc))[:500],
+                        })
+                        if not _is_product_unavailable_error(unforced_exc):
+                            raise
+                elif not _is_product_unavailable_error(exc):
                     raise
 
-            elif "1001" in error_text or "410138" in error_text:
-                raise DHLConfigurationError(
-                    "DHL has no shipping product enabled for "
-                    f"{origin_country} to {destination_country} on this payer account. "
-                    "Ask DHL to enable the required route/product or use an eligible account."
-                ) from exc
-            else:
-                raise
+        # If all forced attempts failed, make a clean unforced Rating request
+        # for each candidate date. This is the final product-discovery path.
+        if rate_result is None:
+            for candidate_date in candidate_dates:
+                try:
+                    rate_result = _request_rates(candidate_date, None, None)
+                    planned_shipping_date = candidate_date
+                    explicit_product = None
+                    explicit_local_product = None
+                    break
+                except DHLAPIError as exc:
+                    rating_errors.append({
+                        "date": candidate_date,
+                        "product": None,
+                        "status": exc.status_code,
+                        "body": (exc.response_body or str(exc))[:500],
+                    })
+                    if not _is_product_unavailable_error(exc):
+                        raise
+
+        if rate_result is None:
+            last = rating_errors[-1] if rating_errors else {}
+            detail = last.get("body") or "No usable DHL Rating response."
+            environment = (
+                "production"
+                if DHL_API_BASE_URL.rstrip("/").endswith("/mydhlapi")
+                else "test"
+            )
+            raise DHLConfigurationError(
+                "DHL Rating could not find an eligible product for "
+                f"{origin_country} -> {destination_country}. "
+                f"Environment={environment}; account={_mask_account(DHL_ACCOUNT_NUMBER)}; "
+                f"dates tried={len(candidate_dates)}. "
+                "The application tried the configured product, then retried "
+                "without any product restriction across four future dates. "
+                "Verify the DHL account is provisioned for MyDHL API Rating "
+                "and that the route is enabled for the account. "
+                f"Last DHL response: {detail}"
+            )
 
         selected_product = self._select_rate_product(
             rate_result,
-            preferred_product=preferred_product,
-            preferred_local=preferred_local_product,
+            preferred_product=explicit_product,
+            preferred_local=explicit_local_product,
         )
         if not selected_product:
             raise DHLConfigurationError(
@@ -1267,6 +1334,79 @@ class DHLService:
             },
         }
         return self._post("/landing-cost", payload)
+
+    # ==================================================================
+    # 9. DHL RATING DIAGNOSTICS
+    # ==================================================================
+    def diagnose_rating(
+        self,
+        origin_country,
+        destination_country,
+        destination_city=None,
+        destination_postal_code=None,
+        weight_kg=1.0,
+        length_cm=30,
+        width_cm=20,
+        height_cm=10,
+        declared_value=100.0,
+        currency="USD",
+    ):
+        """Return a safe, unforced DHL Rating diagnostic response."""
+        origin_country = normalize_country_code(origin_country, "origin country")
+        destination_country = normalize_country_code(
+            destination_country, "destination country"
+        )
+        destination_city, destination_postal_code = _resolve_destination(
+            destination_country, destination_city, destination_postal_code
+        )
+        planned_date = _dhl_now(hours_ahead=2)
+
+        result = {
+            "environment": (
+                "production"
+                if DHL_API_BASE_URL.rstrip("/").endswith("/mydhlapi")
+                else "test"
+            ),
+            "api_base_url": DHL_API_BASE_URL,
+            "account_number": _mask_account(DHL_ACCOUNT_NUMBER),
+            "origin_country": origin_country,
+            "destination_country": destination_country,
+            "destination_city": destination_city,
+            "destination_postal_code": destination_postal_code,
+            "planned_shipping_date": planned_date,
+            "products": [],
+            "error": None,
+        }
+
+        try:
+            raw = self.get_rates(
+                origin_country=origin_country,
+                destination_country=destination_country,
+                origin_city=os.getenv("DHL_ORIGIN_CITY", "Nairobi"),
+                origin_postal_code=os.getenv("DHL_ORIGIN_POSTAL", "00100"),
+                destination_city=destination_city,
+                destination_postal_code=destination_postal_code,
+                weight_kg=weight_kg,
+                length_cm=length_cm,
+                width_cm=width_cm,
+                height_cm=height_cm,
+                declared_value=declared_value,
+                currency=currency,
+                product_code=None,
+                local_product_code=None,
+                planned_shipping_date_and_time=planned_date,
+            )
+            result["products"] = (
+                raw.get("products", []) if isinstance(raw, dict) else []
+            )
+            result["raw_rate"] = raw
+        except DHLAPIError as exc:
+            result["error"] = {
+                "status_code": exc.status_code,
+                "message": str(exc),
+                "response_body": exc.response_body,
+            }
+        return result
 
     # ==================================================================
     # 9. PRODUCT CODE LIST
