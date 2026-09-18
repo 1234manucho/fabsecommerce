@@ -239,20 +239,35 @@ def normalize_country_code(value, field_name="country"):
     )
 
 
-def _dhl_now(hours_ahead=2):
+def _dhl_now(hours_ahead=2, days_ahead=0):
     """
-    Return a DHL-compliant planned shipping datetime string.
+    Return a future DHL planned-shipping datetime.
 
-    DHL requires:
-      - ISO-8601 with an offset formatted as +HH:MM (colon required)
-      - A time in the near future
+    The default origin is Kenya (UTC+03:00), but the offset can be changed
+    with DHL_ORIGIN_UTC_OFFSET, e.g. "+03:00" or "+04:00".
 
-    Example output: '2026-09-17T14:30:00 GMT+00:00'
+    A caller can move the planned date forward with days_ahead. This is used
+    by rate fallback logic when DHL says a product is unavailable on the
+    requested pickup date.
     """
-    dt = datetime.now(timezone.utc) + timedelta(hours=hours_ahead)
-    offset = dt.strftime("%z")                     # "+0000"
-    offset_colon = offset[:3] + ":" + offset[3:]   # "+00:00"
-    return dt.strftime("%Y-%m-%dT%H:%M:%S") + " GMT" + offset_colon
+    offset_text = str(os.getenv("DHL_ORIGIN_UTC_OFFSET", "+03:00")).strip()
+    if not re.fullmatch(r"[+-]\\d{2}:\\d{2}", offset_text):
+        offset_text = "+03:00"
+
+    sign = 1 if offset_text[0] == "+" else -1
+    offset_hours = int(offset_text[1:3])
+    offset_minutes = int(offset_text[4:6])
+    offset_delta = timedelta(
+        hours=sign * offset_hours,
+        minutes=sign * offset_minutes,
+    )
+
+    dt_utc = datetime.now(timezone.utc) + timedelta(
+        hours=hours_ahead,
+        days=days_ahead,
+    )
+    dt_local = dt_utc.astimezone(timezone(offset_delta))
+    return dt_local.strftime("%Y-%m-%dT%H:%M:%S") + " GMT" + offset_text
 
 
 def _resolve_destination(country_code, city, postal_code):
@@ -529,6 +544,7 @@ class DHLService:
         weight_kg=1.0, length_cm=30, width_cm=20, height_cm=10,
         declared_value=100.0, currency="USD",
         product_code=None, local_product_code=None,
+        planned_shipping_date_and_time=None,
     ):
         origin_country = normalize_country_code(origin_country, "origin country")
         destination_country = normalize_country_code(
@@ -558,7 +574,10 @@ class DHLService:
             },
             "accounts": [{"typeCode": "shipper", "number": DHL_ACCOUNT_NUMBER}],
             "valueAddedServices": [],
-            "plannedShippingDateAndTime": _dhl_now(hours_ahead=2),
+            "plannedShippingDateAndTime": (
+                planned_shipping_date_and_time
+                or _dhl_now(hours_ahead=2)
+            ),
             "unitOfMeasurement": "metric",
             "isCustomsDeclarable": is_international,
             "packages": [
@@ -680,13 +699,14 @@ class DHLService:
             "description": package_desc,
         }
 
-        # DHL Kenya requested product P for its discounted international
-        # shipment service. Do not allow a configured fallback to silently
-        # replace P on international requests.
-        preferred_product = "P" if is_international else (
+        # IMPORTANT:
+        # Do not hard-code DHL product P for international shipments.
+        # Product availability depends on the account, route, package and
+        # planned shipping date. Rating is therefore the source of truth.
+        preferred_product = (
             order_data.get("product_code")
             or os.getenv("DHL_PRODUCT_CODE")
-            or "N"
+            or None
         )
         preferred_local_product = (
             order_data.get("local_product_code")
@@ -694,8 +714,14 @@ class DHLService:
             or None
         )
 
-        try:
-            rate_result = self.get_rates(
+        planned_shipping_date = order_data.get("planned_shipping_date")
+        if planned_shipping_date:
+            planned_shipping_date = str(planned_shipping_date).strip()
+        else:
+            planned_shipping_date = _dhl_now(hours_ahead=2)
+
+        def _request_rates(planned_date):
+            return self.get_rates(
                 origin_country=origin_country,
                 destination_country=destination_country,
                 origin_city=os.getenv("DHL_ORIGIN_CITY", "Nairobi"),
@@ -708,16 +734,65 @@ class DHLService:
                 height_cm=package_block["dimensions"]["height"],
                 declared_value=declared_value,
                 currency=currency,
+                # Only constrain Rating when the caller explicitly selected
+                # a product. Otherwise DHL returns eligible products.
+                product_code=preferred_product,
+                local_product_code=preferred_local_product,
+                planned_shipping_date_and_time=planned_date,
             )
+
+        try:
+            rate_result = _request_rates(planned_shipping_date)
         except DHLAPIError as exc:
             error_text = f"{exc} {exc.response_body or ''}".lower()
-            if "1001" in error_text or "410138" in error_text:
+
+            if "996" in error_text or "product not found" in error_text:
+                # Error 996 can mean the product is unavailable for the
+                # requested date. Retry Rating for the next calendar day
+                # without a forced product, allowing DHL to return what is
+                # actually available for that date.
+                retry_date = _dhl_now(hours_ahead=10, days_ahead=1)
+                try:
+                    rate_result = self.get_rates(
+                        origin_country=origin_country,
+                        destination_country=destination_country,
+                        origin_city=os.getenv("DHL_ORIGIN_CITY", "Nairobi"),
+                        origin_postal_code=os.getenv("DHL_ORIGIN_POSTAL", "00100"),
+                        destination_city=order_data.get("receiver_city"),
+                        destination_postal_code=order_data.get("receiver_postal_code"),
+                        weight_kg=weight,
+                        length_cm=package_block["dimensions"]["length"],
+                        width_cm=package_block["dimensions"]["width"],
+                        height_cm=package_block["dimensions"]["height"],
+                        declared_value=declared_value,
+                        currency=currency,
+                        product_code=None,
+                        local_product_code=None,
+                        planned_shipping_date_and_time=retry_date,
+                    )
+                    planned_shipping_date = retry_date
+                    preferred_product = None
+                    preferred_local_product = None
+                except DHLAPIError as retry_exc:
+                    retry_text = f"{retry_exc} {retry_exc.response_body or ''}".lower()
+                    if "996" in retry_text or "product not found" in retry_text:
+                        raise DHLConfigurationError(
+                            "DHL Rating returned error 996: no eligible product is "
+                            "available for the requested route/account and pickup date. "
+                            "The system also retried the next day without forcing a "
+                            "product. Check the DHL account's enabled products and "
+                            "pickup schedule."
+                        ) from retry_exc
+                    raise
+
+            elif "1001" in error_text or "410138" in error_text:
                 raise DHLConfigurationError(
                     "DHL has no shipping product enabled for "
                     f"{origin_country} to {destination_country} on this payer account. "
                     "Ask DHL to enable the required route/product or use an eligible account."
                 ) from exc
-            raise
+            else:
+                raise
 
         selected_product = self._select_rate_product(
             rate_result,
@@ -728,15 +803,14 @@ class DHLService:
             raise DHLConfigurationError(
                 "DHL Rating returned no available shipping product for "
                 f"{origin_country} to {destination_country}. "
-                "Verify the destination, package details and DHL account permissions."
+                "Verify the destination, package details, planned shipping date "
+                "and DHL account permissions."
             )
         product_code, local_product_code = selected_product
 
-        if is_international and product_code != "P":
-            raise DHLConfigurationError(
-                "DHL product P is required for international shipments, but it "
-                "was not returned as available for this route/account"
-            )
+        # The product returned by Rating is now the product used to create
+        # the shipment. Never reject an eligible DHL product merely because
+        # it is not hard-coded as P.
 
         is_document = bool(order_data.get("is_document", False))
         is_customs_declarable = is_international and not is_document
@@ -843,7 +917,7 @@ class DHLService:
 
         payload = {
             "getOptionalInformation": False,
-            "plannedShippingDateAndTime": _dhl_now(hours_ahead=2),
+            "plannedShippingDateAndTime": planned_shipping_date,
             "pickup": {"isRequested": False},
             "productCode": product_code,
             "localProductCode": local_product_code,
@@ -1089,8 +1163,18 @@ class DHLService:
                 },
             },
             "shipmentDetails": [{
-                "productCode": "P",
-                "localProductCode": "P",
+                "productCode": str(
+                    pickup_data.get("product_code")
+                    or os.getenv("DHL_PRODUCT_CODE")
+                    or "P"
+                ).strip().upper(),
+                "localProductCode": str(
+                    pickup_data.get("local_product_code")
+                    or os.getenv("DHL_LOCAL_PRODUCT_CODE")
+                    or pickup_data.get("product_code")
+                    or os.getenv("DHL_PRODUCT_CODE")
+                    or "P"
+                ).strip().upper(),
                 "accounts": [{"typeCode": "shipper", "number": DHL_ACCOUNT_NUMBER}],
                 "packages": [{
                     "weight": pickup_data.get("weight_kg", 1.0),
@@ -1163,8 +1247,6 @@ class DHLService:
                 },
             },
             "accounts": [{"typeCode": "shipper", "number": DHL_ACCOUNT_NUMBER}],
-            "productCode": "P",
-            "localProductCode": "P",
             "plannedShippingDateAndTime": _dhl_now(hours_ahead=2),
             "unitOfMeasurement": "metric",
             "isCustomsDeclarable": is_customs_declarable,
