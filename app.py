@@ -59,10 +59,6 @@ csrf = CSRFProtect()
 migrate = Migrate()
 DEFAULT_USD_KES_RATE = Decimal("130.00")
 CATALOGUE_PAGE_SIZE = 8
-# The home page hero / gallery / services render a "page 10" slice of the
-# catalogue (games[10:16]).  Fetch a pool large enough to cover that slice
-# plus headroom so the template's safe-slice fallbacks rarely kick in.
-HOME_FEATURED_POOL_SIZE = 30
 
 DEFAULT_SHIP_ORIGIN_COUNTRY = normalize_country_code(
     os.getenv("DHL_ORIGIN_COUNTRY", "KE"), "DHL_ORIGIN_COUNTRY"
@@ -609,7 +605,7 @@ def register_routes(app):
         featured = (
             Game.query.filter_by(is_active=True)
             .order_by(Game.is_featured.desc(), Game.price.asc(), Game.id.asc())
-            .limit(HOME_FEATURED_POOL_SIZE)
+            .limit(CATALOGUE_PAGE_SIZE)
             .all()
         )
         return render_template("index.html", games=featured, commodities=[])
@@ -2339,4 +2335,4 @@ def register_errors(app):
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true")
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true") 
