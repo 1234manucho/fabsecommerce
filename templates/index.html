@@ -1,5 +1,19 @@
 {% extends 'base.html' %}
 
+{# ------------------------------------------------------------------
+   Safe catalogue slices.
+   The home page wants to feature "page 10" of the catalogue, but we
+   must never crash if the DB has fewer than 16 games.
+   ------------------------------------------------------------------ #}
+{% set _n = games|length %}
+{% set _hero_start = 10 if _n > 15 else 0 %}
+{% set hero_games    = games[_hero_start:_hero_start + 5] %}
+{% set gallery_games = games[_hero_start:_hero_start + 5] %}
+{% set service_games = games[_hero_start:_hero_start + 6] %}
+{% set about_game    = games[_hero_start] if _n > _hero_start else games[0] %}
+{% set story_games   = games[_hero_start + 2:_hero_start + 5] if _n > (_hero_start + 2) else games[:3] %}
+{% set story_img     = story_games[0] if story_games else games[0] %}
+
 {% macro dhl_logo(class_name='', width=180, height=52) -%}
 <svg class="dhl-logo {{ class_name }}" viewBox="0 0 320 90" width="{{ width }}" height="{{ height }}" role="img" aria-label="DHL Express logo" focusable="false" xmlns="http://www.w3.org/2000/svg">
   <g fill="#d40511">
@@ -33,7 +47,6 @@
   .fh-slide img{width:100%;height:100%;object-fit:cover}
   .fh-shade{background:linear-gradient(90deg,rgba(4,6,9,.97) 0%,rgba(4,6,9,.82) 36%,rgba(4,6,9,.38) 64%,rgba(4,6,9,.75) 100%),linear-gradient(0deg,rgba(4,6,9,.88),transparent 55%)}
 
-  /* Aurora glow behind hero */
   .fh-hero::before{
     content:"";position:absolute;z-index:1;left:-10%;top:-30%;width:70%;height:120%;
     background:radial-gradient(circle at 30% 40%,rgba(237,49,56,.22),transparent 60%);
@@ -41,7 +54,6 @@
   }
   @keyframes aurora{to{transform:translateX(20%) scale(1.15)}}
 
-  /* -------- DHL PLANE across hero sky -------- */
   .fh-hero-sky{position:absolute;z-index:3;inset:0;pointer-events:none;overflow:hidden}
   .fh-hero-sky svg{width:100%;height:100%;display:block}
   .fh-hero-sky .trail{stroke:url(#heroTrailGrad);stroke-width:2;fill:none;stroke-dasharray:10 8;opacity:.85}
@@ -78,7 +90,6 @@
   .fh-product span{font-size:9px;color:#ff7378}
   .fh-source{display:block!important;margin-top:15px;color:#707881!important;font-size:7px!important;letter-spacing:.1em!important}
 
-  /* -------- HERO NETWORK (globe) -------- */
   .fh-network{position:relative;width:600px;height:600px;margin:auto}
   .fh-network:before{content:"";position:absolute;inset:4%;border:1px solid rgba(255,255,255,.08);border-radius:50%;background:radial-gradient(circle,rgba(237,49,56,.12),transparent 62%)}
   .fh-ring{position:absolute;left:50%;top:50%;border:1px solid rgba(255,103,109,.25);border-radius:50%;transform:translate(-50%,-50%);animation:fhspin 32s linear infinite}
@@ -115,7 +126,7 @@
   @keyframes fhfloat{50%{transform:translateY(-10px)}}
 
   /* ============================================================ */
-  /* LIVE TICKER (marquee under hero)                             */
+  /* LIVE TICKER                                                  */
   /* ============================================================ */
 
   .fh-ticker{background:#0b0e12;color:#c8cdd4;overflow:hidden;border-bottom:1px solid #1b2027;position:relative;z-index:5}
@@ -155,7 +166,7 @@
   .fh-dhl-banner-cta span{font-size:13px;line-height:1}
 
   /* ============================================================ */
-  /* LIVE AIRWAY (world map + plane animation)                    */
+  /* LIVE AIRWAY                                                  */
   /* ============================================================ */
 
   .fh-airway{background:#05070b;color:#fff;padding:0;position:relative;overflow:hidden}
@@ -201,7 +212,7 @@
   .fh-trust-mark.fh-trust-mark-3ds{background:#121a3f;color:#fff;font-size:11px;letter-spacing:.02em}
 
   /* ============================================================ */
-  /* SHIPPING & PAYMENT FEATURE                                   */
+  /* SHIPPING & PAYMENT                                           */
   /* ============================================================ */
 
   .fh-shipping-payment{background:#f1f2f3}
@@ -485,7 +496,7 @@
   <section class="fh-hero" aria-roledescription="carousel" aria-label="FABS gaming marketplace">
 
     <div class="fh-slides">
-      {% for game in games[10:15] %}
+      {% for game in hero_games %}
       <article class="fh-slide {% if loop.first %}active{% endif %}" data-slide="{{ loop.index0 }}">
         <img src="{{ game.image_url }}" alt="{{ game.title }} real product media" {% if loop.first %}fetchpriority="high"{% endif %}>
         <div class="fh-shade"></div>
@@ -493,7 +504,6 @@
       {% endfor %}
     </div>
 
-    <!-- Animated DHL cargo plane flying across the hero sky -->
     <div class="fh-hero-sky" aria-hidden="true">
       <svg viewBox="0 0 1600 820" preserveAspectRatio="xMidYMid slice">
         <defs>
@@ -505,18 +515,15 @@
           <path id="heroFlightPath" d="M-100,180 Q200,60 500,140 T1200,120 T1700,200" fill="none"/>
         </defs>
 
-        <!-- Trail -->
         <path d="M-100,180 Q200,60 500,140 T1200,120 T1700,200"
               class="trail"
               style="fill:none;stroke:url(#heroTrailGrad);stroke-width:2;stroke-dasharray:10 8;opacity:.85"/>
 
-        <!-- Plane following the path -->
         <g>
           <animateMotion dur="18s" repeatCount="indefinite" rotate="auto">
             <mpath href="#heroFlightPath"/>
           </animateMotion>
           <g transform="translate(-18,-14)">
-            <!-- Plane silhouette -->
             <path class="plane-shadow" d="M2,20 L52,12 L50,17 L20,20 L50,23 L52,28 Z" transform="translate(0,2)"/>
             <path class="plane-body" d="M0,20 L52,12 L50,17 L20,20 L50,23 L52,28 Z"/>
             <path class="plane-accent" d="M22,20 L34,17 L36,20 L34,23 Z"/>
@@ -525,7 +532,6 @@
           </g>
         </g>
 
-        <!-- Falling packages stream -->
         <g>
           <animateMotion dur="18s" repeatCount="indefinite" begin="-2s">
             <mpath href="#heroFlightPath"/>
@@ -571,11 +577,11 @@
         </div>
 
         <div class="fh-product">
-          <small id="hero-category">{{ games[10].genre|upper }}</small>
-          <strong id="hero-product">{{ games[10].title }}</strong>
-          <span id="hero-moq">{{ games[10].minimum_order }}</span>
+          <small id="hero-category">{{ hero_games[0].genre|upper }}</small>
+          <strong id="hero-product">{{ hero_games[0].title }}</strong>
+          <span id="hero-moq">{{ hero_games[0].minimum_order }}</span>
         </div>
-        <span class="fh-source">● AUTHENTIC SUPPLIER MEDIA · <b id="hero-source">{{ games[10].photo_source }}</b></span>
+        <span class="fh-source">● AUTHENTIC SUPPLIER MEDIA · <b id="hero-source">{{ hero_games[0].photo_source }}</b></span>
       </div>
 
       <div class="fh-network" aria-label="Animated FABS global sourcing network">
@@ -592,7 +598,7 @@
             <b>DIGITAL NETWORK</b>
           </div>
         </div>
-        {% for game in games[10:15] %}
+        {% for game in hero_games %}
         <a class="fh-node n{{ loop.index }}" href="{{ url_for('game_detail',slug=game.slug) }}">
           <img src="{{ game.image_url }}" alt="">
           <b>{{ game.title }}</b>
@@ -603,7 +609,7 @@
     </div>
 
     <div class="fh-controls">
-      {% for game in games[10:15] %}
+      {% for game in hero_games %}
       <button class="{% if loop.first %}active{% endif %}" type="button" data-hero-control="{{ loop.index0 }}" aria-label="Show {{ game.title }}"></button>
       {% endfor %}
     </div>
@@ -616,11 +622,11 @@
 
   <div class="fh-ticker" aria-hidden="true">
     <div class="fh-ticker-track">
-      {% for game in games[10:15] %}
+      {% for game in hero_games %}
       <span>Now shipping · {{ game.title }} → worldwide</span>
       <span>DHL Express rate available for {{ game.genre }}</span>
       {% endfor %}
-      {% for game in games[10:15] %}
+      {% for game in hero_games %}
       <span>Now shipping · {{ game.title }} → worldwide</span>
       <span>DHL Express rate available for {{ game.genre }}</span>
       {% endfor %}
@@ -658,7 +664,7 @@
   </section>
 
   <!-- ============================================================ -->
-  <!-- LIVE GLOBAL AIRWAY (world map + animated DHL planes)         -->
+  <!-- LIVE GLOBAL AIRWAY                                           -->
   <!-- ============================================================ -->
 
   <section class="fh-airway" aria-label="FABS global DHL airway network">
@@ -691,10 +697,8 @@
             </filter>
           </defs>
 
-          <!-- Atmosphere -->
           <rect width="1200" height="520" fill="url(#mapGlow)"/>
 
-          <!-- Latitude / longitude grid -->
           <g stroke="rgba(255,255,255,.045)" stroke-width="1">
             <line x1="0" y1="130" x2="1200" y2="130"/>
             <line x1="0" y1="260" x2="1200" y2="260"/>
@@ -706,27 +710,17 @@
             <line x1="1000" y1="0" x2="1000" y2="520"/>
           </g>
 
-          <!-- Simplified continents (dot-style) -->
           <g fill="rgba(255,255,255,.22)">
-            <!-- North America -->
             <circle cx="200" cy="150" r="2.2"/><circle cx="220" cy="140" r="2.4"/><circle cx="240" cy="150" r="2.6"/><circle cx="180" cy="170" r="2.2"/><circle cx="210" cy="180" r="2.6"/><circle cx="230" cy="200" r="2.4"/><circle cx="250" cy="210" r="2.2"/><circle cx="220" cy="220" r="2.0"/>
-            <!-- South America -->
             <circle cx="280" cy="290" r="2.6"/><circle cx="300" cy="320" r="2.6"/><circle cx="310" cy="350" r="2.4"/><circle cx="300" cy="380" r="2.2"/><circle cx="320" cy="400" r="2.0"/><circle cx="290" cy="340" r="2.4"/>
-            <!-- Europe -->
             <circle cx="540" cy="130" r="2.6"/><circle cx="560" cy="120" r="2.6"/><circle cx="580" cy="130" r="2.4"/><circle cx="550" cy="150" r="2.4"/><circle cx="570" cy="155" r="2.6"/><circle cx="590" cy="145" r="2.2"/><circle cx="600" cy="160" r="2.4"/>
-            <!-- Africa -->
             <circle cx="560" cy="240" r="2.6"/><circle cx="580" cy="260" r="2.6"/><circle cx="570" cy="290" r="2.4"/><circle cx="590" cy="310" r="2.6"/><circle cx="580" cy="340" r="2.4"/><circle cx="600" cy="290" r="2.2"/><circle cx="610" cy="260" r="2.2"/>
-            <!-- Middle East -->
             <circle cx="650" cy="200" r="2.4"/><circle cx="670" cy="220" r="2.4"/><circle cx="660" cy="235" r="2.2"/><circle cx="680" cy="210" r="2.0"/>
-            <!-- Asia -->
             <circle cx="740" cy="140" r="2.6"/><circle cx="780" cy="130" r="2.6"/><circle cx="820" cy="140" r="2.6"/><circle cx="860" cy="150" r="2.4"/><circle cx="900" cy="140" r="2.4"/><circle cx="940" cy="150" r="2.2"/><circle cx="760" cy="170" r="2.4"/><circle cx="800" cy="180" r="2.4"/><circle cx="840" cy="180" r="2.6"/><circle cx="880" cy="190" r="2.4"/><circle cx="920" cy="180" r="2.2"/>
-            <!-- South Asia -->
             <circle cx="700" cy="230" r="2.4"/><circle cx="730" cy="240" r="2.4"/><circle cx="760" cy="250" r="2.2"/><circle cx="780" cy="260" r="2.0"/>
-            <!-- Australia -->
             <circle cx="920" cy="380" r="2.6"/><circle cx="960" cy="390" r="2.4"/><circle cx="1000" cy="380" r="2.4"/><circle cx="980" cy="410" r="2.2"/><circle cx="940" cy="405" r="2.0"/>
           </g>
 
-          <!-- ROUTES from Nairobi (595, 275) -->
           <g fill="none" stroke="url(#routeGrad)" stroke-width="1.6" stroke-linecap="round" filter="url(#softGlow)">
             <path id="routeAmsterdam" d="M595,275 Q570,200 570,145"/>
             <path id="routeDubai" d="M595,275 Q640,240 670,220"/>
@@ -736,29 +730,15 @@
             <path id="routeSydney" d="M595,275 Q800,350 960,395"/>
           </g>
 
-          <!-- Route pulse dots -->
           <g>
-            <circle r="3" fill="#ffcc00">
-              <animateMotion dur="3.5s" repeatCount="indefinite" rotate="auto"><mpath href="#routeAmsterdam"/></animateMotion>
-            </circle>
-            <circle r="3" fill="#ffcc00">
-              <animateMotion dur="4s" repeatCount="indefinite" begin="-1s" rotate="auto"><mpath href="#routeDubai"/></animateMotion>
-            </circle>
-            <circle r="3" fill="#ffcc00">
-              <animateMotion dur="5s" repeatCount="indefinite" begin="-2s" rotate="auto"><mpath href="#routeShanghai"/></animateMotion>
-            </circle>
-            <circle r="3" fill="#ffcc00">
-              <animateMotion dur="5.5s" repeatCount="indefinite" begin="-3s" rotate="auto"><mpath href="#routeNY"/></animateMotion>
-            </circle>
-            <circle r="3" fill="#ffcc00">
-              <animateMotion dur="6s" repeatCount="indefinite" begin="-1.5s" rotate="auto"><mpath href="#routeSaoPaulo"/></animateMotion>
-            </circle>
-            <circle r="3" fill="#ffcc00">
-              <animateMotion dur="5s" repeatCount="indefinite" begin="-2.5s" rotate="auto"><mpath href="#routeSydney"/></animateMotion>
-            </circle>
+            <circle r="3" fill="#ffcc00"><animateMotion dur="3.5s" repeatCount="indefinite" rotate="auto"><mpath href="#routeAmsterdam"/></animateMotion></circle>
+            <circle r="3" fill="#ffcc00"><animateMotion dur="4s" repeatCount="indefinite" begin="-1s" rotate="auto"><mpath href="#routeDubai"/></animateMotion></circle>
+            <circle r="3" fill="#ffcc00"><animateMotion dur="5s" repeatCount="indefinite" begin="-2s" rotate="auto"><mpath href="#routeShanghai"/></animateMotion></circle>
+            <circle r="3" fill="#ffcc00"><animateMotion dur="5.5s" repeatCount="indefinite" begin="-3s" rotate="auto"><mpath href="#routeNY"/></animateMotion></circle>
+            <circle r="3" fill="#ffcc00"><animateMotion dur="6s" repeatCount="indefinite" begin="-1.5s" rotate="auto"><mpath href="#routeSaoPaulo"/></animateMotion></circle>
+            <circle r="3" fill="#ffcc00"><animateMotion dur="5s" repeatCount="indefinite" begin="-2.5s" rotate="auto"><mpath href="#routeSydney"/></animateMotion></circle>
           </g>
 
-          <!-- Small cargo planes on the two main routes -->
           <g>
             <animateMotion dur="8s" repeatCount="indefinite" rotate="auto"><mpath href="#routeShanghai"/></animateMotion>
             <path d="M-8,-3 L8,0 L-8,3 L-4,0 Z" fill="#ffcc00"/>
@@ -772,7 +752,6 @@
             <path d="M-8,-3 L8,0 L-8,3 L-4,0 Z" fill="#ffcc00"/>
           </g>
 
-          <!-- Hub: Nairobi -->
           <g transform="translate(595,275)">
             <circle r="20" fill="none" stroke="#d40511" stroke-width="1" opacity="0.5">
               <animate attributeName="r" from="6" to="28" dur="2.6s" repeatCount="indefinite"/>
@@ -786,7 +765,6 @@
             <text x="14" y="4" fill="#fff" font-size="12" font-weight="900" font-family="Arial, Helvetica, sans-serif">NAIROBI HUB</text>
           </g>
 
-          <!-- Destination markers -->
           <g font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="800" fill="#c8cdd4">
             <g transform="translate(570,145)"><circle r="4" fill="#ffcc00"/><text x="8" y="3">AMS</text></g>
             <g transform="translate(670,220)"><circle r="4" fill="#ffcc00"/><text x="8" y="3">DXB</text></g>
@@ -877,7 +855,7 @@
         <p>Authentic venue, manufacturer and product photography—never generated imagery.</p>
       </header>
       <div class="fh-gallery-grid">
-        {% for game in games[10:15] %}
+        {% for game in gallery_games %}
         <a class="fh-gallery-card {% if loop.first %}featured{% endif %}" href="{{ url_for('game_detail',slug=game.slug) }}">
           <img src="{{ game.image_url }}" alt="{{ game.title }} authentic product photograph" loading="{% if loop.index < 3 %}eager{% else %}lazy{% endif %}">
           <span class="fh-real-badge">REAL MEDIA</span>
@@ -907,11 +885,11 @@
         <a class="fh-red-button" href="{{ url_for('about') }}">Discover our company →</a>
       </div>
       <figure class="fh-about-image">
-        <img src="{{ games[10].image_url }}" alt="{{ games[10].title }} at a real entertainment venue">
+        <img src="{{ about_game.image_url }}" alt="{{ about_game.title }} at a real entertainment venue">
         <figcaption>
           <span>● AUTHENTIC VENUE PHOTOGRAPHY</span>
-          <strong>{{ games[10].title }}</strong>
-          <small>Real venue media · {{ games[10].photo_source }}</small>
+          <strong>{{ about_game.title }}</strong>
+          <small>Real venue media · {{ about_game.photo_source }}</small>
         </figcaption>
         <div><b>01</b><span>Connected sourcing<br>partner</span></div>
       </figure>
@@ -983,7 +961,7 @@
         <a href="{{ url_for('games') }}">Browse all 2,399,976 products →</a>
       </header>
       <div class="fh-service-grid">
-        {% for game in games[10:16] %}
+        {% for game in service_games %}
         <a class="fh-service" href="{{ url_for('game_detail',slug=game.slug) }}">
           <figure>
             <img src="{{ game.image_url }}" alt="{{ game.title }} real product photograph" loading="lazy">
@@ -1172,7 +1150,7 @@
           {% endfor %}
         </div>
         <figure class="fh-story-media">
-          <img id="story-image" src="{{ games[12].image_url }}" alt="Real commercial gaming product media">
+          <img id="story-image" src="{{ story_img.image_url }}" alt="Real commercial gaming product media">
         </figure>
       </div>
       <div class="fh-story-dots">
@@ -1207,12 +1185,12 @@
 <script>
 (()=>{
   /* ============================== */
-  /* HERO CAROUSEL (games[10:15])   */
+  /* HERO CAROUSEL                  */
   /* ============================== */
-  const products={{ games[10:15]|map(attribute='title')|list|tojson }};
-  const moqs={{ games[10:15]|map(attribute='minimum_order')|list|tojson }};
-  const categories={{ games[10:15]|map(attribute='genre')|list|tojson }};
-  const sources={{ games[10:15]|map(attribute='photo_source')|list|tojson }};
+  const products={{ hero_games|map(attribute='title')|list|tojson }};
+  const moqs={{ hero_games|map(attribute='minimum_order')|list|tojson }};
+  const categories={{ hero_games|map(attribute='genre')|list|tojson }};
+  const sources={{ hero_games|map(attribute='photo_source')|list|tojson }};
   const slides=[...document.querySelectorAll('.fh-slide')];
   const controls=[...document.querySelectorAll('[data-hero-control]')];
   let active=0,timer;
@@ -1240,7 +1218,7 @@
   /* ============================== */
   const stories=[...document.querySelectorAll('[data-story]')];
   const storyControls=[...document.querySelectorAll('[data-story-control]')];
-  const storyImages={{ games[12:15]|map(attribute='image_url')|list|tojson }};
+  const storyImages={{ story_games|map(attribute='image_url')|list|tojson }};
   let story=0;
 
   const showStory=index=>{
