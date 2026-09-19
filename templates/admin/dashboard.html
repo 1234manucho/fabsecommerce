@@ -5,247 +5,489 @@
 
 {% block head %}
 <style>
-  .admin-hero-bg {
-    background:
-      radial-gradient(circle at 88% 20%, rgba(255, 0, 0, 0.14), transparent 28%),
-      linear-gradient(135deg, #11161b 0%, #1d242b 100%);
+  :root {
+    --dash-bg: #f6f7f9;
+    --dash-card: #ffffff;
+    --dash-border: #e5e8ec;
+    --dash-ink: #0f1419;
+    --dash-muted: #6b7480;
+    --dash-accent: #e10600;
+    --dash-accent-soft: rgba(225, 6, 0, 0.08);
+    --dash-shadow: 0 1px 2px rgba(15, 20, 25, 0.04), 0 12px 32px rgba(15, 20, 25, 0.06);
+    --dash-shadow-hover: 0 1px 2px rgba(15, 20, 25, 0.06), 0 20px 45px rgba(15, 20, 25, 0.10);
   }
-  .admin-hero-bg::after {
+
+  .dash-hero {
+    background:
+      radial-gradient(circle at 12% 0%, rgba(225, 6, 0, 0.18), transparent 42%),
+      radial-gradient(circle at 88% 100%, rgba(225, 6, 0, 0.10), transparent 40%),
+      linear-gradient(135deg, #0b0f14 0%, #171d24 60%, #1c232b 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .dash-hero::before {
     content: "";
     position: absolute;
-    right: -80px;
-    bottom: -140px;
-    width: 340px;
-    height: 340px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at 50% 0%, black 40%, transparent 80%);
+    pointer-events: none;
+  }
+  .dash-hero::after {
+    content: "";
+    position: absolute;
+    right: -120px;
+    bottom: -180px;
+    width: 420px;
+    height: 420px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 50%;
+    pointer-events: none;
   }
-  .admin-btn-primary {
-    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+
+  .dash-stat {
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
   }
-  .admin-btn-primary:hover {
-    background: #cc0000;
-    border-color: #cc0000;
+  .dash-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--dash-shadow-hover);
+    border-color: #d8dde3;
+  }
+
+  .dash-btn {
+    transition: background-color 160ms ease, border-color 160ms ease,
+                color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  }
+  .dash-btn-primary {
+    background: var(--dash-accent);
+    border-color: var(--dash-accent);
+    color: #fff;
+  }
+  .dash-btn-primary:hover {
+    background: #b90500;
+    border-color: #b90500;
     transform: translateY(-1px);
-    box-shadow: 0 10px 25px rgba(255, 0, 0, 0.28);
+    box-shadow: 0 12px 28px rgba(225, 6, 0, 0.30);
   }
-  .admin-btn-primary:focus-visible {
-    outline: 3px solid rgba(255, 0, 0, 0.35);
-    outline-offset: 3px;
+  .dash-btn-ghost {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #fff;
   }
+  .dash-btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.28);
+  }
+  .dash-btn-light {
+    background: #fff;
+    border-color: var(--dash-border);
+    color: var(--dash-ink);
+  }
+  .dash-btn-light:hover {
+    background: #f6f7f9;
+    border-color: #d8dde3;
+  }
+
+  .dash-row:hover { background: #fafbfc; }
+
+  .dash-panel {
+    box-shadow: var(--dash-shadow);
+    transition: box-shadow 180ms ease;
+  }
+  .dash-panel:hover { box-shadow: var(--dash-shadow-hover); }
 </style>
 {% endblock %}
 
 {% block content %}
-<main class="min-h-[70vh] bg-[#f4f5f6] text-[#161a1f]">
+<main class="min-h-[70vh] bg-[var(--dash-bg)] text-[var(--dash-ink)]">
 
   <!-- ================== HERO ================== -->
-  <section class="relative overflow-hidden admin-hero-bg text-white py-[clamp(48px,7vw,80px)]">
-    <div class="w-[min(1280px,calc(100%-40px))] mx-auto relative z-10 flex flex-wrap items-end justify-between gap-8">
-      <div class="min-w-0">
-        <span class="inline-flex items-center gap-2 mb-3.5 text-[#ff7479] text-[0.7rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-6 before:h-[2px] before:bg-current">
-          Operations centre
-        </span>
-        <h1 class="m-0 text-[clamp(2rem,4.5vw,3.4rem)] tracking-[-0.055em] leading-[1] max-w-[820px]">
-          FABS control dashboard.
-        </h1>
-        <p class="mt-4 max-w-[680px] text-[#bdc5cc] text-[0.95rem] leading-[1.7]">
-          Gaming inquiries, retail orders, payments, DHL shipments, commodity RFQs and
-          catalogue operations — all from one place.
-        </p>
-      </div>
+  <section class="dash-hero text-white pt-[clamp(40px,6vw,72px)] pb-[clamp(56px,8vw,96px)]">
+    <div class="w-[min(1280px,calc(100%-40px))] mx-auto relative z-10">
+      <div class="flex flex-wrap items-end justify-between gap-8">
+        <div class="min-w-0 max-w-[720px]">
+          <div class="inline-flex items-center gap-2 mb-4 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[0.62rem] font-black tracking-[0.14em] uppercase text-[#ff8a85]">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#ff3b30] shadow-[0_0_0_3px_rgba(255,59,48,0.25)]"></span>
+            Operations centre · Live
+          </div>
+          <h1 class="m-0 text-[clamp(1.9rem,4vw,3rem)] font-black tracking-[-0.045em] leading-[1.02]">
+            FABS control dashboard
+          </h1>
+          <p class="mt-4 max-w-[640px] text-[#aab2bc] text-[0.94rem] leading-[1.7]">
+            Gaming inquiries, retail orders, payments, DHL shipments, commodity RFQs
+            and catalogue operations — unified in one command centre.
+          </p>
+          <div class="mt-5 flex items-center gap-4 text-[0.7rem] text-[#7b8591] font-medium">
+            <span class="inline-flex items-center gap-1.5">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Updated just now
+            </span>
+            <span class="w-1 h-1 rounded-full bg-[#3a434e]"></span>
+            <span>All systems operational</span>
+          </div>
+        </div>
 
-      <div class="flex flex-wrap gap-2.5">
-        <a href="{{ url_for('admin_inquiries') }}"
-           class="inline-flex items-center justify-center min-h-[44px] px-4 bg-white text-[#11161b] text-[0.72rem] font-black tracking-[0.05em] uppercase border border-white no-underline hover:bg-[#f4f5f6]">
-          Gaming inquiries
-        </a>
-        <a href="{{ url_for('admin_orders') }}"
-           class="inline-flex items-center justify-center min-h-[44px] px-4 bg-white text-[#11161b] text-[0.72rem] font-black tracking-[0.05em] uppercase border border-white no-underline hover:bg-[#f4f5f6]">
-          Orders
-        </a>
-        <a href="{{ url_for('admin_game_new') }}"
-           class="admin-btn-primary inline-flex items-center justify-center min-h-[44px] px-4 bg-[#ff0000] text-white text-[0.72rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] no-underline">
-          Add game
-        </a>
+        <div class="flex flex-wrap gap-2.5">
+          <a href="{{ url_for('admin_inquiries') }}"
+             class="dash-btn dash-btn-ghost inline-flex items-center gap-2 min-h-[42px] px-4 text-[0.7rem] font-black tracking-[0.06em] uppercase border rounded-md no-underline">
+            Inquiries
+          </a>
+          <a href="{{ url_for('admin_orders') }}"
+             class="dash-btn dash-btn-ghost inline-flex items-center gap-2 min-h-[42px] px-4 text-[0.7rem] font-black tracking-[0.06em] uppercase border rounded-md no-underline">
+            Orders
+          </a>
+          <a href="{{ url_for('admin_game_new') }}"
+             class="dash-btn dash-btn-primary inline-flex items-center gap-2 min-h-[42px] px-4 text-[0.7rem] font-black tracking-[0.06em] uppercase border rounded-md no-underline">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add game
+          </a>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ================== BODY ================== -->
-  <section class="py-[clamp(38px,6vw,72px)] pb-[88px]">
+  <section class="pb-[96px] -mt-[clamp(36px,5vw,56px)] relative z-20">
     <div class="w-[min(1280px,calc(100%-40px))] mx-auto">
 
-      <!-- STATS -->
+      <!-- ============ STATS ============ -->
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 mb-8">
-        {% for label, value in [
-          ('Total orders', stats.orders),
-          ('Paid orders', stats.paid),
-          ('Awaiting shipment', stats.pending_shipment if stats.pending_shipment is defined else 0),
-          ('Shipped this week', stats.shipped_week if stats.shipped_week is defined else 0),
-          ('Game inquiries', stats.inquiries),
-          ('Trade RFQs', stats.quotes)
-        ] %}
-        <div class="p-5 bg-white border border-[#e0e3e6] shadow-[0_10px_30px_rgba(17,24,39,0.04)]">
-          <span class="block mb-2 text-[0.68rem] font-black tracking-[0.07em] uppercase text-[#68717a]">
-            {{ label }}
-          </span>
-          <strong class="block text-[2rem] leading-none tracking-[-0.035em]">{{ value }}</strong>
+
+        {# Total orders — brand red #}
+        <div class="dash-stat group relative overflow-hidden p-4 bg-white border border-[var(--dash-border)] rounded-lg shadow-[var(--dash-shadow)]">
+          <div class="absolute top-0 right-0 w-20 h-20 -mr-6 -mt-6 rounded-full bg-[var(--dash-accent-soft)]"></div>
+          <div class="relative flex items-start justify-between mb-3">
+            <span class="text-[0.62rem] font-black tracking-[0.09em] uppercase text-[var(--dash-muted)]">Total orders</span>
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[var(--dash-accent-soft)] text-[var(--dash-accent)]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            </span>
+          </div>
+          <strong class="relative block text-[2rem] leading-none font-black tracking-[-0.04em] text-[var(--dash-ink)]">
+            {{ stats.orders }}
+          </strong>
+          <span class="relative block mt-2 text-[0.66rem] font-semibold text-[var(--dash-muted)]">All time</span>
         </div>
-        {% endfor %}
+
+        {# Paid orders — green #}
+        <div class="dash-stat group relative overflow-hidden p-4 bg-white border border-[var(--dash-border)] rounded-lg shadow-[var(--dash-shadow)]">
+          <div class="absolute top-0 right-0 w-20 h-20 -mr-6 -mt-6 rounded-full bg-[rgba(16,185,129,0.08)]"></div>
+          <div class="relative flex items-start justify-between mb-3">
+            <span class="text-[0.62rem] font-black tracking-[0.09em] uppercase text-[var(--dash-muted)]">Paid</span>
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[rgba(16,185,129,0.10)] text-[#059669]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+          </div>
+          <strong class="relative block text-[2rem] leading-none font-black tracking-[-0.04em] text-[var(--dash-ink)]">
+            {{ stats.paid }}
+          </strong>
+          <span class="relative block mt-2 text-[0.66rem] font-semibold text-[#059669]">
+            {% if stats.orders and stats.orders > 0 %}
+              {{ ((stats.paid / stats.orders) * 100) | round(0, 'floor') | int }}% conversion
+            {% else %}
+              No orders yet
+            {% endif %}
+          </span>
+        </div>
+
+        {# Awaiting shipment — amber #}
+        <div class="dash-stat group relative overflow-hidden p-4 bg-white border border-[var(--dash-border)] rounded-lg shadow-[var(--dash-shadow)]">
+          <div class="absolute top-0 right-0 w-20 h-20 -mr-6 -mt-6 rounded-full bg-[rgba(245,158,11,0.08)]"></div>
+          <div class="relative flex items-start justify-between mb-3">
+            <span class="text-[0.62rem] font-black tracking-[0.09em] uppercase text-[var(--dash-muted)]">Awaiting shipment</span>
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[rgba(245,158,11,0.10)] text-[#d97706]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </span>
+          </div>
+          <strong class="relative block text-[2rem] leading-none font-black tracking-[-0.04em] text-[var(--dash-ink)]">
+            {{ stats.pending_shipment if stats.pending_shipment is defined else 0 }}
+          </strong>
+          <span class="relative block mt-2 text-[0.66rem] font-semibold text-[var(--dash-muted)]">Needs action</span>
+        </div>
+
+        {# Shipped this week — blue #}
+        <div class="dash-stat group relative overflow-hidden p-4 bg-white border border-[var(--dash-border)] rounded-lg shadow-[var(--dash-shadow)]">
+          <div class="absolute top-0 right-0 w-20 h-20 -mr-6 -mt-6 rounded-full bg-[rgba(59,130,246,0.08)]"></div>
+          <div class="relative flex items-start justify-between mb-3">
+            <span class="text-[0.62rem] font-black tracking-[0.09em] uppercase text-[var(--dash-muted)]">Shipped</span>
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[rgba(59,130,246,0.10)] text-[#2563eb]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h13v13H1z"/><path d="M14 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+            </span>
+          </div>
+          <strong class="relative block text-[2rem] leading-none font-black tracking-[-0.04em] text-[var(--dash-ink)]">
+            {{ stats.shipped_week if stats.shipped_week is defined else 0 }}
+          </strong>
+          <span class="relative block mt-2 text-[0.66rem] font-semibold text-[var(--dash-muted)]">Last 7 days</span>
+        </div>
+
+        {# Game inquiries — violet #}
+        <div class="dash-stat group relative overflow-hidden p-4 bg-white border border-[var(--dash-border)] rounded-lg shadow-[var(--dash-shadow)]">
+          <div class="absolute top-0 right-0 w-20 h-20 -mr-6 -mt-6 rounded-full bg-[rgba(139,92,246,0.08)]"></div>
+          <div class="relative flex items-start justify-between mb-3">
+            <span class="text-[0.62rem] font-black tracking-[0.09em] uppercase text-[var(--dash-muted)]">Inquiries</span>
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[rgba(139,92,246,0.10)] text-[#7c3aed]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </span>
+          </div>
+          <strong class="relative block text-[2rem] leading-none font-black tracking-[-0.04em] text-[var(--dash-ink)]">
+            {{ stats.inquiries }}
+          </strong>
+          <span class="relative block mt-2 text-[0.66rem] font-semibold text-[var(--dash-muted)]">Gaming pipeline</span>
+        </div>
+
+        {# Trade RFQs — slate #}
+        <div class="dash-stat group relative overflow-hidden p-4 bg-white border border-[var(--dash-border)] rounded-lg shadow-[var(--dash-shadow)]">
+          <div class="absolute top-0 right-0 w-20 h-20 -mr-6 -mt-6 rounded-full bg-[rgba(100,116,139,0.08)]"></div>
+          <div class="relative flex items-start justify-between mb-3">
+            <span class="text-[0.62rem] font-black tracking-[0.09em] uppercase text-[var(--dash-muted)]">Trade RFQs</span>
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[rgba(100,116,139,0.10)] text-[#475569]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            </span>
+          </div>
+          <strong class="relative block text-[2rem] leading-none font-black tracking-[-0.04em] text-[var(--dash-ink)]">
+            {{ stats.quotes }}
+          </strong>
+          <span class="relative block mt-2 text-[0.66rem] font-semibold text-[var(--dash-muted)]">Commodity desk</span>
+        </div>
       </div>
 
-      <!-- TWO-COLUMN PANELS -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- ============ TWO-COLUMN PANELS ============ -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-        <!-- ============ RECENT ORDERS ============ -->
-        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
-          <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
-            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Recent orders</h2>
+        <!-- ===== RECENT ORDERS ===== -->
+        <section class="dash-panel bg-white border border-[var(--dash-border)] rounded-lg overflow-hidden">
+          <header class="flex items-center justify-between px-5 py-4 border-b border-[var(--dash-border)]">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[var(--dash-accent-soft)] text-[var(--dash-accent)] shrink-0">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+              </span>
+              <div class="min-w-0">
+                <h2 class="m-0 text-[0.98rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)]">Recent orders</h2>
+                <p class="m-0 text-[0.68rem] text-[var(--dash-muted)]">Latest purchases</p>
+              </div>
+            </div>
             <a href="{{ url_for('admin_orders') }}"
-               class="text-[0.7rem] font-black tracking-[0.05em] uppercase text-[#ff0000] no-underline hover:underline">
+               class="inline-flex items-center gap-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[var(--dash-accent)] no-underline hover:underline shrink-0">
               View all
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </a>
-          </div>
+          </header>
 
-          {% for order in orders %}
-          <div class="flex items-center justify-between gap-4 px-5 py-3.5 border-b border-[#e0e3e6] last:border-b-0 hover:bg-[#fafbfc]">
-            <div class="min-w-0">
-              <strong class="block text-[0.85rem]">
-                <a href="{{ url_for('order_detail', reference=order.reference) }}"
-                   class="text-[#161a1f] no-underline border-b border-transparent hover:border-[#ff0000] hover:text-[#ff0000]">
-                  {{ order.reference }}
-                </a>
-              </strong>
-              <small class="block mt-0.5 text-[0.72rem] text-[#68717a] truncate">{{ order.email }}</small>
+          <div class="divide-y divide-[var(--dash-border)]">
+            {% for order in orders %}
+            <div class="dash-row flex items-center justify-between gap-4 px-5 py-3.5">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-[#f2f4f7] text-[#4a5560] text-[0.68rem] font-black shrink-0">
+                  {{ (order.email or '??')[0:2] | upper }}
+                </span>
+                <div class="min-w-0">
+                  <a href="{{ url_for('order_detail', reference=order.reference) }}"
+                     class="block text-[0.84rem] font-bold text-[var(--dash-ink)] no-underline hover:text-[var(--dash-accent)] truncate">
+                    {{ order.reference }}
+                  </a>
+                  <small class="block mt-0.5 text-[0.7rem] text-[var(--dash-muted)] truncate">{{ order.email }}</small>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 whitespace-nowrap shrink-0">
+                {{ status(order.payment_status) }}
+                <b class="text-[0.85rem] font-black tracking-[-0.01em] text-[var(--dash-ink)]">${{ '%.2f'|format(order.total) }}</b>
+              </div>
             </div>
-            <div class="flex items-center gap-3 whitespace-nowrap">
-              {{ status(order.payment_status) }}
-              <b class="text-[0.85rem]">${{ '%.2f'|format(order.total) }}</b>
+            {% else %}
+            <div class="p-10 text-center">
+              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#f2f4f7] text-[#98a1ab] mb-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+              </div>
+              <p class="m-0 text-[0.82rem] font-semibold text-[var(--dash-ink)]">No orders yet</p>
+              <p class="mt-1 m-0 text-[0.72rem] text-[var(--dash-muted)]">Orders will appear here as customers check out.</p>
             </div>
+            {% endfor %}
           </div>
-          {% else %}
-          <div class="p-6 text-center text-[#68717a] text-sm">No orders yet.</div>
-          {% endfor %}
         </section>
 
-        <!-- ============ DHL SHIPMENTS ============ -->
-        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
-          <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
-            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Recent DHL shipments</h2>
+        <!-- ===== DHL SHIPMENTS ===== -->
+        <section class="dash-panel bg-white border border-[var(--dash-border)] rounded-lg overflow-hidden">
+          <header class="flex items-center justify-between px-5 py-4 border-b border-[var(--dash-border)]">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[rgba(59,130,246,0.10)] text-[#2563eb] shrink-0">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h13v13H1z"/><path d="M14 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+              </span>
+              <div class="min-w-0">
+                <h2 class="m-0 text-[0.98rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)]">Recent DHL shipments</h2>
+                <p class="m-0 text-[0.68rem] text-[var(--dash-muted)]">Live tracking &amp; labels</p>
+              </div>
+            </div>
             <a href="{{ url_for('admin_orders') }}"
-               class="text-[0.7rem] font-black tracking-[0.05em] uppercase text-[#ff0000] no-underline hover:underline">
-              Manage orders
+               class="inline-flex items-center gap-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[var(--dash-accent)] no-underline hover:underline shrink-0">
+              Manage
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </a>
-          </div>
+          </header>
 
-          {% for order in shipments if shipments is defined %}
-          <div class="flex items-center justify-between gap-4 px-5 py-3.5 border-b border-[#e0e3e6] last:border-b-0 hover:bg-[#fafbfc]">
-            <div class="min-w-0">
-              <strong class="block text-[0.85rem]">
+          <div class="divide-y divide-[var(--dash-border)]">
+            {% for order in shipments if shipments is defined %}
+            <div class="dash-row flex items-center justify-between gap-4 px-5 py-3.5">
+              <div class="min-w-0">
                 <a href="{{ url_for('order_detail', reference=order.reference) }}"
-                   class="text-[#161a1f] no-underline border-b border-transparent hover:border-[#ff0000] hover:text-[#ff0000]">
+                   class="block text-[0.84rem] font-bold text-[var(--dash-ink)] no-underline hover:text-[var(--dash-accent)] truncate">
                   {{ order.reference }}
                 </a>
-              </strong>
-              <small class="block mt-0.5 text-[0.72rem] text-[#68717a] truncate">
-                {% if order.dhl_tracking_number %}
-                  Tracking: <span class="font-mono">{{ order.dhl_tracking_number }}</span>
-                {% else %}
-                  Awaiting shipment
+                <small class="block mt-0.5 text-[0.7rem] text-[var(--dash-muted)] truncate">
+                  {% if order.dhl_tracking_number %}
+                    <span class="font-mono text-[0.68rem]">{{ order.dhl_tracking_number }}</span>
+                  {% else %}
+                    Awaiting shipment
+                  {% endif %}
+                </small>
+              </div>
+              <div class="flex items-center gap-2.5 whitespace-nowrap shrink-0">
+                {{ status(order.shipping_status or 'pending') }}
+                {% if order.dhl_label_url %}
+                <a href="{{ order.dhl_label_url }}" target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-1 min-h-[28px] px-2.5 bg-white text-[var(--dash-accent)] text-[0.6rem] font-black tracking-[0.06em] uppercase border border-[var(--dash-accent)] rounded no-underline hover:bg-[#fff5f5]">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Label
+                </a>
                 {% endif %}
-              </small>
+              </div>
             </div>
-            <div class="flex items-center gap-3 whitespace-nowrap">
-              {{ status(order.shipping_status or 'pending') }}
-              {% if order.dhl_label_url %}
-              <a href="{{ order.dhl_label_url }}" target="_blank" rel="noopener"
-                 class="inline-flex items-center gap-1 min-h-[30px] px-2.5 bg-white text-[#ff0000] text-[0.62rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] no-underline hover:bg-[#fff7f7]">
-                Label
-              </a>
-              {% endif %}
+            {% else %}
+            <div class="p-10 text-center">
+              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#f2f4f7] text-[#98a1ab] mb-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h13v13H1z"/><path d="M14 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+              </div>
+              <p class="m-0 text-[0.82rem] font-semibold text-[var(--dash-ink)]">No shipments created</p>
+              <p class="mt-1 m-0 text-[0.72rem] text-[var(--dash-muted)]">
+                Create one from the <a href="{{ url_for('admin_orders') }}" class="text-[var(--dash-accent)] hover:underline">orders page</a>.
+              </p>
             </div>
+            {% endfor %}
           </div>
-          {% else %}
-          <div class="p-6 text-center text-[#68717a] text-sm">
-            No shipments created yet. Create one from the
-            <a href="{{ url_for('admin_orders') }}" class="text-[#ff0000] hover:underline">orders page</a>.
-          </div>
-          {% endfor %}
         </section>
 
-        <!-- ============ RECENT RFQs ============ -->
-        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
-          <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
-            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Recent RFQs</h2>
+        <!-- ===== RECENT RFQs ===== -->
+        <section class="dash-panel bg-white border border-[var(--dash-border)] rounded-lg overflow-hidden">
+          <header class="flex items-center justify-between px-5 py-4 border-b border-[var(--dash-border)]">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[rgba(100,116,139,0.10)] text-[#475569] shrink-0">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+              </span>
+              <div class="min-w-0">
+                <h2 class="m-0 text-[0.98rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)]">Recent RFQs</h2>
+                <p class="m-0 text-[0.68rem] text-[var(--dash-muted)]">Commodity quote requests</p>
+              </div>
+            </div>
             <a href="{{ url_for('admin_quotes') }}"
-               class="text-[0.7rem] font-black tracking-[0.05em] uppercase text-[#ff0000] no-underline hover:underline">
+               class="inline-flex items-center gap-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[var(--dash-accent)] no-underline hover:underline shrink-0">
               View all
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </a>
-          </div>
+          </header>
 
-          {% for quote in quotes %}
-          <div class="flex items-center justify-between gap-4 px-5 py-3.5 border-b border-[#e0e3e6] last:border-b-0 hover:bg-[#fafbfc]">
-            <div class="min-w-0">
-              <strong class="block text-[0.85rem]">{{ quote.reference }}</strong>
-              <small class="block mt-0.5 text-[0.72rem] text-[#68717a] truncate">
-                {{ quote.company_name }} · {{ quote.commodity.name }}
-              </small>
+          <div class="divide-y divide-[var(--dash-border)]">
+            {% for quote in quotes %}
+            <div class="dash-row flex items-center justify-between gap-4 px-5 py-3.5">
+              <div class="min-w-0">
+                <strong class="block text-[0.84rem] font-bold text-[var(--dash-ink)] truncate">{{ quote.reference }}</strong>
+                <small class="block mt-0.5 text-[0.7rem] text-[var(--dash-muted)] truncate">
+                  {{ quote.company_name }} · {{ quote.commodity.name }}
+                </small>
+              </div>
+              {{ status(quote.status) }}
             </div>
-            {{ status(quote.status) }}
+            {% else %}
+            <div class="p-10 text-center">
+              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#f2f4f7] text-[#98a1ab] mb-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <p class="m-0 text-[0.82rem] font-semibold text-[var(--dash-ink)]">No RFQs yet</p>
+              <p class="mt-1 m-0 text-[0.72rem] text-[var(--dash-muted)]">Commodity quote requests will show up here.</p>
+            </div>
+            {% endfor %}
           </div>
-          {% else %}
-          <div class="p-6 text-center text-[#68717a] text-sm">No RFQs yet.</div>
-          {% endfor %}
         </section>
 
-        <!-- ============ RECENT INQUIRIES ============ -->
-        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
-          <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
-            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Recent gaming inquiries</h2>
-            <a href="{{ url_for('admin_inquiries') }}"
-               class="text-[0.7rem] font-black tracking-[0.05em] uppercase text-[#ff0000] no-underline hover:underline">
-              View all
-            </a>
-          </div>
-
-          {% for inquiry in inquiries if inquiries is defined %}
-          <div class="flex items-center justify-between gap-4 px-5 py-3.5 border-b border-[#e0e3e6] last:border-b-0 hover:bg-[#fafbfc]">
-            <div class="min-w-0">
-              <strong class="block text-[0.85rem]">{{ inquiry.reference }}</strong>
-              <small class="block mt-0.5 text-[0.72rem] text-[#68717a] truncate">
-                {{ inquiry.company }} · {{ inquiry.game.title if inquiry.game else 'Gaming product' }}
-              </small>
+        <!-- ===== RECENT INQUIRIES ===== -->
+        <section class="dash-panel bg-white border border-[var(--dash-border)] rounded-lg overflow-hidden">
+          <header class="flex items-center justify-between px-5 py-4 border-b border-[var(--dash-border)]">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[rgba(139,92,246,0.10)] text-[#7c3aed] shrink-0">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </span>
+              <div class="min-w-0">
+                <h2 class="m-0 text-[0.98rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)]">Recent gaming inquiries</h2>
+                <p class="m-0 text-[0.68rem] text-[var(--dash-muted)]">Gaming sales pipeline</p>
+              </div>
             </div>
-            {{ status(inquiry.status) }}
+            <a href="{{ url_for('admin_inquiries') }}"
+               class="inline-flex items-center gap-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[var(--dash-accent)] no-underline hover:underline shrink-0">
+              View all
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </header>
+
+          <div class="divide-y divide-[var(--dash-border)]">
+            {% for inquiry in inquiries if inquiries is defined %}
+            <div class="dash-row flex items-center justify-between gap-4 px-5 py-3.5">
+              <div class="min-w-0">
+                <strong class="block text-[0.84rem] font-bold text-[var(--dash-ink)] truncate">{{ inquiry.reference }}</strong>
+                <small class="block mt-0.5 text-[0.7rem] text-[var(--dash-muted)] truncate">
+                  {{ inquiry.company }} · {{ inquiry.game.title if inquiry.game else 'Gaming product' }}
+                </small>
+              </div>
+              {{ status(inquiry.status) }}
+            </div>
+            {% else %}
+            <div class="p-10 text-center">
+              <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#f2f4f7] text-[#98a1ab] mb-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <p class="m-0 text-[0.82rem] font-semibold text-[var(--dash-ink)]">No inquiries yet</p>
+              <p class="mt-1 m-0 text-[0.72rem] text-[var(--dash-muted)]">New gaming inquiries will appear here.</p>
+            </div>
+            {% endfor %}
           </div>
-          {% else %}
-          <div class="p-6 text-center text-[#68717a] text-sm">No inquiries yet.</div>
-          {% endfor %}
         </section>
       </div>
 
       <!-- ============ QUICK ACTIONS ============ -->
-      <div class="mt-8 p-6 bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
-        <span class="inline-flex items-center gap-2 mb-4 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">
-          Quick actions
-        </span>
+      <div class="mt-6 p-6 bg-white border border-[var(--dash-border)] rounded-lg shadow-[var(--dash-shadow)]">
+        <div class="flex items-center gap-3 mb-5">
+          <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[var(--dash-accent-soft)] text-[var(--dash-accent)]">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </span>
+          <div>
+            <h3 class="m-0 text-[0.98rem] font-bold tracking-[-0.01em] text-[var(--dash-ink)]">Quick actions</h3>
+            <p class="m-0 text-[0.68rem] text-[var(--dash-muted)]">Jump straight to a common task</p>
+          </div>
+        </div>
         <div class="flex flex-wrap gap-2.5">
           <a href="{{ url_for('admin_orders') }}"
-             class="admin-btn-primary inline-flex items-center gap-2 min-h-[44px] px-4 bg-[#ff0000] text-white text-[0.7rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] no-underline">
+             class="dash-btn dash-btn-primary inline-flex items-center gap-2 min-h-[42px] px-4 text-[0.68rem] font-black tracking-[0.06em] uppercase border rounded-md no-underline">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h13v13H1z"/><path d="M14 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
             Create DHL shipment
           </a>
           <a href="{{ url_for('admin_orders') }}"
-             class="inline-flex items-center gap-2 min-h-[44px] px-4 bg-white text-[#161a1f] text-[0.7rem] font-black tracking-[0.05em] uppercase border border-[#161a1f] no-underline hover:bg-[#f4f5f6]">
+             class="dash-btn dash-btn-light inline-flex items-center gap-2 min-h-[42px] px-4 text-[0.68rem] font-black tracking-[0.06em] uppercase border rounded-md no-underline">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             Track a shipment
           </a>
           <a href="{{ url_for('admin_game_new') }}"
-             class="inline-flex items-center gap-2 min-h-[44px] px-4 bg-white text-[#161a1f] text-[0.7rem] font-black tracking-[0.05em] uppercase border border-[#161a1f] no-underline hover:bg-[#f4f5f6]">
+             class="dash-btn dash-btn-light inline-flex items-center gap-2 min-h-[42px] px-4 text-[0.68rem] font-black tracking-[0.06em] uppercase border rounded-md no-underline">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add new game
           </a>
           <a href="{{ url_for('admin_inquiries') }}"
-             class="inline-flex items-center gap-2 min-h-[44px] px-4 bg-white text-[#161a1f] text-[0.7rem] font-black tracking-[0.05em] uppercase border border-[#161a1f] no-underline hover:bg-[#f4f5f6]">
+             class="dash-btn dash-btn-light inline-flex items-center gap-2 min-h-[42px] px-4 text-[0.68rem] font-black tracking-[0.06em] uppercase border rounded-md no-underline">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Review inquiries
+          </a>
+          <a href="{{ url_for('admin_quotes') }}"
+             class="dash-btn dash-btn-light inline-flex items-center gap-2 min-h-[42px] px-4 text-[0.68rem] font-black tracking-[0.06em] uppercase border rounded-md no-underline">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Open RFQ desk
           </a>
         </div>
       </div>
