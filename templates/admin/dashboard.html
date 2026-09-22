@@ -98,6 +98,28 @@
     transition: box-shadow 180ms ease;
   }
   .dash-panel:hover { box-shadow: var(--dash-shadow-hover); }
+
+  /* ============================================================
+     GIFT UI (NEW)
+     ============================================================ */
+  .dash-gift-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 8px; border-radius: 999px;
+    background: linear-gradient(135deg, #fff4d1 0%, #ffe58a 100%);
+    border: 1px solid #f0c400;
+    color: #7a5410;
+    font-size: 0.55rem; font-weight: 900;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin-left: 6px; vertical-align: middle;
+  }
+  .dash-gift-pill::before { content: "🎁"; font-size: 0.68rem; }
+
+  .dash-recipient-line {
+    display: block; margin-top: 2px;
+    color: #7a5410; font-size: 0.68rem;
+    font-weight: 800; letter-spacing: 0.02em;
+  }
+  .dash-recipient-line b { color: #5a1006; }
 </style>
 {% endblock %}
 
@@ -152,6 +174,9 @@
   <!-- ================== BODY ================== -->
   <section class="pb-[96px] -mt-[clamp(36px,5vw,56px)] relative z-20">
     <div class="w-[min(1280px,calc(100%-40px))] mx-auto">
+
+      {# Compute gift orders this week from the recent orders list #}
+      {% set gift_orders_recent = orders | selectattr('is_gift_order') | list | length %}
 
       <!-- ============ STATS ============ -->
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 mb-8">
@@ -237,19 +262,25 @@
           <span class="relative block mt-2 text-[0.66rem] font-semibold text-[var(--dash-muted)]">Gaming pipeline</span>
         </div>
 
-        {# Trade RFQs — slate #}
+        {# Gift orders — gold, NEW #}
         <div class="dash-stat group relative overflow-hidden p-4 bg-white border border-[var(--dash-border)] rounded-lg shadow-[var(--dash-shadow)]">
-          <div class="absolute top-0 right-0 w-20 h-20 -mr-6 -mt-6 rounded-full bg-[rgba(100,116,139,0.08)]"></div>
+          <div class="absolute top-0 right-0 w-20 h-20 -mr-6 -mt-6 rounded-full bg-[rgba(255,204,0,0.14)]"></div>
           <div class="relative flex items-start justify-between mb-3">
-            <span class="text-[0.62rem] font-black tracking-[0.09em] uppercase text-[var(--dash-muted)]">Trade RFQs</span>
-            <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[rgba(100,116,139,0.10)] text-[#475569]">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            <span class="text-[0.62rem] font-black tracking-[0.09em] uppercase text-[var(--dash-muted)]">Gift orders</span>
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-md bg-[rgba(255,204,0,0.18)] text-[#a87b00]">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 12 20 22 4 22 4 12"/>
+                <rect x="2" y="7" width="20" height="5"/>
+                <line x1="12" y1="22" x2="12" y2="7"/>
+                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+              </svg>
             </span>
           </div>
           <strong class="relative block text-[2rem] leading-none font-black tracking-[-0.04em] text-[var(--dash-ink)]">
-            {{ stats.quotes }}
+            {{ gift_orders_recent }}
           </strong>
-          <span class="relative block mt-2 text-[0.66rem] font-semibold text-[var(--dash-muted)]">Commodity desk</span>
+          <span class="relative block mt-2 text-[0.66rem] font-semibold text-[#a87b00]">Recent · recipient shipments</span>
         </div>
       </div>
 
@@ -286,8 +317,20 @@
                   <a href="{{ url_for('order_detail', reference=order.reference) }}"
                      class="block text-[0.84rem] font-bold text-[var(--dash-ink)] no-underline hover:text-[var(--dash-accent)] truncate">
                     {{ order.reference }}
+                    {% if order.is_gift_order %}
+                      <span class="dash-gift-pill" title="Gift to {{ order.recipient_full_name or '—' }}">
+                        {{ order.recipient_full_name or 'gift' }}
+                      </span>
+                    {% endif %}
                   </a>
                   <small class="block mt-0.5 text-[0.7rem] text-[var(--dash-muted)] truncate">{{ order.email }}</small>
+
+                  {% if order.is_gift_order %}
+                    <span class="dash-recipient-line">
+                      → <b>{{ order.recipient_full_name or 'Recipient' }}</b>
+                      {% if order.recipient_relationship_label %} · {{ order.recipient_relationship_label }}{% endif %}
+                    </span>
+                  {% endif %}
                 </div>
               </div>
               <div class="flex items-center gap-3 whitespace-nowrap shrink-0">
@@ -341,6 +384,12 @@
                     Awaiting shipment
                   {% endif %}
                 </small>
+
+                {% if order.is_gift_order %}
+                  <span class="dash-recipient-line">
+                    🎁 For <b>{{ order.recipient_full_name or 'Recipient' }}</b>
+                  </span>
+                {% endif %}
               </div>
               <div class="flex items-center gap-2.5 whitespace-nowrap shrink-0">
                 {{ status(order.shipping_status or 'pending') }}

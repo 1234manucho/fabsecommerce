@@ -57,6 +57,46 @@ class CheckoutForm(FlaskForm):
     city          = StringField("City", validators=[DataRequired(), Length(max=100)])
     postal_code   = StringField("Postal code", validators=[DataRequired(), Length(max=20)])
 
+    # ---- Pay for someone else / gift (NEW) ----
+    pay_for_other = BooleanField("I'm paying for someone else / This is a gift")
+    recipient_relationship = SelectField(
+        "Relationship to you",
+        choices=[
+            ("", "— Select —"),
+            ("family",           "Family member"),
+            ("friend",           "Friend"),
+            ("partner",          "Partner / Spouse"),
+            ("colleague",        "Colleague"),
+            ("client",           "Client"),
+            ("business_partner", "Business partner"),
+            ("employee",         "Employee"),
+            ("gift",             "Gift recipient"),
+            ("other",            "Other"),
+        ],
+        validators=[Optional()],
+    )
+    recipient_full_name = StringField(
+        "Recipient full name",
+        validators=[Optional(), Length(max=140)],
+    )
+    recipient_phone = StringField(
+        "Recipient phone",
+        validators=[Optional(), Length(max=40)],
+    )
+    recipient_email = EmailField(
+        "Recipient email",
+        validators=[Optional(), Email(), Length(max=255)],
+    )
+    recipient_company = StringField(
+        "Recipient company",
+        validators=[Optional(), Length(max=180)],
+    )
+    gift_message = TextAreaField(
+        "Gift message or special instructions",
+        validators=[Optional(), Length(max=280)],
+    )
+    hide_prices_on_slip = BooleanField("Hide prices on the packing slip")
+
     # ---- Shipping (DHL) ----
     shipping_quote = HiddenField()   # JSON string posted from the frontend
 

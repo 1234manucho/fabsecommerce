@@ -37,6 +37,7 @@
     --dhl-yellow:#ffcc00;--dhl-red:#d40511;
     --emerald:#22c55e;--emerald-dark:#15803d;
     --amber:#f59e0b;--rose:#e11d48;
+    --gold:#f0c400;--gold-dark:#7a5410;
     background:#fff;color:var(--ink);overflow-x:clip;
     -webkit-font-smoothing:antialiased;
   }
@@ -52,6 +53,11 @@
       radial-gradient(900px 420px at 78% 12%,rgba(34,197,94,.24),transparent 65%),
       radial-gradient(900px 420px at 8% 100%,rgba(255,204,0,.14),transparent 62%),
       linear-gradient(180deg,#05070a,#0b0f15 55%,#080b10)}
+  .os-hero.is-gift::before{content:"";position:absolute;inset:0;z-index:-1;
+    background:
+      radial-gradient(900px 420px at 78% 12%,rgba(240,196,0,.26),transparent 65%),
+      radial-gradient(900px 420px at 8% 100%,rgba(34,197,94,.16),transparent 62%),
+      linear-gradient(180deg,#05070a,#100d05 55%,#0b0a07)}
   .os-hero-grid{position:absolute;inset:0;z-index:-1;pointer-events:none;
     background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
                      linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
@@ -82,6 +88,7 @@
   @keyframes osPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
   .os-hero h1{margin:22px auto 14px;font-size:clamp(38px,5.4vw,72px);line-height:1.02;letter-spacing:-.05em;max-width:920px}
   .os-hero h1 em{font-style:normal;background:linear-gradient(100deg,#86efac,#22c55e 70%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .os-hero.is-gift h1 em{background:linear-gradient(100deg,#ffd966,#f0c400 70%);-webkit-background-clip:text;background-clip:text;color:transparent}
   .os-hero p{margin:0 auto;max-width:640px;color:#c1c6cc;font-size:15px;line-height:1.75}
   .os-hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:30px}
   .os-hero-actions a{height:52px;padding:0 22px;display:inline-flex;align-items:center;gap:14px;
@@ -92,6 +99,8 @@
   .os-hero-actions a.primary:hover{background:var(--red-dark);border-color:var(--red-dark)}
   .os-hero-actions a.dhl{border-color:var(--dhl-yellow);color:var(--dhl-yellow)}
   .os-hero-actions a.dhl:hover{background:var(--dhl-yellow);color:#111}
+  .os-hero-actions a.gift{border-color:var(--gold);color:var(--gold)}
+  .os-hero-actions a.gift:hover{background:var(--gold);color:#111}
 
   /* ================= ORDER CARD ================= */
   .os-main{background:var(--paper);padding:0 0 96px;margin-top:-36px;position:relative;z-index:3}
@@ -152,6 +161,104 @@
   .os-ship-copy p{margin:4px 0 0;font-size:12px;color:var(--muted);line-height:1.6}
   .os-ship-copy a{display:inline-flex;align-items:center;gap:8px;margin-top:10px;color:var(--red);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid var(--red);padding-bottom:3px}
 
+  /* ============================================================
+     GIFT DELIVERY CARD (NEW)
+     ============================================================ */
+  .os-gift{
+    border-top:5px solid var(--gold);
+    background:linear-gradient(180deg,#fffdf3 0%,#ffffff 60%);
+  }
+  .os-gift-head{
+    display:flex;align-items:center;gap:14px;padding:22px 26px;
+    border-bottom:1px dashed #f0d97a;
+  }
+  .os-gift-head-icon{
+    display:grid;place-items:center;width:46px;height:46px;
+    border-radius:50%;background:var(--dhl-yellow);color:var(--dhl-red);
+    font-size:1.3rem;line-height:1;flex:none;
+    box-shadow:0 8px 20px rgba(255,204,0,.35);
+  }
+  .os-gift-head-copy small{
+    display:block;font-size:9px;font-weight:900;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--gold-dark);margin-bottom:4px;
+  }
+  .os-gift-head-copy h2{
+    margin:0;font-size:18px;letter-spacing:-.02em;font-weight:900;color:var(--ink);
+  }
+
+  .os-gift-body{padding:26px}
+
+  .os-gift-grid{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px 24px;
+  }
+  .os-gift-cell{
+    display:grid;gap:4px;padding:14px 16px;
+    background:#fffdf3;border:1px solid #f0d97a;border-radius:8px;
+  }
+  .os-gift-cell.wide{grid-column:1 / -1}
+  .os-gift-cell small{
+    font-size:9px;font-weight:900;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--gold-dark);
+  }
+  .os-gift-cell b{
+    font-size:14px;color:var(--ink);letter-spacing:-.01em;
+    line-height:1.4;word-break:break-word;
+  }
+  .os-gift-cell span{
+    font-size:11px;color:#7a5410;line-height:1.6;
+  }
+
+  .os-gift-relationship{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:3px 10px;border-radius:999px;
+    background:var(--dhl-yellow);color:#5a1006;
+    font-size:9px;font-weight:900;letter-spacing:.08em;
+    text-transform:uppercase;width:fit-content;
+  }
+
+  .os-gift-message{
+    grid-column:1 / -1;margin-top:6px;
+    padding:16px 18px;background:#fff;border:1px dashed #f0d97a;border-radius:8px;
+    position:relative;
+  }
+  .os-gift-message::before{
+    content:"“";position:absolute;left:10px;top:-6px;
+    font-size:34px;line-height:1;color:#f0d97a;
+    font-family:Georgia, serif;font-weight:900;
+  }
+  .os-gift-message small{
+    display:block;font-size:9px;font-weight:900;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--gold-dark);margin-bottom:6px;
+  }
+  .os-gift-message p{
+    margin:0;color:#4b3d00;font-size:13px;line-height:1.65;font-style:italic;
+  }
+
+  .os-gift-flags{
+    display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;
+  }
+  .os-gift-flag{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:7px 12px;border-radius:6px;
+    background:#ecfdf5;border:1px solid #86efac;
+    color:#15803d;font-size:9px;font-weight:900;
+    letter-spacing:.08em;text-transform:uppercase;
+  }
+  .os-gift-flag.warn{
+    background:#fffbeb;border-color:#fcd34d;color:#b45309;
+  }
+  .os-gift-flag i{font-size:12px;line-height:1}
+
+  /* Gift indicator in address card */
+  .os-address-gift-tag{
+    display:inline-flex;align-items:center;gap:6px;
+    margin-bottom:10px;padding:4px 10px;
+    border-radius:999px;background:var(--dhl-yellow);
+    color:#5a1006;font-size:9px;font-weight:900;
+    letter-spacing:.08em;text-transform:uppercase;
+  }
+
   /* side panel — help */
   .os-help{position:sticky;top:24px}
   .os-help-body{padding:26px}
@@ -160,6 +267,7 @@
   .os-help-list{list-style:none;margin:0 0 22px;padding:0;display:grid;gap:12px}
   .os-help-list li{display:grid;grid-template-columns:auto 1fr;gap:12px;font-size:12px;color:#4f5860;line-height:1.6}
   .os-help-list li::before{content:"→";color:var(--red);font-weight:900}
+  .os-help-list li.gift::before{content:"🎁";color:var(--gold-dark)}
   .os-help-cta{display:flex;flex-direction:column;gap:10px}
   .os-help-cta a{display:inline-flex;align-items:center;justify-content:center;gap:10px;
     height:46px;padding:0 16px;border-radius:6px;font-size:10px;font-weight:900;
@@ -177,6 +285,7 @@
     .os-help{position:static}
     .os-ref{grid-template-columns:1fr}
     .os-hero-flight{display:none}
+    .os-gift-grid{grid-template-columns:1fr}
   }
   @media(max-width:520px){
     .os-shell{width:min(100% - 24px,1100px)}
@@ -186,6 +295,10 @@
     .os-item-media{width:64px;height:64px}
     .os-item-price{grid-column:2;text-align:left;margin-top:6px}
     .os-ship{grid-template-columns:1fr}
+    .os-gift-head{padding:20px 18px;gap:12px}
+    .os-gift-head-icon{width:40px;height:40px;font-size:1.15rem}
+    .os-gift-body{padding:20px 18px}
+    .os-gift-cell{padding:12px 14px}
   }
   @media(prefers-reduced-motion:reduce){
     .os-hero-plane,.os-badge i{animation:none!important}
@@ -200,7 +313,7 @@
 <div class="os-wrap">
 
   <!-- ================= HERO ================= -->
-  <section class="os-hero">
+  <section class="os-hero {% if order.is_gift_order %}is-gift{% endif %}">
     <span class="os-hero-grid" aria-hidden="true"></span>
     <div class="os-hero-flight" aria-hidden="true">
       <span class="os-hero-route"></span>
@@ -209,9 +322,23 @@
 
     <div class="os-shell os-hero-inner">
       {% if order.payment_status == 'paid' %}
-        <span class="os-badge"><i aria-hidden="true"></i> Payment received</span>
-        <h1>Thank you — your order is <em>confirmed.</em></h1>
-        <p>We've received your payment and our team is preparing your shipment. A confirmation email is on its way to <strong style="color:#fff">{{ order.email }}</strong>.</p>
+        {% if order.is_gift_order %}
+          <span class="os-badge" style="background:rgba(240,196,0,.20);border-color:rgba(240,196,0,.65);color:#ffe58a">
+            <i style="background:#f0c400;box-shadow:0 0 14px #f0c400" aria-hidden="true"></i>
+            Gift order confirmed
+          </span>
+          <h1>Thank you — your <em>gift is on its way.</em></h1>
+          <p>
+            We've received your payment. Your gift will be shipped to
+            <strong style="color:#fff">{{ order.recipient_full_name }}</strong>
+            via DHL Express — carefully packed{% if order.hide_prices_on_slip %} with prices hidden{% endif %}.
+            A confirmation email is on its way to <strong style="color:#fff">{{ order.email }}</strong>.
+          </p>
+        {% else %}
+          <span class="os-badge"><i aria-hidden="true"></i> Payment received</span>
+          <h1>Thank you — your order is <em>confirmed.</em></h1>
+          <p>We've received your payment and our team is preparing your shipment. A confirmation email is on its way to <strong style="color:#fff">{{ order.email }}</strong>.</p>
+        {% endif %}
       {% elif order.payment_status == 'failed' %}
         <span class="os-badge" style="background:rgba(225,29,72,.18);border-color:rgba(225,29,72,.55);color:#fda4af"><i style="background:#e11d48;box-shadow:0 0 14px #e11d48" aria-hidden="true"></i> Payment not completed</span>
         <h1>We couldn't complete your <em>payment.</em></h1>
@@ -224,6 +351,9 @@
 
       <div class="os-hero-actions">
         <a class="primary" href="{{ url_for('games') }}">Continue shopping <span aria-hidden="true">→</span></a>
+        {% if order.is_gift_order %}
+          <a class="gift" href="{{ url_for('order_detail', reference=order.reference) }}">View gift details <span aria-hidden="true">→</span></a>
+        {% endif %}
         {% if order.payment_status == 'failed' %}
           <a class="dhl" href="{{ url_for('start_payment', order_id=order.id) }}">Retry payment <span aria-hidden="true">→</span></a>
         {% endif %}
@@ -238,6 +368,77 @@
 
       <!-- --------- LEFT COLUMN --------- -->
       <div>
+
+        <!-- ============================================================
+             GIFT DELIVERY CARD (NEW) — only when order is a gift
+             ============================================================ -->
+        {% if order.is_gift_order %}
+        <article class="os-card os-gift">
+          <header class="os-gift-head">
+            <span class="os-gift-head-icon" aria-hidden="true">🎁</span>
+            <div class="os-gift-head-copy">
+              <small>Gift delivery</small>
+              <h2>This order is on its way to your recipient</h2>
+            </div>
+          </header>
+
+          <div class="os-gift-body">
+            <div class="os-gift-grid">
+              <div class="os-gift-cell">
+                <small>Recipient name</small>
+                <b>{{ order.recipient_full_name or '—' }}</b>
+                {% if order.recipient_relationship_label %}
+                  <span class="os-gift-relationship">🧑 {{ order.recipient_relationship_label }}</span>
+                {% endif %}
+              </div>
+
+              {% if order.recipient_phone %}
+              <div class="os-gift-cell">
+                <small>Recipient phone</small>
+                <b>{{ order.recipient_phone }}</b>
+                <span>DHL may contact them on delivery.</span>
+              </div>
+              {% endif %}
+
+              {% if order.recipient_email %}
+              <div class="os-gift-cell">
+                <small>Recipient email</small>
+                <b>{{ order.recipient_email }}</b>
+                <span>Used only for delivery notifications.</span>
+              </div>
+              {% endif %}
+
+              {% if order.recipient_company %}
+              <div class="os-gift-cell">
+                <small>Recipient company</small>
+                <b>{{ order.recipient_company }}</b>
+              </div>
+              {% endif %}
+
+              {% if order.gift_message %}
+              <div class="os-gift-message">
+                <small>Gift message</small>
+                <p>{{ order.gift_message }}</p>
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="os-gift-flags">
+              <span class="os-gift-flag">
+                <i>✓</i> Delivered via DHL Express
+              </span>
+              {% if order.hide_prices_on_slip %}
+                <span class="os-gift-flag"><i>🔒</i> Prices hidden on packing slip</span>
+              {% else %}
+                <span class="os-gift-flag warn"><i>ℹ</i> Prices shown on packing slip</span>
+              {% endif %}
+              {% if order.recipient_email %}
+                <span class="os-gift-flag"><i>✉</i> Recipient notified by email</span>
+              {% endif %}
+            </div>
+          </div>
+        </article>
+        {% endif %}
 
         <!-- Order summary -->
         <article class="os-card">
@@ -307,10 +508,13 @@
         <!-- Delivery address -->
         <article class="os-card">
           <header class="os-card-head">
-            <small>Delivery address</small>
+            <small>{% if order.is_gift_order %}Gift delivery address{% else %}Delivery address{% endif %}</small>
           </header>
           <div class="os-card-body">
             <div class="os-address">
+              {% if order.is_gift_order %}
+                <span class="os-address-gift-tag">🎁 Shipped to recipient</span>
+              {% endif %}
               <strong>{{ order.full_name }}{% if order.company %} · {{ order.company }}{% endif %}</strong>
               {% if order.address_line1 %}<span>{{ order.address_line1 }}</span>{% endif %}
               {% if order.address_line2 %}<span>{{ order.address_line2 }}</span>{% endif %}
@@ -361,9 +565,12 @@
             <p>Here's the typical journey of your order from now on:</p>
             <ul class="os-help-list">
               <li><strong>Payment confirmed</strong> — we've received your card authorisation.</li>
-              <li><strong>Order prepared</strong> — our team picks and packs your items in Nairobi.</li>
+              <li><strong>Order prepared</strong> — our team picks and packs your items in Nairobi{% if order.is_gift_order %}, ready for gifting{% endif %}.</li>
+              {% if order.is_gift_order %}
+                <li class="gift"><strong>Gift packing</strong> — recipient details checked, prices {% if order.hide_prices_on_slip %}hidden from{% else %}visible on{% endif %} the packing slip.</li>
+              {% endif %}
               <li><strong>DHL pickup</strong> — the shipment is handed to DHL Express with a real tracking number.</li>
-              <li><strong>Delivery</strong> — track your order all the way to your door from the tracking page.</li>
+              <li><strong>Delivery</strong> — track your order all the way to {% if order.is_gift_order %}your recipient's{% else %}your{% endif %} door from the tracking page.</li>
             </ul>
 
             <div class="os-help-cta">
@@ -375,8 +582,13 @@
         </article>
 
         <div class="os-final">
-          <strong>Need help with this order?</strong>
-          <p>Quote reference <b>{{ order.reference }}</b> in any email or WhatsApp message and our team will find it instantly.</p>
+          {% if order.is_gift_order %}
+            <strong>Need to update the gift?</strong>
+            <p>Quote reference <b>{{ order.reference }}</b> in any email or WhatsApp message and our team will find it instantly. Let us know if the recipient details or message need to change.</p>
+          {% else %}
+            <strong>Need help with this order?</strong>
+            <p>Quote reference <b>{{ order.reference }}</b> in any email or WhatsApp message and our team will find it instantly.</p>
+          {% endif %}
         </div>
       </aside>
 

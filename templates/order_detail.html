@@ -7,6 +7,8 @@
 <style>
   .order-hero-bg { background: radial-gradient(circle at 88% 20%, rgba(255, 0, 0, 0.14), transparent 28%),
     linear-gradient(135deg, #11161b 0%, #1d242b 100%); }
+  .order-hero-bg.is-gift { background: radial-gradient(circle at 88% 20%, rgba(240, 196, 0, 0.20), transparent 30%),
+    linear-gradient(135deg, #1a1408 0%, #262015 100%); }
   .order-hero-bg::after { content: ""; position: absolute; right: -80px; bottom: -140px;
     width: 340px; height: 340px; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 50%; }
   .order-btn-primary { transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease; }
@@ -21,6 +23,130 @@
   .order-step.is-done::before { background: #21842a; }
   .order-step.is-done .order-step-dot { background: #21842a; border-color: #21842a; color: #fff; }
   .order-step.is-active .order-step-dot { background: #ff0000; border-color: #ff0000; color: #fff; }
+
+  /* ============================================================
+     GIFT BLOCK (NEW)
+     ============================================================ */
+  .gift-badge-hero {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 999px;
+    background: linear-gradient(135deg, #fff4d1 0%, #ffe58a 100%);
+    border: 1px solid #f0c400; color: #5a1006;
+    font-size: 0.7rem; font-weight: 900;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .gift-badge-hero::before { content: "🎁"; font-size: 0.85rem; line-height: 1; }
+
+  .gift-card {
+    border-top: 5px solid #f0c400;
+    background: linear-gradient(180deg, #fffdf3 0%, #ffffff 55%);
+  }
+  .gift-card-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 20px 22px; border-bottom: 1px dashed #f0d97a;
+  }
+  .gift-card-icon {
+    display: grid; place-items: center; width: 42px; height: 42px;
+    border-radius: 50%; background: #ffcc00; color: #d40511;
+    font-size: 1.15rem; line-height: 1; flex: none;
+    box-shadow: 0 6px 16px rgba(255, 204, 0, 0.35);
+  }
+  .gift-card-title { display: grid; gap: 3px; }
+  .gift-card-title small {
+    font-size: 0.62rem; font-weight: 900; letter-spacing: 0.14em;
+    text-transform: uppercase; color: #7a5410;
+  }
+  .gift-card-title h2 {
+    margin: 0; font-size: 1.1rem; letter-spacing: -0.02em;
+    color: #161a1f; font-weight: 800;
+  }
+  .gift-card-body { padding: 22px; }
+  .gift-card-grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .gift-cell {
+    display: grid; gap: 4px;
+    padding: 12px 14px; background: #fffdf3;
+    border: 1px solid #f0d97a; border-radius: 6px;
+  }
+  .gift-cell.wide { grid-column: 1 / -1; }
+  .gift-cell small {
+    font-size: 0.62rem; font-weight: 900; letter-spacing: 0.13em;
+    text-transform: uppercase; color: #7a5410;
+  }
+  .gift-cell b {
+    font-size: 0.88rem; color: #161a1f; letter-spacing: -0.01em;
+    line-height: 1.4; word-break: break-word;
+  }
+  .gift-cell span { font-size: 0.72rem; color: #7a5410; line-height: 1.55; }
+
+  .gift-rel-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 999px;
+    background: #ffcc00; color: #5a1006;
+    font-size: 0.6rem; font-weight: 900;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    width: fit-content;
+  }
+
+  .gift-message-block {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1px dashed #f0d97a;
+    border-radius: 6px;
+    position: relative;
+  }
+  .gift-message-block::before {
+    content: "“";
+    position: absolute; left: 10px; top: -6px;
+    font-size: 30px; line-height: 1; color: #f0d97a;
+    font-family: Georgia, serif; font-weight: 900;
+  }
+  .gift-message-block small {
+    display: block; margin-bottom: 5px;
+    font-size: 0.6rem; font-weight: 900;
+    letter-spacing: 0.13em; text-transform: uppercase;
+    color: #7a5410;
+  }
+  .gift-message-block p {
+    margin: 0; font-style: italic;
+    color: #4b3d00; font-size: 0.82rem; line-height: 1.6;
+  }
+
+  .gift-flags {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 16px; padding-top: 14px;
+    border-top: 1px dashed #f0d97a;
+  }
+  .gift-flag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 11px; border-radius: 6px;
+    background: #ecfdf5; border: 1px solid #86efac;
+    color: #15803d; font-size: 0.6rem; font-weight: 900;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .gift-flag.warn {
+    background: #fffbeb; border-color: #fcd34d; color: #b45309;
+  }
+
+  /* Recipient vs Buyer in address card */
+  .addr-two-col {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .addr-col-title {
+    display: block; margin-bottom: 6px;
+    font-size: 0.64rem; font-weight: 900; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #7a5410;
+  }
+  .addr-col-title.buyer { color: #68717a; }
+  @media (max-width: 640px) {
+    .gift-card-grid,
+    .addr-two-col { grid-template-columns: 1fr; }
+  }
 
   /* ePOD modal */
   .pod-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(7, 16, 29, 0.72);
@@ -78,7 +204,7 @@
 <main class="min-h-[70vh] bg-[#f4f5f6] text-[#161a1f]">
 
   <!-- ================== HERO ================== -->
-  <section class="relative overflow-hidden order-hero-bg text-white py-[clamp(48px,7vw,88px)]">
+  <section class="relative overflow-hidden order-hero-bg {% if order.is_gift_order %}is-gift{% endif %} text-white py-[clamp(48px,7vw,88px)]">
     <div class="w-[min(1100px,calc(100%-40px))] mx-auto relative z-10">
       <a href="{{ url_for('account') }}" class="inline-flex items-center gap-1.5 mb-5 text-[#bdc5cc] text-[0.7rem] font-black tracking-[0.05em] uppercase no-underline hover:text-white">&larr; Back to account</a>
       <span class="inline-flex items-center gap-2 mb-4 text-[#ff7479] text-[0.72rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-6 before:h-[2px] before:bg-current">
@@ -89,6 +215,9 @@
       </h1>
 
       <div class="flex flex-wrap items-center gap-3 mt-5">
+        {% if order.is_gift_order %}
+          <span class="gift-badge-hero">Gift to {{ order.recipient_full_name or 'recipient' }}</span>
+        {% endif %}
         <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 border border-white/20 text-[0.72rem] font-black tracking-[0.04em] uppercase">
           Payment: {{ order.payment_status|replace('_',' ')|title }}
         </div>
@@ -112,6 +241,75 @@
 
       <!-- ================== LEFT COLUMN ================== -->
       <div class="grid gap-6">
+
+        <!-- ============================================================
+             GIFT DETAILS (NEW) — shown only when this order is a gift
+             ============================================================ -->
+        {% if order.is_gift_order %}
+        <section class="gift-card bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
+          <header class="gift-card-head">
+            <span class="gift-card-icon" aria-hidden="true">🎁</span>
+            <div class="gift-card-title">
+              <small>Gift order</small>
+              <h2>You're sending this to {{ order.recipient_full_name or 'your recipient' }}</h2>
+            </div>
+          </header>
+
+          <div class="gift-card-body">
+            <div class="gift-card-grid">
+              <div class="gift-cell">
+                <small>Recipient name</small>
+                <b>{{ order.recipient_full_name or '—' }}</b>
+                {% if order.recipient_relationship_label %}
+                  <span class="gift-rel-pill">🧑 {{ order.recipient_relationship_label }}</span>
+                {% endif %}
+              </div>
+
+              {% if order.recipient_phone %}
+              <div class="gift-cell">
+                <small>Recipient phone</small>
+                <b>{{ order.recipient_phone }}</b>
+                <span>DHL may contact them on delivery.</span>
+              </div>
+              {% endif %}
+
+              {% if order.recipient_email %}
+              <div class="gift-cell">
+                <small>Recipient email</small>
+                <b>{{ order.recipient_email }}</b>
+                <span>Used only for delivery updates.</span>
+              </div>
+              {% endif %}
+
+              {% if order.recipient_company %}
+              <div class="gift-cell">
+                <small>Recipient company</small>
+                <b>{{ order.recipient_company }}</b>
+              </div>
+              {% endif %}
+
+              {% if order.gift_message %}
+              <div class="gift-message-block">
+                <small>Gift message on packing slip</small>
+                <p>{{ order.gift_message }}</p>
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="gift-flags">
+              <span class="gift-flag">✓ Recipient is the DHL consignee</span>
+              {% if order.hide_prices_on_slip %}
+                <span class="gift-flag">🔒 Prices hidden on packing slip</span>
+              {% else %}
+                <span class="gift-flag warn">ℹ Prices shown on packing slip</span>
+              {% endif %}
+              {% if order.recipient_email %}
+                <span class="gift-flag">✉ Recipient notified by email</span>
+              {% endif %}
+            </div>
+          </div>
+        </section>
+        {% endif %}
 
         <!-- Order items -->
         <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
@@ -145,9 +343,35 @@
         {% if order.address_line1 or order.city or order.postal_code %}
         <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
           <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
-            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Delivery address</h2>
+            <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">
+              {% if order.is_gift_order %}Gift delivery address{% else %}Delivery address{% endif %}
+            </h2>
             <span class="inline-flex items-center gap-2 text-[0.68rem] font-black tracking-[0.05em] uppercase text-[#21842a]">&#10003; Ready for DHL</span>
           </div>
+
+          {% if order.is_gift_order %}
+          <!-- Gift: two-column recipient vs buyer -->
+          <div class="p-5 addr-two-col text-[0.85rem] leading-[1.6] text-[#4f5860]">
+            <div>
+              <span class="addr-col-title">🎁 Ship to (recipient)</span>
+              <strong class="block text-[#161a1f]">{{ order.recipient_full_name or order.full_name }}</strong>
+              {% if order.recipient_company %}<div>{{ order.recipient_company }}</div>{% endif %}
+              {% if order.recipient_phone %}<div>Phone: {{ order.recipient_phone }}</div>{% endif %}
+              {% if order.recipient_email %}<div>{{ order.recipient_email }}</div>{% endif %}
+              <div class="mt-2">{{ order.address_line1 or '' }}</div>
+              {% if order.address_line2 %}<div>{{ order.address_line2 }}</div>{% endif %}
+              <div>{{ order.city or '' }}{% if order.postal_code %} &middot; {{ order.postal_code }}{% endif %}</div>
+              <div class="font-bold text-[#161a1f]">{{ order.country }}</div>
+            </div>
+            <div>
+              <span class="addr-col-title buyer">💳 Buyer (you)</span>
+              <strong class="block text-[#161a1f]">{{ order.full_name }}</strong>
+              {% if order.company %}<div>{{ order.company }}</div>{% endif %}
+              <div>{{ order.email }}</div>
+              {% if order.phone %}<div class="mt-1">Phone: {{ order.phone }}</div>{% endif %}
+            </div>
+          </div>
+          {% else %}
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 p-5 text-[0.85rem] leading-[1.6] text-[#4f5860]">
             <div>
               <span class="block mb-1 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Recipient</span>
@@ -164,6 +388,7 @@
               <div class="font-bold text-[#161a1f]">{{ order.country }}</div>
             </div>
           </div>
+          {% endif %}
         </section>
         {% endif %}
 
@@ -347,9 +572,45 @@
           </div>
         </section>
 
+        {% if order.is_gift_order %}
+        <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)] p-6">
+          <span class="inline-flex items-center gap-2 mb-3 text-[#7a5410] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">🎁 Gift summary</span>
+          <div class="mt-3 grid gap-3 text-[0.78rem] leading-[1.55] text-[#4f5860]">
+            <div>
+              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#7a5410]">Recipient</span>
+              <strong class="text-[#161a1f]">{{ order.recipient_full_name or '—' }}</strong>
+            </div>
+            {% if order.recipient_relationship_label %}
+            <div>
+              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#7a5410]">Relationship</span>
+              <span class="gift-rel-pill">{{ order.recipient_relationship_label }}</span>
+            </div>
+            {% endif %}
+            {% if order.recipient_phone %}
+            <div>
+              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#7a5410]">Recipient phone</span>
+              <strong class="text-[#161a1f]">{{ order.recipient_phone }}</strong>
+            </div>
+            {% endif %}
+            <div>
+              <span class="block mb-1 text-[0.66rem] font-black tracking-[0.06em] uppercase text-[#7a5410]">Packing slip</span>
+              <strong class="text-[#161a1f]">
+                {% if order.hide_prices_on_slip %}Prices hidden{% else %}Prices shown{% endif %}
+              </strong>
+            </div>
+          </div>
+        </section>
+        {% endif %}
+
         <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)] p-6">
           <span class="inline-flex items-center gap-2 mb-3 text-[#ff7479] text-[0.68rem] font-black tracking-[0.12em] uppercase before:content-[''] before:w-5 before:h-[2px] before:bg-current">Need help?</span>
-          <p class="m-0 text-[0.78rem] leading-[1.65] text-[#68717a]">Contact our fulfilment team with this order reference and we'll respond as soon as possible.</p>
+          <p class="m-0 text-[0.78rem] leading-[1.65] text-[#68717a]">
+            {% if order.is_gift_order %}
+              Need to update the recipient details or gift message? Contact us with this order reference and we'll help right away.
+            {% else %}
+              Contact our fulfilment team with this order reference and we'll respond as soon as possible.
+            {% endif %}
+          </p>
           <a href="mailto:{{ support_email if support_email else 'e-trades@fabstrading.com' }}?subject=Order%20{{ order.reference }}"
              class="mt-4 inline-flex items-center justify-center w-full min-h-[44px] px-4 bg-white text-[#ff0000] text-[0.72rem] font-black tracking-[0.05em] uppercase border border-[#ff0000] no-underline hover:bg-[#fff7f7]">
             Email support

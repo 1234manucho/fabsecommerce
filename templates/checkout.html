@@ -142,7 +142,7 @@
         grid-column: 1 / -1;
     }
 
-    .checkout-card label:not(.checkout-check-row) {
+    .checkout-card label:not(.checkout-check-row):not(.checkout-gift-toggle):not(.checkout-gift-check-row) {
         color: #32383e;
         font-size: 0.76rem;
         font-weight: 850;
@@ -161,6 +161,13 @@
         font: inherit;
         font-size: 0.9rem;
         transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .checkout-card textarea {
+        min-height: 90px;
+        resize: vertical;
+        padding: 12px 14px;
+        line-height: 1.55;
     }
 
     .checkout-card input:not([type="checkbox"]):not([type="radio"]):focus,
@@ -225,6 +232,229 @@
 
     .checkout-saved-address a:hover {
         text-decoration: underline;
+    }
+
+    /* ============================================================
+       Pay for someone else / Gift options (NEW)
+       ============================================================ */
+    .checkout-gift-toggle {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        padding: 20px 22px;
+        margin: 0 0 20px;
+        background: linear-gradient(135deg, #fffdf3 0%, #fff8e0 100%);
+        border: 1px solid #f0d97a;
+        border-left: 4px solid var(--dhl-yellow);
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .checkout-gift-toggle:hover {
+        background: linear-gradient(135deg, #fffbe8 0%, #fff3cc 100%);
+        box-shadow: 0 6px 18px rgba(255, 204, 0, 0.18);
+    }
+
+    .checkout-gift-toggle input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .checkout-gift-toggle-icon {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        background: var(--dhl-yellow);
+        color: var(--dhl-red);
+        border-radius: 50%;
+        font-size: 1.15rem;
+        line-height: 1;
+        flex: none;
+        box-shadow: 0 4px 12px rgba(255, 204, 0, 0.4);
+    }
+
+    .checkout-gift-toggle-copy strong {
+        display: block;
+        font-size: 0.95rem;
+        color: var(--checkout-ink);
+        letter-spacing: -0.01em;
+    }
+
+    .checkout-gift-toggle-copy small {
+        display: block;
+        margin-top: 5px;
+        color: #7a5410;
+        font-size: 0.74rem;
+        line-height: 1.55;
+    }
+
+    .checkout-gift-toggle-switch {
+        position: relative;
+        width: 48px;
+        height: 26px;
+        background: #cfd4d8;
+        border-radius: 999px;
+        transition: background-color 200ms ease;
+        flex: none;
+    }
+
+    .checkout-gift-toggle-switch::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 20px;
+        height: 20px;
+        background: #fff;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .checkout-gift-toggle input:checked ~ .checkout-gift-toggle-switch {
+        background: var(--checkout-green);
+    }
+
+    .checkout-gift-toggle input:checked ~ .checkout-gift-toggle-switch::after {
+        transform: translateX(22px);
+    }
+
+    .checkout-gift-toggle input:focus-visible ~ .checkout-gift-toggle-switch {
+        outline: 3px solid rgba(33, 132, 42, 0.35);
+        outline-offset: 3px;
+    }
+
+    .checkout-gift-panel {
+        display: none;
+        margin: 0 0 26px;
+        padding: 26px 26px 28px;
+        background: #fff;
+        border: 1px solid #f0d97a;
+        border-top: 0;
+    }
+
+    .checkout-gift-panel.is-open {
+        display: block;
+        animation: checkout-gift-fade 260ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes checkout-gift-fade {
+        from { opacity: 0; transform: translateY(-6px); }
+        to   { opacity: 1; transform: none; }
+    }
+
+    .checkout-gift-panel-header {
+        margin: 0 0 20px;
+        padding-bottom: 18px;
+        border-bottom: 1px dashed #f0d97a;
+    }
+
+    .checkout-gift-panel-header h3 {
+        margin: 0;
+        font-size: 1.15rem;
+        letter-spacing: -0.025em;
+        color: var(--checkout-ink);
+    }
+
+    .checkout-gift-panel-header p {
+        margin: 8px 0 0;
+        color: var(--checkout-muted);
+        font-size: 0.8rem;
+        line-height: 1.65;
+    }
+
+    .checkout-gift-note {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 12px;
+        align-items: start;
+        padding: 14px 16px;
+        margin: 20px 0 0;
+        background: #f7f8f9;
+        border-left: 3px solid var(--checkout-ink);
+        color: #4f5860;
+        font-size: 0.76rem;
+        line-height: 1.6;
+    }
+
+    .checkout-gift-note::before {
+        content: "i";
+        display: grid;
+        place-items: center;
+        width: 20px;
+        height: 20px;
+        background: var(--checkout-ink);
+        color: #fff;
+        border-radius: 50%;
+        font-size: 0.68rem;
+        font-weight: 900;
+        font-style: italic;
+        font-family: Georgia, serif;
+        flex: none;
+    }
+
+    .checkout-gift-check-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: start;
+        gap: 12px;
+        padding: 16px 18px;
+        margin: 20px 0 0;
+        background: #fffdf3;
+        border: 1px solid #f0d97a;
+        color: #4f5860;
+        font-size: 0.8rem;
+        line-height: 1.55;
+        cursor: pointer;
+        transition: background-color 160ms ease;
+    }
+
+    .checkout-gift-check-row:hover {
+        background: #fff8e0;
+    }
+
+    .checkout-gift-check-row input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin: 1px 0 0;
+        accent-color: var(--checkout-green);
+        flex: none;
+    }
+
+    .checkout-gift-check-row strong {
+        display: block;
+        color: var(--checkout-ink);
+        font-size: 0.82rem;
+        font-weight: 850;
+    }
+
+    .checkout-gift-check-row small {
+        display: block;
+        margin-top: 4px;
+        color: var(--checkout-muted);
+        font-size: 0.72rem;
+        line-height: 1.55;
+    }
+
+    .checkout-field-optional {
+        color: #7a828a;
+        font-size: 0.68rem;
+        font-weight: 600;
+        font-style: normal;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    .checkout-field-hint {
+        display: block;
+        margin-top: 6px;
+        color: #7a828a;
+        font-size: 0.68rem;
+        line-height: 1.5;
     }
 
     /* ---------- Address verification ---------- */
@@ -1032,6 +1262,22 @@
         .checkout-summary {
             padding: 22px 18px;
         }
+
+        .checkout-gift-toggle {
+            grid-template-columns: auto minmax(0, 1fr);
+            padding: 16px 18px;
+            gap: 12px;
+        }
+
+        .checkout-gift-toggle-switch {
+            grid-column: 2;
+            justify-self: end;
+            margin-top: 4px;
+        }
+
+        .checkout-gift-panel {
+            padding: 20px 18px 22px;
+        }
     }
 
     @media (max-width: 420px) {
@@ -1115,6 +1361,177 @@
                     {{ field(form.email) }}
                     {{ field(form.country, extra_class='checkout-span-2', placeholder='Official country code (e.g. KE, US, TR)') }}
                 </div>
+
+                <!-- ============================================================
+                     NEW: Pay for someone else / Gift options
+                     ============================================================ -->
+                <header class="checkout-card-header">
+                    <span class="checkout-kicker">Who is this order for?</span>
+                    <h2>Ordering for yourself or someone else?</h2>
+                    <p>
+                        By default, we prepare the shipment for the person named in the
+                        customer and delivery sections. If you are purchasing on behalf
+                        of a family member, colleague, client or gift recipient, tell us
+                        below so we can prepare the order, paperwork and any message
+                        correctly.
+                    </p>
+                </header>
+
+                <label class="checkout-gift-toggle" for="checkout-pay-for-other">
+                    <span class="checkout-gift-toggle-icon" aria-hidden="true">🎁</span>
+                    <span class="checkout-gift-toggle-copy">
+                        <strong>I'm paying for someone else / This is a gift</strong>
+                        <small>
+                            Add the recipient's name, contact details and your
+                            relationship so we prepare the delivery for the right person.
+                        </small>
+                    </span>
+                    <input
+                        type="checkbox"
+                        id="checkout-pay-for-other"
+                        name="pay_for_other"
+                        value="1"
+                    >
+                    <span class="checkout-gift-toggle-switch" aria-hidden="true"></span>
+                </label>
+
+                <section
+                    id="checkout-gift-panel"
+                    class="checkout-gift-panel"
+                    aria-hidden="true"
+                    aria-labelledby="checkout-gift-panel-title"
+                >
+                    <div class="checkout-gift-panel-header">
+                        <h3 id="checkout-gift-panel-title">Recipient details</h3>
+                        <p>
+                            We may share the recipient's first name and delivery window
+                            with them so they can expect the delivery. Your payment
+                            details are never shared with the recipient.
+                        </p>
+                    </div>
+
+                    <div class="checkout-form-grid">
+                        <div>
+                            <label for="checkout-recipient-relationship">
+                                Relationship to you
+                            </label>
+                            <select
+                                id="checkout-recipient-relationship"
+                                name="recipient_relationship"
+                            >
+                                <option value="">— Select —</option>
+                                <option value="family">Family member</option>
+                                <option value="friend">Friend</option>
+                                <option value="partner">Partner / Spouse</option>
+                                <option value="colleague">Colleague</option>
+                                <option value="client">Client</option>
+                                <option value="business_partner">Business partner</option>
+                                <option value="employee">Employee</option>
+                                <option value="gift">Gift recipient</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="checkout-recipient-full-name">
+                                Recipient full name
+                            </label>
+                            <input
+                                id="checkout-recipient-full-name"
+                                name="recipient_full_name"
+                                type="text"
+                                maxlength="140"
+                                autocomplete="off"
+                                placeholder="e.g. Jane Doe"
+                            >
+                        </div>
+
+                        <div>
+                            <label for="checkout-recipient-phone">
+                                Recipient phone
+                            </label>
+                            <input
+                                id="checkout-recipient-phone"
+                                name="recipient_phone"
+                                type="tel"
+                                maxlength="40"
+                                autocomplete="off"
+                                placeholder="+254 7XX XXX XXX"
+                            >
+                        </div>
+
+                        <div>
+                            <label for="checkout-recipient-email">
+                                Recipient email
+                                <em class="checkout-field-optional">(optional)</em>
+                            </label>
+                            <input
+                                id="checkout-recipient-email"
+                                name="recipient_email"
+                                type="email"
+                                maxlength="255"
+                                autocomplete="off"
+                                placeholder="optional — delivery updates only"
+                            >
+                        </div>
+
+                        <div class="checkout-span-2">
+                            <label for="checkout-recipient-company">
+                                Recipient company
+                                <em class="checkout-field-optional">(optional)</em>
+                            </label>
+                            <input
+                                id="checkout-recipient-company"
+                                name="recipient_company"
+                                type="text"
+                                maxlength="180"
+                                autocomplete="off"
+                                placeholder="e.g. company receiving the order"
+                            >
+                        </div>
+
+                        <div class="checkout-span-2">
+                            <label for="checkout-gift-message">
+                                Gift message or special instructions
+                                <em class="checkout-field-optional">(optional)</em>
+                            </label>
+                            <textarea
+                                id="checkout-gift-message"
+                                name="gift_message"
+                                rows="3"
+                                maxlength="280"
+                                placeholder="e.g. Happy birthday! Please wrap with the enclosed card."
+                            ></textarea>
+                            <small class="checkout-field-hint">
+                                Printed on the packing slip only — never shown on
+                                payment receipts.
+                            </small>
+                        </div>
+                    </div>
+
+                    <label class="checkout-gift-check-row" for="checkout-hide-prices">
+                        <input
+                            type="checkbox"
+                            id="checkout-hide-prices"
+                            name="hide_prices_on_slip"
+                            value="1"
+                        >
+                        <span>
+                            <strong>Hide prices on the packing slip</strong>
+                            <small>
+                                Ideal for gifts. The recipient will only see the item
+                                names and quantities — never the prices you paid.
+                            </small>
+                        </span>
+                    </label>
+
+                    <p class="checkout-gift-note">
+                        The delivery address below is where we ship to. Fill in the
+                        recipient's address if it differs from yours — otherwise leave
+                        the fields as your own details and we'll coordinate with the
+                        recipient before dispatch.
+                    </p>
+                </section>
 
                 <header class="checkout-card-header">
                     <span class="checkout-kicker">Delivery address</span>
@@ -1377,12 +1794,38 @@
     const $sumTotK  = document.getElementById('summary-total-kes');
     const $sumTotU  = document.getElementById('summary-total-usd');
 
+    // ---------- NEW: Gift / pay-for-other toggle ----------
+    const $giftToggle = document.getElementById('checkout-pay-for-other');
+    const $giftPanel  = document.getElementById('checkout-gift-panel');
+
+    const setGiftPanelOpen = (open) => {
+        if (!$giftPanel) return;
+        $giftPanel.classList.toggle('is-open', open);
+        $giftPanel.setAttribute('aria-hidden', String(!open));
+
+        if (open) {
+            const firstField = $giftPanel.querySelector('select, input, textarea');
+            if (firstField) firstField.focus({ preventScroll: true });
+        } else {
+            // Reset the panel so re-toggling starts cleanly
+            $giftPanel.querySelectorAll('input, select, textarea').forEach((el) => {
+                if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+                else el.value = '';
+            });
+        }
+    };
+
+    $giftToggle?.addEventListener('change', () => {
+        setGiftPanelOpen($giftToggle.checked);
+    });
+
+    if ($giftToggle?.checked) setGiftPanelOpen(true);
+    // ------------------------------------------------------------
+
     if (!$btn) return;
 
     const fieldEl = (name) => document.querySelector(`#checkout-form [name="${name}"]`);
 
-    // ISO-3166 alpha-2 codes accepted by DHL. "UN" is intentionally absent:
-    // it is not a destination-country code and must never be stored on an order.
     const OFFICIAL_ISO_ALPHA2 = new Set(`
         AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ
         BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ
@@ -1645,13 +2088,6 @@
         });
     }
 
-    // ============ ADDRESS VERIFY — parse DHL's address-validate response ============
-    // DHL GET /address-validate returns one of:
-    //   { address: [ { countryCode, postalCode, cityName, addressLine1, ... } ], originalAddress: {...} }
-    //   { suggestions: [ ... ] }
-    //   { data: [ ... ] }
-    // We display the normalised address and compare it to the user's input to decide
-    // between a green "verified" state and an amber "different address" warning.
     $verifyBtn?.addEventListener('click', async () => {
         const country = selectedCountryCode();
         const city = fieldEl('city')?.value?.trim() || '';
@@ -1695,8 +2131,6 @@
                 return;
             }
 
-            // DHL returns `address` (array) in v2 or `suggestions`/`data` in some
-            // API versions. Normalise to a single object.
             const raw = data.address ?? data.suggestions ?? data.data ?? null;
             const validated = Array.isArray(raw) ? raw[0] : raw;
 
@@ -1705,7 +2139,6 @@
                 return;
             }
 
-            // Build a readable one-line address from whatever DHL returned.
             const parts = [
                 validated.addressLine1,
                 validated.addressLine2,
@@ -1721,7 +2154,6 @@
                 ? parts.join(', ')
                 : 'Address accepted by DHL';
 
-            // Compare DHL's normalised form against the user's input.
             const norm = s => String(s || '').trim().toUpperCase().replace(/\s+/g, ' ');
             const stripPostal = s => norm(s).replace(/[\s-]/g, '');
 
@@ -1959,7 +2391,6 @@
 
             const products = Array.isArray(data.products) ? data.products : [];
             if (!products.length) {
-                // Backend sends a friendly `message` for unmapped countries or domestic KE.
                 if (data.message) {
                     setStatus(data.message, 'info');
                 } else {
@@ -2006,7 +2437,6 @@
         const code = resolveCountryCode($toolbarInput.value);
         if (code) syncCountryCode(code);
     });
-    // Enter key inside the country input triggers the lookup on mobile keyboards
     $toolbarInput?.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -2015,8 +2445,6 @@
     });
 
     function renderRates(products, country) {
-        // Only keep products with a real numeric price so a null-price row can't
-        // silently win the "first checked" slot and give a KES 0.00 shipping line.
         const priced = products
             .map(p => {
                 const price = p.totalPrice && p.totalPrice[0]
@@ -2072,7 +2500,6 @@
             });
         });
 
-        // Default to the cheapest priced option (top of the sorted list).
         const first = priced[0];
         selectProduct(first.price, country, first.raw);
 

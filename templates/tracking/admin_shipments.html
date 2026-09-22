@@ -24,15 +24,18 @@
   .as-btn svg{width:14px;height:14px}
 
   /* ---------------- KPI strip ---------------- */
-  .as-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:28px}
+  .as-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:28px}
   .as-kpi{background:#fff;border:1px solid #e0e3e5;padding:22px 24px;display:grid;gap:6px}
   .as-kpi small{font-size:9px;color:#7a828a;letter-spacing:.16em;text-transform:uppercase;font-weight:900}
   .as-kpi b{font-size:28px;letter-spacing:-.03em;line-height:1;color:#11151a}
   .as-kpi span{font-size:11px;color:#7a828a}
+  .as-kpi.is-gift{background:linear-gradient(135deg,#fffdf3 0%,#fff6d9 100%);border-color:#f0c400}
+  .as-kpi.is-gift small{color:#7a5410}
+  .as-kpi.is-gift b{color:#5a1006}
 
   /* ---------------- Table ---------------- */
   .as-table-wrap{background:#fff;border:1px solid #e0e3e5;overflow:auto}
-  .as-table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
+  .as-table{width:100%;border-collapse:collapse;font-size:13px;min-width:1000px}
   .as-table thead{background:#f5f6f7;text-align:left}
   .as-table thead th{
     padding:14px 18px;font-size:9px;font-weight:900;color:#4f5860;
@@ -40,7 +43,9 @@
   }
   .as-table tbody tr{border-top:1px solid #eef0f2;transition:background .15s ease}
   .as-table tbody tr:hover{background:#fbfbfc}
-  .as-table td{padding:16px 18px;vertical-align:middle}
+  .as-table tbody tr.is-gift{background:#fffdf5}
+  .as-table tbody tr.is-gift:hover{background:#fff9e6}
+  .as-table td{padding:16px 18px;vertical-align:top}
   .as-tracking{
     font-family:ui-monospace,Menlo,monospace;font-size:12px;font-weight:800;
     color:#ed3138;letter-spacing:.01em;
@@ -48,6 +53,29 @@
   .as-tracking:hover{text-decoration:underline}
   .as-order{font-size:12px;color:#11151a;font-weight:700}
   .as-order:hover{color:#ed3138}
+
+  /* Consignee block (NEW) */
+  .as-consignee{display:grid;gap:5px;min-width:200px}
+  .as-consignee-name{font-size:12.5px;font-weight:800;color:#11151a;line-height:1.35}
+  .as-consignee-role{font-size:9px;color:#8a9096;letter-spacing:.14em;text-transform:uppercase;font-weight:900}
+  .as-consignee-contact{font-size:11px;color:#68717a;line-height:1.5}
+  .as-consignee-contact a{color:#ed3138;text-decoration:none}
+  .as-consignee-contact a:hover{text-decoration:underline}
+
+  /* Gift pill inside consignee cell */
+  .as-gift-pill{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:3px 9px;border-radius:999px;
+    background:linear-gradient(135deg,#fff4d1 0%,#ffe58a 100%);
+    border:1px solid #f0c400;color:#7a5410;
+    font-size:8.5px;font-weight:900;letter-spacing:.08em;
+    text-transform:uppercase;width:fit-content;
+    box-shadow:0 2px 6px rgba(255,204,0,.22);
+  }
+  .as-gift-pill::before{content:"🎁";font-size:10px;line-height:1}
+  .as-gift-pill b{color:#5a1006;font-weight:900;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .as-gift-sub{font-size:9.5px;color:#8a6d10;font-weight:800;letter-spacing:.02em}
+
   .as-route{font-size:11px;color:#4f5860;font-family:ui-monospace,Menlo,monospace;letter-spacing:.02em}
   .as-route b{color:#11151a}
   .as-pill{
@@ -87,7 +115,8 @@
   .as-empty a{color:#ed3138;font-weight:800}
 
   /* ---------------- Responsive ---------------- */
-  @media (max-width:1100px){ .as-kpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:1180px){ .as-kpis{grid-template-columns:repeat(3,minmax(0,1fr))} }
+  @media (max-width:780px){ .as-kpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
   @media (max-width:640px){
     .as-shell{width:min(100% - 30px,1440px);margin:32px auto 80px}
     .as-kpis{grid-template-columns:1fr}
@@ -123,12 +152,19 @@
   {% set in_transit = shipments|selectattr('status_code','equalto','transit')|list|length %}
   {% set delivered = shipments|selectattr('status_code','equalto','delivered')|list|length %}
   {% set pending = shipments|selectattr('status_code','in',['pre-transit','created','unknown'])|list|length %}
+  {% set gift_count = namespace(n=0) %}
+  {% for s in shipments %}
+    {% if s.order and s.order.is_gift_order %}
+      {% set gift_count.n = gift_count.n + 1 %}
+    {% endif %}
+  {% endfor %}
 
   <section class="as-kpis" aria-label="Shipment KPIs">
     <article class="as-kpi"><small>Total tracked</small><b>{{ total }}</b><span>Active shipments in view</span></article>
     <article class="as-kpi"><small>In transit</small><b>{{ in_transit }}</b><span>Currently moving with DHL</span></article>
     <article class="as-kpi"><small>Delivered</small><b>{{ delivered }}</b><span>Successfully handed over</span></article>
     <article class="as-kpi"><small>Awaiting pickup</small><b>{{ pending }}</b><span>Label created, not yet scanned</span></article>
+    <article class="as-kpi is-gift"><small>🎁 Gift shipments</small><b>{{ gift_count.n }}</b><span>Addressed to a recipient</span></article>
   </section>
 
   {# ------------------ Table ------------------ #}
@@ -139,6 +175,7 @@
           <tr>
             <th>Tracking</th>
             <th>Order</th>
+            <th>Consignee</th>
             <th>Route</th>
             <th>Status</th>
             <th>Last sync</th>
@@ -153,7 +190,8 @@
                               else 'is-failure' if code in ('failure','exception')
                               else 'is-cancelled' if code == 'cancelled'
                               else '' %}
-            <tr>
+            {% set is_gift = s.order and s.order.is_gift_order %}
+            <tr class="{% if is_gift %}is-gift{% endif %}">
               <td>
                 <a class="as-tracking" href="{{ url_for('track_shipment', tracking_number=s.tracking_number) }}" target="_blank" rel="noopener">
                   {{ s.tracking_number }}
@@ -164,11 +202,47 @@
                   <a class="as-order" href="{{ url_for('order_detail', reference=s.order.reference) }}">
                     {{ s.order.reference }}
                   </a>
-                  <div style="font-size:11px;color:#8a9096;margin-top:3px">{{ s.order.full_name }}</div>
                 {% else %}
                   <span style="color:#a4a9ae">—</span>
                 {% endif %}
               </td>
+
+              <!-- ============================================================
+                   Consignee cell — shows recipient for gift orders, buyer otherwise
+                   ============================================================ -->
+              <td>
+                <div class="as-consignee">
+                  {% if is_gift %}
+                    <span class="as-gift-pill" title="Gift shipment">
+                      For <b>{{ s.order.recipient_full_name or 'Recipient' }}</b>
+                    </span>
+                    <span class="as-gift-sub">
+                      {% if s.order.recipient_relationship_label %}{{ s.order.recipient_relationship_label }}{% endif %}
+                      {% if s.order.recipient_relationship_label and s.order.recipient_phone %} · {% endif %}
+                      {% if s.order.recipient_phone %}{{ s.order.recipient_phone }}{% endif %}
+                    </span>
+                    <span class="as-consignee-role">Recipient (buyer paid)</span>
+                    {% if s.order.full_name %}
+                      <span class="as-consignee-contact">Buyer: {{ s.order.full_name }}</span>
+                    {% endif %}
+                  {% else %}
+                    {% if s.order and s.order.full_name %}
+                      <span class="as-consignee-name">{{ s.order.full_name }}</span>
+                    {% else %}
+                      <span class="as-consignee-name" style="color:#a4a9ae">—</span>
+                    {% endif %}
+                    {% if s.order and s.order.phone %}
+                      <span class="as-consignee-contact">{{ s.order.phone }}</span>
+                    {% endif %}
+                    {% if s.order and s.order.email %}
+                      <span class="as-consignee-contact">
+                        <a href="mailto:{{ s.order.email }}">{{ s.order.email }}</a>
+                      </span>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </td>
+
               <td>
                 <span class="as-route">
                   <b>{{ s.origin_country or 'KE' }}</b> → <b>{{ s.destination_country or '—' }}</b>

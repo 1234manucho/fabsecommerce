@@ -769,6 +769,9 @@ def register_routes(app):
     # ================================================================
     # CHECKOUT
     # ================================================================
+    # ================================================================
+    # CHECKOUT
+    # ================================================================
     @app.route("/checkout", methods=["GET", "POST"])
     def checkout():
         items = (
@@ -821,6 +824,55 @@ def register_routes(app):
 
             grand_total = (subtotal + shipping_cost).quantize(Decimal("0.01"))
 
+            # ----------------------------------------------------------------
+            # NEW: Pay-for-other / gift fields
+            # ----------------------------------------------------------------
+            pay_for_other = bool(form.pay_for_other.data)
+
+            # Relationship is only kept if pay_for_other is True
+            recipient_relationship = (form.recipient_relationship.data or "").strip().lower() or None
+            if recipient_relationship not in {
+                "family", "friend", "partner", "colleague",
+                "client", "business_partner", "employee", "gift", "other",
+            }:
+                recipient_relationship = None
+
+            recipient_full_name = (form.recipient_full_name.data or "").strip()[:140] or None
+            recipient_phone     = (form.recipient_phone.data or "").strip()[:40] or None
+            recipient_email     = (form.recipient_email.data or "").strip().lower()[:255] or None
+            recipient_company   = (form.recipient_company.data or "").strip()[:180] or None
+            gift_message        = (form.gift_message.data or "").strip()[:280] or None
+            hide_prices_on_slip = bool(form.hide_prices_on_slip.data)
+
+            if pay_for_other:
+                if not recipient_full_name:
+                    flash(
+                        "Please provide the recipient's full name — the shipment "
+                        "label needs a consignee.",
+                        "danger",
+                    )
+                    return render_template(
+                        "checkout.html", form=form, items=items, total=subtotal
+                    )
+                if not recipient_phone:
+                    flash(
+                        "Please provide the recipient's phone number so DHL can "
+                        "contact them on delivery.",
+                        "danger",
+                    )
+                    return render_template(
+                        "checkout.html", form=form, items=items, total=subtotal
+                    )
+            else:
+                # Do not persist recipient fields when the user did not opt in
+                recipient_relationship = None
+                recipient_full_name    = None
+                recipient_phone        = None
+                recipient_email        = None
+                recipient_company      = None
+                gift_message           = None
+                hide_prices_on_slip    = False
+
             order = Order(
                 reference=make_reference("GM"),
                 user_id=current_user.id if current_user.is_authenticated else None,
@@ -836,6 +888,16 @@ def register_routes(app):
                 address_line2=(form.address_line2.data or None),
                 city=(form.city.data or None),
                 postal_code=(form.postal_code.data or None),
+                # --- NEW: gift / pay-for-other fields ---
+                pay_for_other=pay_for_other,
+                recipient_relationship=recipient_relationship,
+                recipient_full_name=recipient_full_name,
+                recipient_phone=recipient_phone,
+                recipient_email=recipient_email,
+                recipient_company=recipient_company,
+                gift_message=gift_message,
+                hide_prices_on_slip=hide_prices_on_slip,
+                # --- shipping defaults ---
                 shipping_cost=shipping_cost if shipping_cost > 0 else None,
                 shipping_currency=shipping_currency if shipping_cost > 0 else None,
                 shipping_status="pending",
@@ -854,7 +916,12 @@ def register_routes(app):
                     )
                 )
 
-            audit("order_created", "order", order.id, order.reference)
+            audit(
+                "order_created",
+                "order",
+                order.id,
+                f"{order.reference} (gift={pay_for_other})",
+            )
             db.session.commit()
 
             session.pop("cart", None)
@@ -862,7 +929,6 @@ def register_routes(app):
             return redirect(url_for("start_payment", order_id=order.id))
 
         return render_template("checkout.html", form=form, items=items, total=subtotal)
-
     # ================================================================
     # DHL SHIPPING — RATE QUOTES
     # ================================================================
@@ -1308,7 +1374,7 @@ def register_routes(app):
         db.session.commit()
         return jsonify({"status": "ok"})
 
-    # ================================================================
+        # ================================================================
     # DHL SHIPPING — ADMIN
     # ================================================================
     @app.post("/admin/orders/<int:order_id>/create-shipment")
@@ -1349,12 +1415,53 @@ def register_routes(app):
             for item in export_line_items
         ), 2)
 
+        # ----------------------------------------------------------------
+        # NEW: Gift / pay-for-other consignee resolution
+        #
+        # When the buyer is paying for someone else, the recipient becomes
+        # the DHL consignee while the buyer remains the payer of record.
+        # For regular orders, the buyer's own details are used as before.
+        # ----------------------------------------------------------------
+        is_gift = bool(getattr(order, "pay_for_other", False))
+
+        consignee_name = (
+            order.recipient_full_name
+            if is_gift and getattr(order, "recipient_full_name", None)
+            else order.full_name
+        )
+        consignee_phone = (
+            (
+                order.recipient_phone
+                if is_gift and getattr(order, "recipient_phone", None)
+                else getattr(order, "phone", None)
+            ) or ""
+        )
+        consignee_email = (
+            (
+                order.recipient_email
+                if is_gift and getattr(order, "recipient_email", None)
+                else order.email
+            )
+            or order.email
+        )
+        consignee_company = (
+            (
+                order.recipient_company
+                if is_gift and getattr(order, "recipient_company", None)
+                else getattr(order, "company", None)
+            ) or ""
+        )
+
+        # Tag gift shipments in the DHL reference so ops can spot them
+        # at a glance from the DHL portal.
+        shipment_reference = f"{order.reference}-GIFT" if is_gift else order.reference
+
         order_data = {
-            "order_reference": order.reference,
-            "receiver_full_name": order.full_name,
-            "receiver_email": order.email,
-            "receiver_phone": getattr(order, "phone", None) or "",
-            "receiver_company": getattr(order, "company", None) or "",
+            "order_reference": shipment_reference,
+            "receiver_full_name": consignee_name,
+            "receiver_email": consignee_email,
+            "receiver_phone": consignee_phone,
+            "receiver_company": consignee_company,
             "receiver_address_line1": address_line1,
             "receiver_address_line2": getattr(order, "address_line2", None) or "",
             "receiver_city": city,
@@ -1450,7 +1557,13 @@ def register_routes(app):
             try:
                 db.session.add(shipment)
                 db.session.flush()
-                audit("dhl_shipment_created", "order", order.id, tracking_number)
+
+                # Audit entry notes whether this was a gift shipment
+                audit_detail = tracking_number
+                if is_gift:
+                    audit_detail = f"{tracking_number} (gift to {consignee_name})"
+                audit("dhl_shipment_created", "order", order.id, audit_detail)
+
                 db.session.commit()
             except Exception as exc:
                 db.session.rollback()
@@ -1469,12 +1582,19 @@ def register_routes(app):
             # --- 3. Immediately pull tracking so events start populating ---
             _refresh_shipment(shipment, source="poll", force=True)
 
-            flash(f"DHL shipment created. Tracking: {tracking_number}", "success")
+            if is_gift:
+                flash(
+                    f"DHL gift shipment created for {consignee_name}. "
+                    f"Tracking: {tracking_number}",
+                    "success",
+                )
+            else:
+                flash(f"DHL shipment created. Tracking: {tracking_number}", "success")
         else:
             flash("DHL did not return a tracking number. Check the API response.", "danger")
 
         return redirect(url_for("admin_orders"))
-
+    
     @app.get("/admin/orders/<int:order_id>/tracking")
     @admin_required
     def admin_order_tracking(order_id):

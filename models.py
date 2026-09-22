@@ -145,6 +145,16 @@ class Order(TimestampMixin, db.Model):
     city = db.Column(db.String(100), nullable=True)
     postal_code = db.Column(db.String(20), nullable=True)
 
+    # --- Pay-for-other / gift fields (NEW) ---
+    pay_for_other = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    recipient_relationship = db.Column(db.String(40), nullable=True)
+    recipient_full_name = db.Column(db.String(140), nullable=True)
+    recipient_phone = db.Column(db.String(40), nullable=True)
+    recipient_email = db.Column(db.String(255), nullable=True)
+    recipient_company = db.Column(db.String(180), nullable=True)
+    gift_message = db.Column(db.Text, nullable=True)
+    hide_prices_on_slip = db.Column(db.Boolean, default=False, nullable=False)
+
     # --- DHL shipping state (denormalised summary of the latest shipment) ---
     shipping_status = db.Column(db.String(50), default="pending", nullable=True, index=True)
     dhl_tracking_number = db.Column(db.String(100), nullable=True, index=True)
@@ -170,6 +180,21 @@ class Order(TimestampMixin, db.Model):
         order_by="Shipment.created_at.desc()",
     )
 
+    # ------------------------------------------------------------
+    # Gift / pay-for-other labels + accessors
+    # ------------------------------------------------------------
+    RECIPIENT_RELATIONSHIP_LABELS = {
+        "family":           "Family member",
+        "friend":           "Friend",
+        "partner":          "Partner / Spouse",
+        "colleague":        "Colleague",
+        "client":           "Client",
+        "business_partner": "Business partner",
+        "employee":         "Employee",
+        "gift":             "Gift recipient",
+        "other":            "Other",
+    }
+
     @property
     def primary_shipment(self):
         """The most recent active shipment for this order, or None."""
@@ -177,6 +202,47 @@ class Order(TimestampMixin, db.Model):
             if s.is_active:
                 return s
         return self.shipments[0] if self.shipments else None
+
+    @property
+    def recipient_display_name(self):
+        """Name that should appear on the shipment label."""
+        if self.pay_for_other and self.recipient_full_name:
+            return self.recipient_full_name
+        return self.full_name
+
+    @property
+    def recipient_display_phone(self):
+        """Phone that should appear on the shipment label."""
+        if self.pay_for_other and self.recipient_phone:
+            return self.recipient_phone
+        return self.phone
+
+    @property
+    def recipient_display_email(self):
+        """Email used for shipping notifications."""
+        if self.pay_for_other and self.recipient_email:
+            return self.recipient_email
+        return self.email
+
+    @property
+    def recipient_display_company(self):
+        """Company used for the shipment label."""
+        if self.pay_for_other and self.recipient_company:
+            return self.recipient_company
+        return self.company
+
+    @property
+    def recipient_relationship_label(self):
+        if not self.recipient_relationship:
+            return None
+        return self.RECIPIENT_RELATIONSHIP_LABELS.get(
+            self.recipient_relationship, self.recipient_relationship.title()
+        )
+
+    @property
+    def is_gift_order(self):
+        """True when the buyer flagged this as a gift / for someone else."""
+        return bool(self.pay_for_other)
 
 
 class OrderItem(db.Model):
@@ -206,7 +272,7 @@ class Shipment(TimestampMixin, db.Model):
 
     # --- DHL identifiers ---
     tracking_number = db.Column(db.String(100), unique=True, index=True, nullable=False)
-    shipment_id = db.Column(db.String(100), nullable=True)          # DHL internal shipment id
+    shipment_id = db.Column(db.String(100), nullable=True)
     label_url = db.Column(db.String(500), nullable=True)
     label_format = db.Column(db.String(20), default="PDF", nullable=False)
 
@@ -224,7 +290,7 @@ class Shipment(TimestampMixin, db.Model):
 
     # --- Sync bookkeeping ---
     last_synced_at = db.Column(db.DateTime(timezone=True), nullable=True)
-    last_sync_source = db.Column(db.String(20), nullable=True)     # webhook | poll | admin | create
+    last_sync_source = db.Column(db.String(20), nullable=True)
     raw_payload = db.Column(db.Text, nullable=True)
 
     is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
@@ -236,9 +302,6 @@ class Shipment(TimestampMixin, db.Model):
         order_by="ShipmentEvent.occurred_at.desc()",
     )
 
-    # ------------------------------------------------------------
-    # Convenience
-    # ------------------------------------------------------------
     STATUS_LABELS = {
         "created":      "Label created",
         "pre-transit":  "Label created",
@@ -296,7 +359,6 @@ class ShipmentEvent(TimestampMixin, db.Model):
         index=True,
     )
 
-    # Deterministic idempotency key — hash(tracking|timestamp|status_code|description)
     event_key = db.Column(db.String(180), unique=True, index=True, nullable=False)
 
     occurred_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
@@ -305,7 +367,7 @@ class ShipmentEvent(TimestampMixin, db.Model):
     description = db.Column(db.Text, nullable=True)
     location = db.Column(db.String(180), nullable=True)
     country = db.Column(db.String(2), nullable=True)
-    source = db.Column(db.String(20), default="poll", nullable=False)  # webhook | poll | admin
+    source = db.Column(db.String(20), default="poll", nullable=False)
     raw_payload = db.Column(db.Text, nullable=True)
 
     def to_dict(self):

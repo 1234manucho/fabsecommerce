@@ -80,6 +80,85 @@
   .admin-pill-btn.dhl-pickup { min-height: 38px; padding-left: 7px; background: var(--dhl-yellow); border-color: var(--dhl-yellow); color: #111; }
   .admin-pill-btn.dhl-pickup:hover { background: #ffdc4d; border-color: #ffdc4d; }
   .dhl-heading { display: inline-flex; align-items: center; gap: 8px; }
+
+  /* ============================================================
+     GIFT / PAY-FOR-OTHER UI (NEW)
+     ============================================================ */
+  .admin-customer-cell { display: grid; gap: 5px; min-width: 210px; }
+  .admin-customer-email { color: #68717a; font-size: 0.82rem; line-height: 1.4; word-break: break-word; }
+  .admin-customer-name { font-weight: 800; color: #161a1f; font-size: 0.82rem; line-height: 1.35; }
+
+  .admin-gift-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 9px; border-radius: 999px;
+    background: linear-gradient(135deg, #fff4d1 0%, #ffe58a 100%);
+    border: 1px solid #f0c400; color: #7a5410;
+    font-size: 0.58rem; font-weight: 900;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    width: fit-content; max-width: 100%;
+    box-shadow: 0 2px 6px rgba(255, 204, 0, 0.22);
+  }
+  .admin-gift-pill::before {
+    content: "🎁"; font-size: 0.72rem; line-height: 1;
+  }
+  .admin-gift-pill b {
+    color: #5a1006; font-weight: 900;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 130px;
+  }
+  .admin-gift-meta {
+    font-size: 0.66rem; color: #8a6d10; font-weight: 700;
+    letter-spacing: 0.02em; line-height: 1.35;
+  }
+  .admin-gift-meta .admin-gift-rel {
+    background: #fff4d1; color: #7a5410;
+    padding: 2px 6px; border-radius: 3px;
+    font-weight: 850; font-size: 0.58rem;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin-right: 4px;
+  }
+
+  /* Collapsible gift details row */
+  .admin-gift-details {
+    display: none; margin-top: 8px; padding: 10px 12px;
+    background: #fffbf0; border-left: 3px solid #f0c400;
+    border-radius: 4px; font-size: 0.72rem; line-height: 1.55;
+    color: #4b3d00;
+  }
+  .admin-gift-details.is-open { display: block; }
+  .admin-gift-details dl {
+    margin: 0; display: grid; grid-template-columns: 100px 1fr; gap: 4px 12px;
+  }
+  .admin-gift-details dt {
+    font-weight: 850; color: #7a5410; font-size: 0.66rem;
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .admin-gift-details dd { margin: 0; color: #161a1f; font-weight: 700; }
+  .admin-gift-details .admin-gift-msg {
+    grid-column: 1 / -1; margin-top: 6px;
+    padding: 8px 10px; background: #fff; border: 1px dashed #f0c400;
+    border-radius: 4px; color: #4b3d00; font-style: italic;
+    font-weight: 600; font-size: 0.72rem; line-height: 1.5;
+  }
+  .admin-gift-toggle {
+    background: transparent; border: 0; padding: 0; margin-top: 4px;
+    color: #7a5410; font-size: 0.62rem; font-weight: 900;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+  }
+  .admin-gift-toggle:hover { color: #5a1006; }
+
+  /* Hide prices flag */
+  .admin-hide-prices-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 4px; padding: 3px 8px;
+    background: #f2f4f7; border: 1px solid #d9dde1;
+    border-radius: 3px; color: #4f5860;
+    font-size: 0.58rem; font-weight: 900;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .admin-hide-prices-pill::before { content: "🔒"; font-size: 0.66rem; }
+
   @media (max-width: 900px) {
     .dhl-hero-grid { align-items: flex-start; flex-direction: column; }
     .dhl-partner-card { width: 100%; min-width: 0; }
@@ -122,7 +201,7 @@
         <thead>
           <tr class="text-left text-[0.68rem] uppercase tracking-[0.06em] text-[#68717a] bg-[#f7f8f9]">
             <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Reference</th>
-            <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Customer</th>
+            <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Customer / Gift</th>
             <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Total</th>
             <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Payment</th>
             <th class="px-4 py-3.5 border-b border-[#e0e3e6] font-black">Order</th>
@@ -136,17 +215,88 @@
         <tbody>
           {% for order in orders %}
           <tr class="border-b border-[#e0e3e6] hover:bg-[#fafbfc]" data-order-id="{{ order.id }}" data-tracking="{{ order.dhl_tracking_number or '' }}">
-            <td class="px-4 py-3.5 font-extrabold">
+            <td class="px-4 py-3.5 font-extrabold align-top">
               <a href="{{ url_for('order_detail', reference=order.reference) }}" class="text-[#161a1f] no-underline border-b border-transparent hover:border-[#ff0000] hover:text-[#ff0000]">
                 {{ order.reference }}
               </a>
+              {% if order.is_gift_order %}
+                <div class="mt-1" style="font-size:0.58rem;font-weight:900;letter-spacing:0.09em;text-transform:uppercase;color:#7a5410">Gift shipment</div>
+              {% endif %}
             </td>
-            <td class="px-4 py-3.5 text-[#68717a]">{{ order.email }}</td>
-            <td class="px-4 py-3.5 font-black whitespace-nowrap">${{ '%.2f'|format(order.total) }}</td>
-            <td class="px-4 py-3.5">{{ status(order.payment_status) }}</td>
-            <td class="px-4 py-3.5">{{ status(order.status) }}</td>
-            <td class="px-4 py-3.5">{{ status(order.shipping_status or 'pending') }}</td>
-            <td class="px-4 py-3.5">
+
+            <!-- ============================================================
+                 Customer / Gift cell — buyer info plus recipient block
+                 ============================================================ -->
+            <td class="px-4 py-3.5 align-top">
+              <div class="admin-customer-cell">
+                {% if order.full_name %}
+                  <span class="admin-customer-name">{{ order.full_name }}</span>
+                {% endif %}
+                <span class="admin-customer-email">{{ order.email }}</span>
+
+                {% if order.is_gift_order %}
+                  <span class="admin-gift-pill" title="This order will be shipped to the recipient">
+                    Gift to <b>{{ order.recipient_full_name or '—' }}</b>
+                  </span>
+                  <span class="admin-gift-meta">
+                    {% if order.recipient_relationship_label %}
+                      <span class="admin-gift-rel">{{ order.recipient_relationship_label }}</span>
+                    {% endif %}
+                    {% if order.recipient_phone %}📞 {{ order.recipient_phone }}{% endif %}
+                  </span>
+
+                  <button type="button" class="admin-gift-toggle js-gift-toggle" aria-expanded="false">
+                    Show gift details
+                  </button>
+
+                  <div class="admin-gift-details js-gift-details">
+                    <dl>
+                      <dt>Recipient</dt>
+                      <dd>{{ order.recipient_full_name or '—' }}</dd>
+
+                      {% if order.recipient_relationship_label %}
+                      <dt>Relationship</dt>
+                      <dd>{{ order.recipient_relationship_label }}</dd>
+                      {% endif %}
+
+                      {% if order.recipient_phone %}
+                      <dt>Phone</dt>
+                      <dd>{{ order.recipient_phone }}</dd>
+                      {% endif %}
+
+                      {% if order.recipient_email %}
+                      <dt>Email</dt>
+                      <dd>{{ order.recipient_email }}</dd>
+                      {% endif %}
+
+                      {% if order.recipient_company %}
+                      <dt>Company</dt>
+                      <dd>{{ order.recipient_company }}</dd>
+                      {% endif %}
+
+                      {% if order.hide_prices_on_slip %}
+                      <dt>Packing slip</dt>
+                      <dd>Prices hidden</dd>
+                      {% endif %}
+                    </dl>
+
+                    {% if order.gift_message %}
+                      <div class="admin-gift-msg">“{{ order.gift_message }}”</div>
+                    {% endif %}
+                  </div>
+
+                  {% if order.hide_prices_on_slip %}
+                    <span class="admin-hide-prices-pill">No prices on slip</span>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </td>
+
+            <td class="px-4 py-3.5 font-black whitespace-nowrap align-top">${{ '%.2f'|format(order.total) }}</td>
+            <td class="px-4 py-3.5 align-top">{{ status(order.payment_status) }}</td>
+            <td class="px-4 py-3.5 align-top">{{ status(order.status) }}</td>
+            <td class="px-4 py-3.5 align-top">{{ status(order.shipping_status or 'pending') }}</td>
+            <td class="px-4 py-3.5 align-top">
               {% if not order.dhl_tracking_number %}
               <form method="post" action="{{ url_for('admin_update_order_destination', order_id=order.id) }}" class="admin-country-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -171,7 +321,7 @@
                 {{ order.city or 'City missing' }}{% if order.postal_code %} · {{ order.postal_code }}{% endif %}
               </span>
             </td>
-            <td class="px-4 py-3.5 whitespace-nowrap">
+            <td class="px-4 py-3.5 whitespace-nowrap align-top">
               {% if order.dhl_tracking_number %}
               <a href="https://www.dhl.com/global-en/home/tracking.html?tracking-id={{ order.dhl_tracking_number }}" target="_blank" rel="noopener" class="font-mono text-[0.78rem] text-[#d40511] hover:underline">
                 {{ order.dhl_tracking_number }} ↗
@@ -180,13 +330,13 @@
               <span class="text-[#8a9198] text-xs">—</span>
               {% endif %}
             </td>
-            <td class="px-4 py-3.5 whitespace-nowrap text-[#68717a] text-[0.8rem]">{{ order.created_at.strftime('%d %b %Y') }}</td>
-            <td class="px-4 py-3.5">
+            <td class="px-4 py-3.5 whitespace-nowrap text-[#68717a] text-[0.8rem] align-top">{{ order.created_at.strftime('%d %b %Y') }}</td>
+            <td class="px-4 py-3.5 align-top">
               <div class="admin-row-actions">
                 {% if not order.dhl_tracking_number %}
                 <form method="post" action="{{ url_for('admin_create_shipment', order_id=order.id) }}" class="m-0">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="admin-pill-btn dhl-primary admin-btn-primary" onclick="return confirm('Create DHL shipment for {{ order.reference }}?');">
+                  <button type="submit" class="admin-pill-btn dhl-primary admin-btn-primary" onclick="return confirm('Create DHL shipment for {{ order.reference }}{% if order.is_gift_order %} (gift to {{ order.recipient_full_name }}){% endif %}?');">
                     {{ dhl_logo('button', '') }} <span>Create shipment</span>
                   </button>
                 </form>
@@ -240,6 +390,18 @@
 <script>
 (function () {
   const csrf = '{{ csrf_token() }}';
+
+  // ============ GIFT DETAILS TOGGLE ============
+  document.querySelectorAll('.js-gift-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cell  = btn.closest('.admin-customer-cell');
+      const panel = cell?.querySelector('.js-gift-details');
+      if (!panel) return;
+      const isOpen = panel.classList.toggle('is-open');
+      btn.setAttribute('aria-expanded', String(isOpen));
+      btn.textContent = isOpen ? 'Hide gift details' : 'Show gift details';
+    });
+  });
 
   // ============ DOWNLOAD DOCUMENTS ============
   document.querySelectorAll('tr[data-order-id]').forEach(row => {
