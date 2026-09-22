@@ -24,9 +24,7 @@
   .order-step.is-done .order-step-dot { background: #21842a; border-color: #21842a; color: #fff; }
   .order-step.is-active .order-step-dot { background: #ff0000; border-color: #ff0000; color: #fff; }
 
-  /* ============================================================
-     GIFT BLOCK
-     ============================================================ */
+  /* GIFT BLOCK */
   .gift-badge-hero {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 6px 14px; border-radius: 999px;
@@ -203,7 +201,7 @@
 {% block content %}
 <main class="min-h-[70vh] bg-[#f4f5f6] text-[#161a1f]">
 
-  <!-- ================== HERO ================== -->
+  <!-- HERO -->
   <section class="relative overflow-hidden order-hero-bg {% if order.is_gift_order %}is-gift{% endif %} text-white py-[clamp(48px,7vw,88px)]">
     <div class="w-[min(1100px,calc(100%-40px))] mx-auto relative z-10">
       <a href="{{ url_for('account') }}" class="inline-flex items-center gap-1.5 mb-5 text-[#bdc5cc] text-[0.7rem] font-black tracking-[0.05em] uppercase no-underline hover:text-white">&larr; Back to account</a>
@@ -235,16 +233,14 @@
     </div>
   </section>
 
-  <!-- ================== BODY ================== -->
+  <!-- BODY -->
   <section class="py-[clamp(38px,6vw,72px)] pb-[88px]">
     <div class="w-[min(1100px,calc(100%-40px))] mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] gap-6 items-start">
 
-      <!-- ================== LEFT COLUMN ================== -->
+      <!-- LEFT COLUMN -->
       <div class="grid gap-6">
 
-        <!-- ============================================================
-             GIFT DETAILS — shown only when this order is a gift
-             ============================================================ -->
+        <!-- GIFT DETAILS -->
         {% if order.is_gift_order %}
         <section class="gift-card bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
           <header class="gift-card-head">
@@ -350,7 +346,6 @@
           </div>
 
           {% if order.is_gift_order %}
-          <!-- Gift: two-column recipient vs buyer -->
           <div class="p-5 addr-two-col text-[0.85rem] leading-[1.6] text-[#4f5860]">
             <div>
               <span class="addr-col-title">🎁 Ship to (recipient)</span>
@@ -392,7 +387,7 @@
         </section>
         {% endif %}
 
-        <!-- ================== DHL SHIPMENT ================== -->
+        <!-- DHL SHIPMENT -->
         {% if order.dhl_tracking_number or order.shipping_status %}
         <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]"
                  id="dhl-section"
@@ -445,7 +440,6 @@
             {% endif %}
 
             {% if order.dhl_tracking_number %}
-            <!-- Download documents -->
             <div class="md:col-span-3 mt-2">
               <span class="block mb-2 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Download documents</span>
               <div class="flex flex-wrap gap-2">
@@ -455,7 +449,6 @@
               </div>
             </div>
 
-            <!-- Proof of Delivery (visible once delivered) -->
             {% if order.shipping_status == 'delivered' %}
             <div class="md:col-span-3 mt-2 pt-4 border-t border-[#e0e3e6]">
               <span class="block mb-2 text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Electronic Proof of Delivery</span>
@@ -465,7 +458,6 @@
             </div>
             {% endif %}
 
-            <!-- Live tracking events -->
             <div class="md:col-span-3 mt-4 pt-4 border-t border-[#e0e3e6]">
               <div class="flex items-center justify-between mb-3">
                 <span class="block text-[0.68rem] font-black tracking-[0.06em] uppercase text-[#68717a]">Latest DHL tracking events</span>
@@ -487,13 +479,7 @@
         </section>
         {% endif %}
 
-        <!-- ============================================================
-             PROGRESS TIMELINE — FIXED
-             ============================================================
-             The `when` slot now only ever receives a real datetime (or None).
-             Boolean "done" state lives in the third slot, so we never call
-             .strftime() on a bool.
-             ============================================================ -->
+        <!-- PROGRESS TIMELINE — FIXED (no bool() call) -->
         <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
           <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
             <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Order progress</h2>
@@ -502,11 +488,11 @@
           {% set _in_transit = _ship_status in ('transit', 'in_transit') %}
           {% set _delivered  = _ship_status == 'delivered' %}
           {% set steps = [
-            ('Order created',          order.created_at,                          True),
-            ('Payment approved',       None,                                      order.payment_status == 'paid'),
-            ('DHL shipment created',   None,                                      bool(order.dhl_tracking_number)),
-            ('In transit',             None,                                      _in_transit),
-            ('Delivered',              None,                                      _delivered),
+            ('Order created',        order.created_at, True),
+            ('Payment approved',     None,              order.payment_status == 'paid'),
+            ('DHL shipment created', None,              order.dhl_tracking_number),
+            ('In transit',           None,              _in_transit),
+            ('Delivered',            None,              _delivered),
           ] %}
           <ol class="relative p-5 pt-6 m-0 list-none">
             {% for label, when, done in steps %}
@@ -532,7 +518,7 @@
         </section>
       </div>
 
-      <!-- ================== RIGHT COLUMN ================== -->
+      <!-- RIGHT COLUMN -->
       <aside class="lg:sticky lg:top-[120px] grid gap-6">
 
         <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)] p-6">
@@ -629,7 +615,7 @@
   </section>
 </main>
 
-<!-- ================== ePOD modal ================== -->
+<!-- ePOD modal -->
 <div id="pod-backdrop" class="pod-backdrop" hidden></div>
 <div id="pod-modal" class="pod-modal" hidden role="dialog" aria-modal="true" aria-labelledby="pod-modal-title">
   <div class="pod-modal-inner">
@@ -753,7 +739,6 @@
   loadTracking();
   refreshBtn?.addEventListener('click', loadTracking);
 
-  // ---------- Download documents ----------
   document.querySelectorAll('.js-download-doc').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!tracking) return;
@@ -781,7 +766,6 @@
     });
   });
 
-  // ---------- ePOD modal ----------
   const podOpen  = document.getElementById('pod-open-btn');
   const podModal = document.getElementById('pod-modal');
   const podBack  = document.getElementById('pod-backdrop');
