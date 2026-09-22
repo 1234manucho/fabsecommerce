@@ -25,7 +25,7 @@
   .order-step.is-active .order-step-dot { background: #ff0000; border-color: #ff0000; color: #fff; }
 
   /* ============================================================
-     GIFT BLOCK (NEW)
+     GIFT BLOCK
      ============================================================ */
   .gift-badge-hero {
     display: inline-flex; align-items: center; gap: 8px;
@@ -243,7 +243,7 @@
       <div class="grid gap-6">
 
         <!-- ============================================================
-             GIFT DETAILS (NEW) — shown only when this order is a gift
+             GIFT DETAILS — shown only when this order is a gift
              ============================================================ -->
         {% if order.is_gift_order %}
         <section class="gift-card bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
@@ -487,7 +487,13 @@
         </section>
         {% endif %}
 
-        <!-- Progress timeline -->
+        <!-- ============================================================
+             PROGRESS TIMELINE — FIXED
+             ============================================================
+             The `when` slot now only ever receives a real datetime (or None).
+             Boolean "done" state lives in the third slot, so we never call
+             .strftime() on a bool.
+             ============================================================ -->
         <section class="bg-white border border-[#e0e3e6] shadow-[0_18px_55px_rgba(17,24,39,0.06)]">
           <div class="flex items-center justify-between p-5 border-b border-[#e0e3e6]">
             <h2 class="m-0 text-[1.15rem] tracking-[-0.025em]">Order progress</h2>
@@ -496,11 +502,11 @@
           {% set _in_transit = _ship_status in ('transit', 'in_transit') %}
           {% set _delivered  = _ship_status == 'delivered' %}
           {% set steps = [
-            ('Order created', order.created_at, True),
-            ('Payment approved', order.payment_status == 'paid', order.payment_status == 'paid'),
-            ('DHL shipment created', order.dhl_tracking_number, order.dhl_tracking_number),
-            ('In transit', _in_transit, _in_transit),
-            ('Delivered', _delivered, _delivered),
+            ('Order created',          order.created_at,                          True),
+            ('Payment approved',       None,                                      order.payment_status == 'paid'),
+            ('DHL shipment created',   None,                                      bool(order.dhl_tracking_number)),
+            ('In transit',             None,                                      _in_transit),
+            ('Delivered',              None,                                      _delivered),
           ] %}
           <ol class="relative p-5 pt-6 m-0 list-none">
             {% for label, when, done in steps %}
@@ -510,10 +516,12 @@
               </span>
               <div class="pt-0.5">
                 <strong class="block text-[0.85rem]">{{ label }}</strong>
-                {% if when is string %}
-                  <small class="block mt-1 text-[0.7rem] text-[#68717a]">{{ when }}</small>
-                {% elif when %}
+                {% if when and when.strftime is defined %}
                   <small class="block mt-1 text-[0.7rem] text-[#68717a]">{{ when.strftime('%d %b %Y, %H:%M') }}</small>
+                {% elif when is string %}
+                  <small class="block mt-1 text-[0.7rem] text-[#68717a]">{{ when }}</small>
+                {% elif done %}
+                  <small class="block mt-1 text-[0.7rem] text-[#21842a] font-black uppercase tracking-[0.04em]">Completed</small>
                 {% else %}
                   <small class="block mt-1 text-[0.7rem] text-[#8a9198]">Pending</small>
                 {% endif %}
