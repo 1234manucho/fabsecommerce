@@ -30,6 +30,38 @@ DEFAULT_TIMEOUT = int(os.getenv("DHL_TIMEOUT", "30"))
 
 
 # ======================================================================
+# Victor's fix (2026-09): DHL Express Kenya product-code defaults.
+#
+# DHL Express Kenya requires an explicit productCode / localProductCode
+# on every Rating and Shipment payload:
+#   - Domestic (KE -> KE)  : 'N'  (EXPRESS DOMESTIC)
+#   - International        : 'P'  (EXPRESS WORLDWIDE)
+#
+# Omitting the code (or sending the wrong one) causes error 996
+# ("Product not found").  These helpers centralise the choice so
+# get_rates(), create_shipment() and create_pickup() all stay in sync.
+# ======================================================================
+DHL_DOMESTIC_PRODUCT_CODE = os.getenv("DHL_DOMESTIC_PRODUCT_CODE", "N")
+DHL_INTERNATIONAL_PRODUCT_CODE = os.getenv("DHL_INTERNATIONAL_PRODUCT_CODE", "P")
+# Victor's fix (2026-09): Send nextBusinessDay=true on every Rating
+# request.  This tells DHL to skip the operational-hours validation
+# (the 6pm KE cutoff and weekend pickup restrictions) so rates are
+# returned 24/7 and on weekends.
+DHL_NEXT_BUSINESS_DAY = str(
+    os.getenv("DHL_NEXT_BUSINESS_DAY", "true")
+).strip().lower() not in {"0", "false", "no", "off"}
+
+
+def _default_product_code(is_international):
+    """Return the DHL Express Kenya product code for a route."""
+    return (
+        DHL_INTERNATIONAL_PRODUCT_CODE
+        if is_international
+        else DHL_DOMESTIC_PRODUCT_CODE
+    )
+
+
+# ======================================================================
 # TRACKING — status code mapping
 # ======================================================================
 TRACKING_STATUS_MAP = {
@@ -595,6 +627,24 @@ class DHLService:
 
         is_international = origin_country.upper() != destination_country.upper()
 
+        # --------------------------------------------------------------
+        # Victor's fix (2026-09)
+        #
+        # 1. DHL Express Kenya requires the correct product code on every
+        #    Rating request:
+        #       Domestic (KE -> KE) : 'N' (EXPRESS DOMESTIC)
+        #       International       : 'P' (EXPRESS WORLDWIDE)
+        #    Omitting it — or sending the wrong one — returns error 996.
+        #
+        # 2. nextBusinessDay=true tells DHL to ignore operational-hours
+        #    validation (KE 6pm cutoff and weekend pickup restrictions)
+        #    so rates are returned 24/7 and on weekends.
+        # --------------------------------------------------------------
+        if not product_code:
+            product_code = _default_product_code(is_international)
+        if not local_product_code:
+            local_product_code = product_code
+
         payload = {
             "customerDetails": {
                 "shipperDetails": shipper,
@@ -608,6 +658,11 @@ class DHLService:
             ),
             "unitOfMeasurement": "metric",
             "isCustomsDeclarable": is_international,
+            # Victor's fix (2026-09): bypass KE operational-hours checks.
+            "nextBusinessDay": DHL_NEXT_BUSINESS_DAY,
+            # Victor's fix (2026-09): always send the correct product code.
+            "productCode": str(product_code).strip().upper(),
+            "localProductCode": str(local_product_code).strip().upper(),
             "packages": [
                 {
                     "weight": weight_kg,
@@ -621,16 +676,6 @@ class DHLService:
                 "value": declared_value,
                 "currency": str(currency or "USD").upper(),
             }]
-
-        # Omitting product codes asks DHL Rating to return every product that
-        # is actually available for this account, route, date and package.
-        # A code can still be supplied by callers that want to quote one
-        # specific product.
-        if product_code:
-            payload["productCode"] = str(product_code).strip().upper()
-            payload["localProductCode"] = str(
-                local_product_code or product_code
-            ).strip().upper()
 
         return self._post("/rates", payload)
 
@@ -727,17 +772,24 @@ class DHLService:
             "description": package_desc,
         }
 
+        # --------------------------------------------------------------
+        # Victor's fix (2026-09)
+        #
         # DHL Rating is the source of truth for the product that this
-        # account/route/date/package can actually use. Do not hard-code P.
+        # account/route/date/package can actually use. Never hard-code 'P'.
+        # Default to 'N' for domestic and 'P' for international so the
+        # first Rating call already carries the correct code instead of
+        # relying on the retry-without-product fallback.
+        # --------------------------------------------------------------
         explicit_product = (
             order_data.get("product_code")
             or os.getenv("DHL_PRODUCT_CODE")
-            or None
+            or _default_product_code(is_international)
         )
         explicit_local_product = (
             order_data.get("local_product_code")
             or os.getenv("DHL_LOCAL_PRODUCT_CODE")
-            or None
+            or explicit_product
         )
 
         planned_shipping_date = order_data.get("planned_shipping_date")
@@ -796,10 +848,9 @@ class DHLService:
                     "body": (exc.response_body or str(exc))[:500],
                 })
 
-                # If a configured product is rejected with 996, immediately
-                # retry the same date without productCode/localProductCode.
-                # That lets DHL return any product actually enabled for the
-                # account and route.
+                # Safety net: if the configured product is still rejected
+                # with 996, retry the same date without product restriction.
+                # With the 'N'/'P' defaults above this path is rarely hit.
                 if _is_product_unavailable_error(exc) and (
                     explicit_product or explicit_local_product
                 ):
@@ -982,6 +1033,10 @@ class DHLService:
                 "isRequested": True,
             })
 
+        # Victor's fix (2026-09): create_shipment() also needs the correct
+        # product code (N for domestic, P for international). The code is
+        # taken from the Rating response above, so it always matches what
+        # DHL returned for the account/route/date.
         payload = {
             "getOptionalInformation": False,
             "plannedShippingDateAndTime": planned_shipping_date,
@@ -1190,6 +1245,26 @@ class DHLService:
             os.getenv("DHL_ORIGIN_COUNTRY", "KE"), "DHL_ORIGIN_COUNTRY"
         )
 
+        # Victor's fix (2026-09): pickups also need the correct product code.
+        # If the caller supplied a destination country we can choose the
+        # right default; otherwise fall back to the international code 'P'
+        # (which remains the default for outbound Nairobi pickups).
+        pickup_destination_country = (
+            pickup_data.get("destination_country")
+            or pickup_data.get("receiver_country")
+        )
+        if pickup_destination_country:
+            pickup_is_international = (
+                normalize_country_code(
+                    pickup_destination_country,
+                    "pickup destination country",
+                ) != origin_country
+            )
+        else:
+            pickup_is_international = True
+
+        default_pickup_product_code = _default_product_code(pickup_is_international)
+
         payload = {
             "plannedPickupDateAndTime": pickup_data.get(
                 "planned_pickup_date", _dhl_now(hours_ahead=4)
@@ -1233,14 +1308,14 @@ class DHLService:
                 "productCode": str(
                     pickup_data.get("product_code")
                     or os.getenv("DHL_PRODUCT_CODE")
-                    or "P"
+                    or default_pickup_product_code
                 ).strip().upper(),
                 "localProductCode": str(
                     pickup_data.get("local_product_code")
                     or os.getenv("DHL_LOCAL_PRODUCT_CODE")
                     or pickup_data.get("product_code")
                     or os.getenv("DHL_PRODUCT_CODE")
-                    or "P"
+                    or default_pickup_product_code
                 ).strip().upper(),
                 "accounts": [{"typeCode": "shipper", "number": DHL_ACCOUNT_NUMBER}],
                 "packages": [{
@@ -1361,6 +1436,8 @@ class DHLService:
         )
         planned_date = _dhl_now(hours_ahead=2)
 
+        is_international = origin_country != destination_country
+
         result = {
             "environment": (
                 "production"
@@ -1374,6 +1451,10 @@ class DHLService:
             "destination_city": destination_city,
             "destination_postal_code": destination_postal_code,
             "planned_shipping_date": planned_date,
+            # Victor's fix (2026-09): report the default product code so a
+            # diagnostic run shows exactly what would be sent.
+            "default_product_code": _default_product_code(is_international),
+            "next_business_day": DHL_NEXT_BUSINESS_DAY,
             "products": [],
             "error": None,
         }
@@ -1409,7 +1490,7 @@ class DHLService:
         return result
 
     # ==================================================================
-    # 9. PRODUCT CODE LIST
+    # 10. PRODUCT CODE LIST
     # ==================================================================
     def list_products(self, country_code=None, account_number=None):
         params = {
@@ -1420,13 +1501,13 @@ class DHLService:
         return self._get("/products", params=params)
 
     # ==================================================================
-    # 10. UPDATE SHIPMENT
+    # 11. UPDATE SHIPMENT
     # ==================================================================
     def update_shipment(self, shipment_tracking_number, update_payload):
         return self._patch(f"/shipments/{shipment_tracking_number}", update_payload)
 
     # ==================================================================
-    # 11. DOWNLOAD SHIPMENT DOCUMENTS
+    # 12. DOWNLOAD SHIPMENT DOCUMENTS
     # ==================================================================
     def get_shipment_documents(self, shipment_tracking_number, doc_type="label"):
         return self._get(
@@ -1435,7 +1516,7 @@ class DHLService:
         )
 
     # ==================================================================
-    # 12. COUNTRY REFERENCE LIST
+    # 13. COUNTRY REFERENCE LIST
     # ==================================================================
     def list_countries(self):
         raw = self._get("/reference-data", params={"datasetName": "country"})
@@ -1458,7 +1539,7 @@ class DHLService:
         return entries
 
     # ==================================================================
-    # 13. SERVICE POINT FINDER
+    # 14. SERVICE POINT FINDER
     # ==================================================================
     def find_service_points(self, country_code, city=None, postal_code=None, radius_km=10):
         params = {
