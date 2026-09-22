@@ -85,12 +85,13 @@
     100%{left:108%;transform:translateY(-46px) rotate(-6deg) scale(.9);opacity:0}
   }
 
-  /* floating flash badge in hero */
   .fh-hero-flash{position:absolute;z-index:8;left:50%;top:26px;transform:translateX(-50%);
     display:inline-flex;align-items:center;gap:12px;padding:10px 18px;
     background:linear-gradient(90deg,#ff2d55,#ff5f4a);color:#fff;border-radius:999px;
     font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;
-    box-shadow:0 14px 38px rgba(255,45,85,.42);white-space:nowrap}
+    box-shadow:0 14px 38px rgba(255,45,85,.42);white-space:nowrap;text-decoration:none;
+    transition:transform .2s ease}
+  .fh-hero-flash:hover{transform:translateX(-50%) translateY(-2px)}
   .fh-hero-flash i{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 12px #fff;animation:fhPulse 1.4s ease-in-out infinite}
   .fh-hero-flash b{background:#fff;color:#ff2d55;padding:3px 8px;border-radius:999px;font-size:9px;letter-spacing:.08em}
   @keyframes fhPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
@@ -131,7 +132,6 @@
   .fh-product span{font-size:9px;color:#ff7378}
   .fh-source{display:block!important;margin-top:15px;color:#707881!important;font-size:7px!important;letter-spacing:.1em!important}
 
-  /* network globe */
   .fh-network{position:relative;width:600px;height:600px;margin:auto}
   .fh-network:before{content:"";position:absolute;inset:4%;border:1px solid rgba(255,255,255,.08);border-radius:50%;
     background:radial-gradient(circle,rgba(237,49,56,.13),transparent 62%)}
@@ -165,7 +165,7 @@
   .fh-node.n5{left:235px;bottom:-2px;animation-delay:2.8s}
   .fh-live{position:absolute;right:8px;top:20px;font-size:7px;letter-spacing:.13em;color:#aab1b9}
   .fh-live:before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#39db79;margin-right:7px;box-shadow:0 0 10px #39db79}
-  .fh-controls{position:absolute;z-index:9;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+  .fh-controls{position:absolute;z-index:9;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:80%}
   .fh-controls button{width:44px;height:3px;border:0;background:rgba(255,255,255,.25);padding:0;cursor:pointer;border-radius:99px;transition:.25s}
   .fh-controls button.active{background:var(--dhl-yellow);box-shadow:0 0 14px rgba(255,204,0,.6)}
   @keyframes fhspin{to{transform:translate(-50%,-50%) rotate(360deg)}}
@@ -226,7 +226,7 @@
   .fh-deal-meta i{color:var(--red);font-style:normal;font-weight:900}
 
   /* ============================================================
-     OFFERS / PROMO BANNERS (big + small mix)
+     OFFERS / PROMO BANNERS
      ============================================================ */
   .fh-offers{padding:56px 0 20px}
   .fh-offer-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;grid-template-rows:auto auto}
@@ -269,7 +269,7 @@
   .fh-metrics p{font-size:9px;color:#6f767e;text-transform:uppercase;letter-spacing:.1em;margin:0;font-weight:700}
 
   /* ============================================================
-     FLIGHT BAND — the plane flies the route
+     FLIGHT BAND
      ============================================================ */
   .fh-flight{position:relative;padding:66px 0 76px;overflow:hidden;color:#fff;
     background:radial-gradient(1200px 420px at 78% 0%,rgba(255,204,0,.13),transparent 62%),
@@ -408,7 +408,6 @@
     text-transform:uppercase;letter-spacing:.07em;text-decoration:none;white-space:nowrap}
   .fh-section-head>a:hover{gap:20px}
 
-  /* gallery */
   .fh-gallery{background:#f2f3f4}
   .fh-gallery-grid{display:grid;grid-template-columns:1.5fr repeat(2,1fr);grid-template-rows:300px 300px;gap:14px}
   .fh-gallery-card{position:relative;overflow:hidden;background:#111;color:#fff;border-radius:10px;text-decoration:none;display:block}
@@ -426,7 +425,6 @@
   .fh-gallery-note{font-size:8px;color:#818990;margin:18px 0 0}
   .fh-gallery-note:before{content:"✓";color:#28a95a;margin-right:8px}
 
-  /* about */
   .fh-about-layout{display:grid;grid-template-columns:.82fr 1.18fr;gap:90px;align-items:center}
   .fh-copy-block p{font-size:14px}
   .fh-red-button{height:53px;padding:0 24px;display:inline-flex;align-items:center;gap:16px;background:var(--red);
@@ -444,7 +442,6 @@
   .fh-about-image>div b{font-size:30px}
   .fh-about-image>div span{display:block;font-size:7px;letter-spacing:.1em}
 
-  /* services */
   .fh-services{background:#121519;color:#fff}
   .fh-services .fh-section-head p{color:#999fa7}
   .fh-services .fh-section-head>a{color:#ff6b71}
@@ -473,7 +470,6 @@
     text-transform:uppercase;white-space:nowrap;border-radius:6px;text-decoration:none;transition:.2s}
   .fh-services-cta a:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(0,0,0,.22)}
 
-  /* partners */
   .fh-partners{background:#f1f2f3}
   .fh-partner-ribbon{background:#171a1e;color:#fff;padding:26px 28px;border-radius:10px;display:grid;
     grid-template-columns:230px 1fr auto;align-items:center;gap:35px}
@@ -529,7 +525,6 @@
   .fh-venue a{margin-top:auto;color:#d8272f;font-size:8px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;text-decoration:none}
   .fh-notice{font-size:8px;color:#787f86;line-height:1.7;margin:18px 0 0}
 
-  /* faq */
   .fh-faq-layout{display:grid;grid-template-columns:.7fr 1.3fr;gap:80px}
   .fh-faq-list details{border-top:1px solid #dfe2e5}
   .fh-faq-list details:last-child{border-bottom:1px solid #dfe2e5}
@@ -543,7 +538,6 @@
   .fh-faq-list details[open] summary i{transform:rotate(45deg)}
   .fh-faq-list details p{margin:0;padding:0 50px 24px 56px;color:#69727b;font-size:11px;line-height:1.8}
 
-  /* testimonials */
   .fh-testimonials{background:#15181c;color:#fff}
   .fh-testimonials .fh-section-head p{color:#999fa6}
   .fh-story-stage{position:relative;min-height:360px;background:#20242a;border-radius:12px;overflow:hidden;
@@ -561,7 +555,6 @@
   .fh-story-dots button{width:34px;height:3px;background:#484e55;border:0;cursor:pointer;border-radius:99px;transition:.25s}
   .fh-story-dots button.active{background:#ed3a42}
 
-  /* final CTA */
   .fh-final{position:relative;background:linear-gradient(100deg,#ed3138,#c11b23 62%,#8f1218);color:#fff;padding:78px 0;overflow:hidden}
   .fh-final-plane{position:absolute;right:4%;top:14%;width:210px;opacity:.16;pointer-events:none;
     animation:fhFinalFly 13s ease-in-out infinite}
@@ -704,7 +697,6 @@
        ============================================================ -->
   <section class="fh-hero" aria-roledescription="carousel" aria-label="FABS gaming marketplace">
 
-    <!-- Hero background slides: first 10 games (VR and arcade machines) -->
     <div class="fh-slides">
       {% for game in games[:10] %}
       <article class="fh-slide {% if loop.first %}active{% endif %}" data-slide="{{ loop.index0 }}">
@@ -716,13 +708,11 @@
 
     <span class="fh-hero-glow" aria-hidden="true"></span>
 
-    <!-- flying DHL plane -->
     <div class="fh-hero-flight" aria-hidden="true">
       <span class="fh-hero-route"></span>
       <div class="fh-hero-plane">{{ dhl_plane('', 150, 68) }}</div>
     </div>
 
-    <!-- flash sale ribbon -->
     <a class="fh-hero-flash" href="{{ url_for('games') }}?flash=1">
       <i aria-hidden="true"></i>
       Flash sale live · up to 45% off arcade &amp; VR
@@ -793,7 +783,7 @@
   </section>
 
   <!-- ============================================================
-       FLASH DEALS GRID — 8 featured products with % off
+       FLASH DEALS GRID
        ============================================================ -->
   <section class="fh-flash" aria-label="Flash deals">
     <div class="home-shell">
@@ -806,11 +796,15 @@
       </header>
 
       <div class="fh-flash-grid">
+        {# FIX: cast game.price (Decimal) to float before multiplying by
+           the float multipliers below, otherwise Jinja raises
+           "unsupported operand type(s) for *: 'decimal.Decimal' and 'float'". #}
         {% set deal_discounts = [45, 30, 25, 20, 40, 35, 15, 28] %}
         {% set deal_old = [1.35, 1.28, 1.2, 1.15, 1.5, 1.4, 1.12, 1.25] %}
         {% for game in games[:8] %}
         {% set disc = deal_discounts[loop.index0] %}
-        {% set old_price = game.price * deal_old[loop.index0] %}
+        {% set base_price = game.price|float %}
+        {% set old_price = base_price * deal_old[loop.index0] %}
         <a class="fh-deal" href="{{ url_for('game_detail',slug=game.slug) }}" data-reveal>
           <div class="fh-deal-media">
             <img src="{{ game.image_url }}" alt="{{ game.title }} flash deal" loading="lazy">
@@ -821,7 +815,7 @@
             <span class="fh-deal-cat">{{ game.genre }}</span>
             <h3>{{ game.title }}</h3>
             <div class="fh-deal-price">
-              <b>US${{ '{:,.2f}'.format(game.price) }}</b>
+              <b>US${{ '{:,.2f}'.format(base_price) }}</b>
               <s>US${{ '{:,.2f}'.format(old_price) }}</s>
             </div>
             <div class="fh-deal-meta">
@@ -849,7 +843,6 @@
       </header>
 
       <div class="fh-offer-grid">
-        <!-- Hero offer — VR attractions -->
         {% set vr = games[0] %}
         <a class="fh-offer hero-offer vr-offer" href="{{ url_for('games') }}?category=vr" data-reveal>
           {% if vr.image_url %}<img src="{{ vr.image_url }}" alt="VR attractions offer">{% endif %}
@@ -860,7 +853,6 @@
           <span class="fh-offer-cta">Shop VR deals →</span>
         </a>
 
-        <!-- Arcade machines offer -->
         {% set arcade = games[1] if games|length > 1 else games[0] %}
         <a class="fh-offer arcade-offer" href="{{ url_for('games') }}?category=arcade" data-reveal>
           {% if arcade.image_url %}<img src="{{ arcade.image_url }}" alt="Arcade machines offer">{% endif %}
@@ -871,7 +863,6 @@
           <span class="fh-offer-cta">Shop arcade →</span>
         </a>
 
-        <!-- Flash bundle offer -->
         <a class="fh-offer flash-offer" href="{{ url_for('games') }}?flash=1" data-reveal>
           <span class="fh-offer-badge">-45%<small>OFF</small></span>
           <span class="fh-offer-tag">Limited time</span>
@@ -896,7 +887,7 @@
   </section>
 
   <!-- ============================================================
-       DHL FLIGHT BAND — moving plane + tracking input
+       DHL FLIGHT BAND
        ============================================================ -->
   <section class="fh-flight" aria-label="DHL Express worldwide air freight">
     <span class="fh-flight-grid-lines" aria-hidden="true"></span>
@@ -1098,7 +1089,7 @@
             <h3>{{ game.title }}</h3>
             <p>{{ game.description }}</p>
             <dl>
-              <dt>Starting price</dt><dd>US${{ '{:,.2f}'.format(game.price) }}</dd>
+              <dt>Starting price</dt><dd>US${{ '{:,.2f}'.format(game.price|float) }}</dd>
               <dt>Minimum order</dt><dd>{{ game.minimum_order }}</dd>
             </dl>
             <b>Open product and inquire →</b>
@@ -1362,7 +1353,6 @@
   /* ---------- flash sale countdown ---------- */
   const cd = $('#fh-countdown');
   if(cd){
-    // Countdown ends 7 days from the first page load in this session.
     const KEY = 'fabs_flash_end';
     let end = Number(sessionStorage.getItem(KEY));
     if(!end || end < Date.now()){
@@ -1394,4 +1384,4 @@
 })();
 </script>
 
-{% endblock %} 
+{% endblock %}
