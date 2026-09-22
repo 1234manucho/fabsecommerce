@@ -1,114 +1,42 @@
 {% extends 'base.html' %}
 
-{# FABS homepage update. Page-10 media matched to the live catalogue on 22 September 2026.
-   Optional route context:
-     homepage_hero_games: curated product objects, ideally the page-10 equipment below.
-     home_sale_products: products with price, sale_price and is_on_sale=True for a genuine offer.
-     home_campaign: {'ends_at': 'an absolute ISO-8601 deadline with Z or timezone offset'}.
-   Displaying an offer here does not change checkout pricing. Use the same approved
-   product pricing in the existing checkout backend. No assumed discount or rolling timer.
-#}
-{% set page10_equipment = [
-  {
-    "id": 74,
-    "slug": "vart-9d-vr-fighting-gun-games-shooting-virtual-reality-simulat-074",
-    "title": "Vart 9d Vr Fighting Gun Games Shooting Virtual Reality Simulation for 2 Players",
-    "price": 10000.0,
-    "minimum_order": "1 Piece (MOQ)",
-    "image_url": "https://image.made-in-china.com/43f34j00nvVWDRjaaLUH/Vart-9d-Vr-Fighting-Gun-Games-Shooting-Virtual-Reality-Simulation-for-2-Players.webp",
-    "genre": "VR Simulator",
-    "photo_source": "Made-in-China product listing",
-    "display_title": "VART 9D two-player VR system",
-    "description": "Commercial entertainment equipment for professionally managed venues. Confirm specifications, installation and delivery in your quotation."
-  },
-  {
-    "id": 78,
-    "slug": "driving-with-electric-machines-games-078",
-    "title": "Driving with Electric Machines Games",
-    "price": 12700.0,
-    "minimum_order": "1 Piece (MOQ)",
-    "image_url": "https://image.made-in-china.com/43f34j00gOFcknbEQyov/Driving-with-Electric-Machines-Games.webp",
-    "genre": "Racing Simulator",
-    "photo_source": "Made-in-China product listing",
-    "display_title": "Commercial motion racing simulator",
-    "description": "Commercial entertainment equipment for professionally managed venues. Confirm specifications, installation and delivery in your quotation."
-  },
-  {
-    "id": 79,
-    "slug": "vart-vr-arena-multiplayer-shooting-game-commercial-vr-entertai-079",
-    "title": "Vart Vr Arena Multiplayer Shooting Game Commercial Vr Entertainment Equipment",
-    "price": 16800.0,
-    "minimum_order": "1 Piece (MOQ)",
-    "image_url": "https://image.made-in-china.com/43f34j00lJbWjkcdSoUH/Vart-Vr-Arena-Multiplayer-Shooting-Game-Commercial-Vr-Entertainment-Equipment.webp",
-    "genre": "VR Simulator",
-    "photo_source": "Made-in-China product listing",
-    "display_title": "VART multiplayer VR arena",
-    "description": "Commercial entertainment equipment for professionally managed venues. Confirm specifications, installation and delivery in your quotation."
-  },
-  {
-    "id": 76,
-    "slug": "compact-indoor-mini-bowling-game-set-for-family-fun-076",
-    "title": "Compact Indoor Mini Bowling Game Set for Family Fun",
-    "price": 10800.0,
-    "minimum_order": "2 lanes (MOQ)",
-    "image_url": "https://image.made-in-china.com/43f34j00cGEKVCFnwmke/Compact-Indoor-Mini-Bowling-Game-Set-for-Family-Fun.webp",
-    "genre": "Sports Game",
-    "photo_source": "Made-in-China product listing",
-    "display_title": "Compact indoor bowling system",
-    "description": "Commercial entertainment equipment for professionally managed venues. Confirm specifications, installation and delivery in your quotation."
-  },
-  {
-    "id": 80,
-    "slug": "vr-amusement-money-making-equipment-vr-shooting-arcade-machine-080",
-    "title": "Vr Amusement Money Making Equipment Vr Shooting Arcade Machine Game Virtual Reality",
-    "price": 19000.0,
-    "minimum_order": "1 Piece (MOQ)",
-    "image_url": "https://image.made-in-china.com/43f34j00hoBeJOwndAqE/Vr-Amusement-Money-Making-Equipment-Vr-Shooting-Arcade-Machine-Game-Virtual-Reality.webp",
-    "genre": "VR Simulator",
-    "photo_source": "Made-in-China product listing",
-    "display_title": "Commercial VR shooting attraction",
-    "description": "Commercial entertainment equipment for professionally managed venues. Confirm specifications, installation and delivery in your quotation."
-  }
-] %}
-{% set supplied_games = games|default([],true)|list %}
-{% set home_products = supplied_games if supplied_games else page10_equipment %}
-{% set hero_selection = namespace(items=[]) %}
-{% for equipment in page10_equipment %}
-  {% set matches = supplied_games|selectattr('slug','equalto',equipment.slug)|list %}
-  {% set hero_selection.items = hero_selection.items + [matches[0] if matches else equipment] %}
-{% endfor %}
-{% set featured_equipment = homepage_hero_games|default(hero_selection.items,true)|list %}
-{% set offer_products = home_sale_products|default(featured_equipment,true)|list %}
-
-
 {% macro dhl_logo(class_name='', width=180, height=52) -%}
-
 <svg class="dhl-logo {{ class_name }}" viewBox="0 0 320 90" width="{{ width }}" height="{{ height }}" role="img" aria-label="DHL Express logo" focusable="false" xmlns="http://www.w3.org/2000/svg">
-
   <g fill="#d40511">
-
     <path d="M5 21h49l-4 8H3zm-4 14h47l-4 8H0zm7 14h34l-4 8H5z"/>
-
     <text x="58" y="62" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="58" font-style="italic" font-weight="900" letter-spacing="-5">DHL</text>
-
     <path d="M267 21h49l-4 8h-49zm7 14h46l-4 8h-46zm7 14h34l-4 8h-34z"/>
-
   </g>
-
 </svg>
-
 {%- endmacro %}
 
 {% block title %}FABS Trading Global E-Commerce | Gaming Marketplace{% endblock %}
 
 {% block head %}
-{{ super() }}
 
 <style>
 
   .dhl-logo{display:block;overflow:visible;flex:none;color:#d40511}
 
   .flask-home{--red:#ed3138;--ink:#11151a;--muted:#69717a;--paper:#f4f5f6;--dhl-yellow:#ffcc00;--dhl-red:#d40511;background:#fff;color:var(--ink);overflow:hidden}.home-shell{width:min(1440px,calc(100% - 64px));margin-inline:auto}.home-kicker{display:flex;align-items:center;gap:10px;color:var(--red);font-size:9px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.home-kicker:before{content:"";width:23px;height:2px;background:var(--red)}
+
+  .fh-hero{position:relative;min-height:760px;background:#07090c;color:#fff;overflow:hidden}.fh-slides,.fh-slide,.fh-shade{position:absolute;inset:0}.fh-slide{opacity:0;transform:scale(1.05);transition:opacity 1s ease,transform 7s ease}.fh-slide.active{opacity:1;transform:scale(1)}.fh-slide img{width:100%;height:100%;object-fit:cover}.fh-shade{background:linear-gradient(90deg,rgba(4,6,9,.97) 0%,rgba(4,6,9,.82) 36%,rgba(4,6,9,.38) 64%,rgba(4,6,9,.75) 100%),linear-gradient(0deg,rgba(4,6,9,.88),transparent 55%)}.fh-hero-layout{position:relative;z-index:4;min-height:760px;display:grid;grid-template-columns:1fr .9fr;gap:50px;align-items:center;padding-block:74px}.fh-copy{max-width:690px}.fh-copy>span:first-child{display:flex;align-items:center;gap:10px;font-size:9px;font-weight:850;letter-spacing:.2em;color:#ff7075}.fh-copy>span:first-child i{width:30px;height:1px;background:#ff5d63}.fh-copy h1{font-size:clamp(54px,6.4vw,92px);line-height:.94;letter-spacing:-.06em;margin:24px 0 28px;max-width:820px}.fh-copy h1 em{font-style:normal;color:#ff5159}.fh-copy>p{max-width:620px;color:#c1c6cc;font-size:16px;line-height:1.75}
+
+  /* ============ HERO DHL CHIP — yellow background, larger logo ============ */
+
+  .fh-hero-dhl{display:inline-flex;align-items:center;gap:14px;margin-top:26px;padding:10px 18px 10px 14px;background:var(--dhl-yellow);color:var(--dhl-red);text-decoration:none;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:4px;transition:transform .18s ease,box-shadow .18s ease;border:1px solid #e6b800}
+
+  .fh-hero-dhl:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(255,204,0,.45)}
+
+  .fh-hero-dhl .dhl-logo{height:32px;width:120px;min-width:96px}
+
+  .fh-hero-dhl span{display:flex;align-items:center;gap:8px}
+
+  .fh-hero-dhl b{color:var(--dhl-red);font-size:11px}
+
+  .fh-actions{display:flex;gap:10px;margin-top:34px;flex-wrap:wrap}.fh-actions a{height:53px;padding:0 22px;display:flex;align-items:center;gap:18px;font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;border:1px solid rgba(255,255,255,.24)}.fh-actions a:first-child{background:var(--red);border-color:var(--red)}.fh-actions a.fh-actions-dhl{border-color:var(--dhl-yellow);color:var(--dhl-yellow)}.fh-actions a.fh-actions-dhl:hover{background:var(--dhl-yellow);color:#111}.fh-product{margin-top:52px;padding-top:20px;border-top:1px solid rgba(255,255,255,.15);display:grid;grid-template-columns:140px 1fr;gap:6px 18px;max-width:590px}.fh-product small{grid-row:1/3;color:#8f969e;font-size:8px;letter-spacing:.12em}.fh-product strong{font-size:15px}.fh-product span{font-size:9px;color:#ff7378}.fh-source{display:block!important;margin-top:15px;color:#707881!important;font-size:7px!important;letter-spacing:.1em!important}
+
+  .fh-network{position:relative;width:600px;height:600px;margin:auto}.fh-network:before{content:"";position:absolute;inset:4%;border:1px solid rgba(255,255,255,.08);border-radius:50%;background:radial-gradient(circle,rgba(237,49,56,.12),transparent 62%)}.fh-ring{position:absolute;left:50%;top:50%;border:1px solid rgba(255,103,109,.25);border-radius:50%;transform:translate(-50%,-50%);animation:fhspin 32s linear infinite}.fh-ring.one{width:410px;height:410px}.fh-ring.two{width:540px;height:540px;animation-direction:reverse;animation-duration:45s}.fh-ring:before,.fh-ring:after{content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:#ff5159;box-shadow:0 0 18px #ff5159}.fh-ring:before{left:-4px;top:50%}.fh-ring:after{right:14%;top:12%}.fh-globe{position:absolute;z-index:5;left:50%;top:50%;width:250px;height:250px;border-radius:50%;overflow:hidden;transform:translate(-50%,-50%);box-shadow:0 0 0 1px rgba(143,191,255,.4),0 0 85px rgba(31,116,243,.43);background:#02050a}.fh-globe video{width:100%;height:100%;object-fit:cover}.fh-globe:after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:inset -55px -10px 70px rgba(0,0,0,.78),inset 16px 8px 24px rgba(255,255,255,.15)}.fh-globe div{position:absolute;z-index:3;inset:auto 0 34px;text-align:center}.fh-globe small{display:block;color:#9fc4ef;font-size:7px;letter-spacing:.14em}.fh-globe strong{display:block;font-size:31px;line-height:1}.fh-globe b{font-size:7px;letter-spacing:.16em;color:#ff6a70}.fh-node{position:absolute;z-index:8;width:130px;background:rgba(8,12,18,.88);border:1px solid rgba(255,255,255,.18);padding:7px;backdrop-filter:blur(12px);box-shadow:0 15px 35px rgba(0,0,0,.25);animation:fhfloat 5s ease-in-out infinite}.fh-node img{width:100%;height:70px;object-fit:cover;display:block}.fh-node b{display:block;font-size:7px;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fh-node small{display:block;font-size:6px;color:#ff7479;margin-top:3px}.fh-node.n1{left:0;top:95px}.fh-node.n2{right:0;top:110px;animation-delay:.7s}.fh-node.n3{left:0;bottom:82px;animation-delay:1.4s}.fh-node.n4{right:0;bottom:82px;animation-delay:2.1s}.fh-node.n5{left:235px;bottom:-2px;animation-delay:2.8s}.fh-live{position:absolute;right:8px;top:20px;font-size:7px;letter-spacing:.13em;color:#aab1b9}.fh-live:before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#39db79;margin-right:7px;box-shadow:0 0 10px #39db79}.fh-controls{position:absolute;z-index:9;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:8px}.fh-controls button{width:42px;height:3px;border:0;background:rgba(255,255,255,.25);padding:0;cursor:pointer}.fh-controls button.active{background:#ef4148}@keyframes fhspin{to{transform:translate(-50%,-50%) rotate(360deg)}}@keyframes fhfloat{50%{transform:translateY(-10px)}}
 
   .fh-metrics{background:#fff;border-bottom:1px solid #e5e7e9}.fh-metrics>div{display:grid;grid-template-columns:repeat(4,1fr)}.fh-metrics article{padding:31px 28px;border-right:1px solid #e5e7e9;display:grid;grid-template-columns:auto 1fr;gap:3px 18px;align-items:center}.fh-metrics article:last-child{border-right:0}.fh-metrics span{grid-row:1/3;color:#c2c6ca;font-size:9px}.fh-metrics strong{font-size:28px;line-height:1}.fh-metrics p{font-size:9px;color:#6f767e;text-transform:uppercase;letter-spacing:.1em;margin:0}
 
@@ -296,16 +224,6 @@
 
   @media(prefers-reduced-motion:reduce){.fh-ring,.fh-node{animation:none!important}.fh-slide{transition:none}}
 
-/* FABS homepage: commercial equipment hero, offer banners and sale cards. */
-.flask-home{--red:#e92d3c;--fm-night:#10111a;--fm-line:#e6e7eb;--fm-muted:#6d7380;font-family:inherit;isolation:isolate}.flask-home *{box-sizing:border-box}.flask-home a{text-decoration:none}.flask-home button{font:inherit;cursor:pointer}.flask-home a:focus-visible,.flask-home button:focus-visible{outline:3px solid #ff7180;outline-offset:4px}.home-shell{width:min(1380px,calc(100% - 64px))}.fm-announcement{background:#e92d3c;color:#fff}.fm-announcement>.home-shell{min-height:43px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:13px}.fm-announcement b{font-size:11px;letter-spacing:1px;padding-right:18px;margin-right:17px;border-right:1px solid #ff9098}.fm-announcement a{font-size:12px;color:white;white-space:nowrap;font-weight:650}.fm-announcement a span{margin-left:10px}.fm-hero{background:var(--fm-night);color:white;overflow:hidden;position:relative}.fm-hero:before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 80% 45%,#33233d 0,transparent 57%);pointer-events:none}.fm-hero-grid{display:grid;grid-template-columns:1.12fr 1fr;gap:58px;padding-top:66px;padding-bottom:57px;align-items:center;position:relative}.fm-hero-copy{padding-bottom:8px;min-width:0}.fm-eyebrow{font-size:11px;font-weight:750;letter-spacing:1.55px;color:#ff929b;display:flex;align-items:center;gap:12px}.fm-eyebrow i{width:25px;height:2px;background:var(--red);display:block}.fm-hero-copy h1{font-size:clamp(44px,4.7vw,73px);line-height:1.04;letter-spacing:-.055em;margin:25px 0 24px;font-weight:800;color:white}.fm-hero-copy h1 em{font-style:normal;color:#ff5363;display:inline-block}.fm-hero-copy>p{font-size:16px;line-height:1.8;color:#bfc0ce;max-width:550px;margin:0}.fm-hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:29px}.fm-button{display:inline-flex;align-items:center;justify-content:center;min-height:49px;padding:0 21px;gap:24px;border:1px solid transparent;border-radius:6px;font-size:13px;font-weight:700;line-height:1.4;transition:background .2s,transform .2s}.fm-button:hover{transform:translateY(-2px)}.fm-button-red{background:var(--red);color:white!important;border-color:var(--red)}.fm-button-red:hover{background:#ce2231}.fm-button-outline{background:#ffffff04;border-color:#484852;color:white!important}.fm-button-outline:hover{background:#ffffff0d}.fm-button span{font-size:19px;font-weight:400}.fm-hero-assurance{display:flex;flex-wrap:wrap;gap:8px 17px;margin:23px 0 30px;font-size:11px;color:#a1a6b6}.fm-hero-product{padding-top:23px;border-top:1px solid #ffffff1b;max-width:560px}.fm-hero-product>span{font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:#ff8d99}.fm-hero-product>strong{display:block;font-size:18px;font-weight:600;margin:7px 0 9px;color:white;line-height:1.4}.fm-hero-product>div{display:flex;align-items:center;justify-content:space-between;gap:12px}.fm-hero-product small{color:#a1a8b8;font-size:12px}.fm-hero-product a{color:#ff8d99;font-size:12px;font-weight:650;white-space:nowrap}.fm-hero-product a span{padding-left:7px}.fm-hero-visual{position:relative;padding:15px 0 16px;min-width:0}.fm-hero-frame{position:relative;margin-left:16px;padding:12px;border:1px solid #77707e75;background:#ffffff0a;border-radius:16px;transform:rotate(2deg)}.fm-feature-label{position:absolute;right:22px;top:-14px;z-index:4;background:#fff;color:#23232d;padding:8px 14px;letter-spacing:1.35px;font-size:10px;font-weight:750;transform:rotate(-2deg);box-shadow:0 5px 15px #0003}.fm-hero-images{position:relative;aspect-ratio:1.12;overflow:hidden;border-radius:9px;background:#161b27}.fm-equipment-slide{position:absolute;inset:0;margin:0;opacity:0;transition:opacity .65s ease;pointer-events:none}.fm-equipment-slide.is-active{opacity:1;z-index:1}.fm-equipment-slide img{width:100%;height:100%;object-fit:cover;display:block;object-position:center 47%}.fm-image-caption{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#c5c3d0;padding:13px 5px 2px;letter-spacing:.5px}.fm-image-caption span:last-child{color:#fff;font-weight:650}.fm-floating-tag{position:absolute;left:-12px;bottom:-9px;z-index:5;display:flex;gap:12px;align-items:center;background:white;color:#20232a;padding:15px 18px;border-radius:8px;box-shadow:0 10px 30px #09091538}.fm-floating-tag strong{font-size:13px;display:block}.fm-floating-tag div>span{display:block;color:#868795;font-size:11px;margin-top:4px}.fm-bolt{width:37px;height:37px;display:grid;place-items:center;background:#fff0f2;color:var(--red);font-size:28px;font-weight:400;border-radius:50%}.fm-hero-bottom{position:relative;display:flex;align-items:center;gap:20px;border-top:1px solid #ffffff1b;padding-top:19px;padding-bottom:23px}.fm-hero-thumbs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;flex:1;min-width:0}.fm-hero-thumb{display:flex;gap:11px;align-items:center;text-align:left;min-width:0;padding:10px;color:#b7b8c7;background:#ffffff04;border:1px solid #ffffff0f;border-radius:7px;transition:background .2s,border-color .2s}.fm-hero-thumb.is-active{background:#ffffff0b;border-color:#f25e6999}.fm-hero-thumb:hover{background:#ffffff0d}.fm-hero-thumb img{width:48px;height:48px;object-fit:cover;border-radius:5px;flex-shrink:0}.fm-hero-thumb>span{display:block;min-width:0}.fm-hero-thumb small{display:block;font-size:10px;color:#8d94a7;line-height:1.5;margin-bottom:3px}.fm-hero-thumb strong{font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:600;color:#d8dbe5}.fm-hero-thumb.is-active strong{color:#fff}.fm-hero-controls{display:flex;gap:6px}.fm-hero-controls button{height:40px;width:40px;border:1px solid #ffffff26;background:#ffffff05;color:white;border-radius:5px;font-size:16px;display:grid;place-items:center}.fm-hero-controls button:hover{background:#ffffff15}.fm-hero-controls button:disabled{opacity:.3;cursor:default}.fm-promotions{padding:32px 0;background:#f7f7fa}.fm-promo-grid{display:grid;grid-template-columns:1fr 1fr;gap:23px}.fm-promo{position:relative;display:grid;grid-template-columns:1.05fr 1fr;align-items:stretch;min-height:265px;overflow:hidden;border-radius:11px;color:white;border:1px solid #e5e3ee}.fm-promo>div{padding:27px 0 25px 29px;position:relative;z-index:2;background:linear-gradient(90deg,var(--promo),var(--promo) 80%,transparent);width:115%}.fm-promo-vr{--promo:#272043;background:#272043}.fm-promo-racing{--promo:#de2839;background:#de2839;border-color:#de2839}.fm-promo-kicker{font-size:10px;font-weight:750;letter-spacing:1.3px;color:#d2c8ed}.fm-promo-racing .fm-promo-kicker{color:#ffdadf}.fm-promo h2{margin:14px 0 10px;color:white;font-size:31px;line-height:1.08;letter-spacing:-1.1px}.fm-promo p{color:#ddd6ee;font-size:12px;line-height:1.7;max-width:228px;margin:0 0 18px}.fm-promo-racing p{color:#ffdbe0}.fm-promo strong{font-size:12px;color:white;border-bottom:1px solid #ffffff73;padding-bottom:5px;display:inline-flex;gap:17px}.fm-promo img{position:absolute;right:0;top:0;bottom:0;width:49%;height:100%;object-fit:cover;transition:transform .35s;object-position:55% center}.fm-promo:hover img{transform:scale(1.035)}.fm-flash{padding:47px 0 43px;background:white;scroll-margin-top:28px}.fm-sale-heading{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:27px}.fm-section-label{font-size:10px;color:var(--red);font-weight:750;letter-spacing:1.4px}.fm-sale-heading h2{font-size:31px;line-height:1.25;letter-spacing:-1px;color:#151923;margin:10px 0}.fm-flash-icon{color:var(--red);font-size:40px;vertical-align:-2px;margin-right:4px}.fm-sale-heading p{margin:0;color:var(--fm-muted);font-size:14px;line-height:1.6}.fm-sale-tools{display:flex;gap:23px;align-items:center}.fm-sale-tools>a{font-size:12px;color:var(--red);font-weight:700;white-space:nowrap}.fm-sale-tools>a span{margin-left:11px}.fm-countdown[hidden]{display:none!important}.fm-countdown{display:flex;align-items:center;gap:10px;font-size:11px;color:#7a7d8c}.fm-countdown>div{display:flex;gap:5px;align-items:center}.fm-countdown b{font-size:13px;font-variant-numeric:tabular-nums;background:#191b24;color:#fff;padding:7px 8px;min-width:31px;text-align:center;border-radius:5px}.fm-countdown small{font-size:10px}.fm-product-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}.fm-product-card{border:1px solid var(--fm-line);border-radius:10px;background:#fff;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .2s}.fm-product-card:hover{transform:translateY(-4px);box-shadow:0 12px 30px #1515230c}.fm-product-image{position:relative;display:block;aspect-ratio:1.17;background:#f3f3f7;overflow:hidden}.fm-product-image img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s}.fm-product-card:hover .fm-product-image img{transform:scale(1.04)}.fm-product-badge{position:absolute;top:12px;left:12px;background:#fff;color:#202333;border-radius:4px;font-size:9px;font-weight:800;letter-spacing:.65px;padding:6px 9px;box-shadow:0 2px 7px #0001}.fm-product-badge.is-discount{background:var(--red);color:white;font-size:12px}.fm-product-body{padding:19px 18px 17px;display:flex;flex-direction:column;flex:1}.fm-product-category{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#8b90a0}.fm-product-body h3{font-size:16px;line-height:1.45;letter-spacing:-.3px;margin:8px 0 14px;min-height:46px;font-weight:650;color:#242632}.fm-product-price{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 9px;font-size:11px;margin-top:auto;color:#808694}.fm-product-price strong{font-size:20px;letter-spacing:-.6px;color:#e62e3e;font-weight:750;margin-left:3px}.fm-product-price del{font-size:12px;color:#969caa}.fm-product-moq{font-size:11px;color:#8b90a0;line-height:1.6;margin:10px 0 16px}.fm-product-moq b{font-weight:500;color:#575e6e;display:block}.fm-product-cta{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:42px;padding:10px 12px;background:#fff3f4;border:1px solid #f8dadd;border-radius:5px;color:#d22837;font-size:12px;font-weight:650}.fm-product-cta:hover{background:#ffe8eb}.fm-product-cta span{font-size:17px}.fm-offer-note{display:flex;justify-content:space-between;gap:22px;font-size:11px;color:#8a8e9b;line-height:1.65;margin-top:21px}.fm-offer-note>a{white-space:nowrap}.fm-offer-note b{font-weight:600;color:var(--red);padding-left:4px}.fm-bundle-banner{background:#f0f2f8;border-top:1px solid #e7e9ef;border-bottom:1px solid #e7e9ef;padding:29px 0}.fm-bundle-banner>.home-shell{display:flex;align-items:center;gap:25px}.fm-bundle-mark{display:grid;place-items:center;width:67px;height:67px;background:#fff;color:var(--red);border:1px solid #e4e6ec;border-radius:50%;font-size:39px;flex-shrink:0}.fm-bundle-banner>div>div{flex:1}.fm-bundle-banner div>span:not(.fm-bundle-mark){font-size:10px;letter-spacing:1.2px;color:#8a92a5;font-weight:700}.fm-bundle-banner h2{font-size:23px;font-weight:650;line-height:1.3;letter-spacing:-.6px;margin:6px 0;color:#262d3f}.fm-bundle-banner p{font-size:13px;color:#82899b;margin:0;line-height:1.6}.fm-bundle-banner .fm-button{white-space:nowrap}.fm-offer-expired .fm-countdown{color:#66717e}
-/* Match the existing shipping and company sections to the refreshed storefront. */
-.flask-home .fh-section{padding:72px 0}.flask-home .fh-section-head h2,.flask-home .fh-copy-block h2{font-size:clamp(30px,3.4vw,46px);letter-spacing:-.045em}.flask-home .fh-section-head p,.flask-home .fh-copy-block p{font-size:15px;line-height:1.8}.flask-home .fh-section-head>a,.flask-home .fh-red-button{font-size:12px}.flask-home .home-kicker{font-size:11px}.flask-home .fh-dhl-banner-inner{padding:21px 0;gap:27px}.flask-home .fh-dhl-banner-copy p{font-size:13px}.flask-home .fh-trust-inner{padding:30px 0;grid-template-columns:.9fr 1.1fr;gap:27px}.flask-home .fh-trust h3{font-size:20px;line-height:1.5}.flask-home .fh-trust-badges{gap:9px}.flask-home .fh-trust-badge{padding:12px 14px;min-height:64px}.flask-home .fh-trust-text small{font-size:10px}.flask-home .fh-trust-logo-wrap{padding:8px}.flask-home .fh-trust-logo.is-dhl{max-width:105px}.flask-home .fh-trust-logo.is-dpo{max-width:100px}.flask-home .fh-metrics strong{font-size:25px}.flask-home .fh-metrics p{font-size:10px;margin-top:5px}.flask-home .fh-service-grid{gap:19px}.flask-home .fh-service{border-radius:10px}.flask-home .fh-service h3{font-size:19px;line-height:1.45}.flask-home .fh-service p{font-size:13px}.flask-home .fh-service dt,.flask-home .fh-service dd{font-size:12px}.flask-home .fh-service>div>b{font-size:11px}.flask-home .fh-about-image{border-radius:12px;height:470px}.flask-home .fh-sp-card{border-radius:9px;padding:27px}.flask-home .fh-sp-list li{font-size:14px}.flask-home .fh-sp-card>p{font-size:14px}.flask-home .fh-sp-cta{font-size:12px}.flask-home .fh-logo-wall,.flask-home .fh-kenya-wall{grid-template-columns:repeat(4,minmax(0,1fr))}.flask-home .fh-partner p,.flask-home .fh-venue p{font-size:12px}.flask-home .fh-partner small,.flask-home .fh-venue small{font-size:10px}.flask-home .fh-notice{font-size:11px}.flask-home .fh-faq-list details p{font-size:14px}.flask-home .fh-faq-list summary strong{font-size:16px}.flask-home .fh-faq-list summary span{font-size:12px}.flask-home .fh-story-copy blockquote{font-size:27px}.flask-home .fh-story-copy small{font-size:11px}.flask-home .fh-story-copy strong{font-size:14px}.flask-home .fh-story-dots button{height:5px;min-width:38px;position:relative}.flask-home .fh-story-dots button:before{content:'';position:absolute;inset:-12px 0}.flask-home .fh-final h2{font-size:42px}.flask-home .fh-final-links a{font-size:12px}.flask-home .fh-official-partner{grid-template-columns:auto minmax(0,1fr);padding:25px 20px;gap:18px}.flask-home .fh-official-partner-copy p{font-size:12px}.flask-home .fh-official-partner-copy b{font-size:11px}
-@media(max-width:1180px){.fm-hero-grid{gap:34px;grid-template-columns:1.12fr 1fr;padding-block:49px}.fm-hero-copy h1{font-size:55px}.fm-hero-copy>p{font-size:15px}.fm-hero-assurance{gap:6px 12px}.fm-hero-thumbs{gap:9px}.fm-hero-thumb{padding:8px;gap:8px}.fm-hero-thumb img{width:40px;height:40px}.fm-hero-thumb strong{font-size:11px}.fm-hero-controls{gap:4px}.fm-hero-controls button{height:36px;width:34px}.fm-promo h2{font-size:28px}.fm-promo>div{padding-left:23px}.fm-product-grid{gap:15px}.fm-product-body{padding:16px 14px}.fm-sale-heading h2{font-size:27px}.fm-sale-tools{flex-direction:column;align-items:flex-end;gap:12px}.fm-product-price strong{font-size:18px}.flask-home .fh-trust-inner{grid-template-columns:1fr}.flask-home .fh-trust-badges{justify-content:flex-start}.flask-home .fh-official-partners{grid-template-columns:1fr}}
-@media(max-width:960px){.fm-hero-grid{gap:30px}.fm-hero-copy h1{font-size:44px}.fm-eyebrow{font-size:9px;letter-spacing:1px}.fm-hero-actions{gap:9px}.fm-button{font-size:12px;padding:0 15px;gap:12px}.fm-hero-visual{padding-bottom:18px}.fm-floating-tag{padding:12px;left:0;right:-3px;bottom:-3px}.fm-floating-tag strong{font-size:11px}.fm-floating-tag div>span{font-size:10px}.fm-hero-frame{margin-left:0}.fm-hero-product>strong{font-size:16px}.fm-hero-thumbs{grid-template-columns:repeat(4,minmax(140px,1fr));overflow-x:auto;padding-bottom:4px}.fm-hero-bottom{align-items:flex-start}.fm-hero-controls{margin-top:8px}.fm-promo-grid{gap:16px}.fm-promo h2{font-size:26px}.fm-promo{min-height:250px}.fm-promo img{width:47%;opacity:.84}.fm-promo>div{width:125%}.fm-promo-kicker{font-size:9px}.fm-promo p{max-width:190px;font-size:12px}.fm-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.fm-product-image{aspect-ratio:1.35}.fm-product-body h3{min-height:auto;font-size:17px}.fm-product-price strong{font-size:21px}.fm-sale-heading{align-items:flex-start}.fm-offer-note{flex-direction:column;gap:9px}.fm-bundle-banner>.home-shell{gap:18px}.fm-bundle-banner h2{font-size:21px}.fm-bundle-mark{display:none}.flask-home .fh-logo-wall,.flask-home .fh-kenya-wall{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:760px){.home-shell{width:calc(100% - 32px)}.fm-announcement>.home-shell{font-size:11px;min-height:43px;gap:10px}.fm-announcement b{font-size:10px;letter-spacing:.5px;margin-right:8px;padding-right:8px}.fm-announcement a{font-size:11px}.fm-announcement>div>span{font-size:0}.fm-announcement b{font-size:11px;border:0;padding:0;margin:0}.fm-hero-grid{grid-template-columns:1fr;padding-top:37px;padding-bottom:34px;gap:30px}.fm-hero-copy h1{font-size:clamp(40px,8.6vw,61px);max-width:620px;margin:21px 0 19px}.fm-hero-copy>p{font-size:15px;max-width:600px}.fm-eyebrow{font-size:10px}.fm-hero-actions{margin-top:23px}.fm-hero-assurance{margin-top:20px;margin-bottom:19px;font-size:11px}.fm-hero-product{padding-top:20px;max-width:none}.fm-hero-product>strong{font-size:17px}.fm-hero-visual{max-width:520px;width:95%;margin:0 auto;padding:13px 0 18px}.fm-hero-images{aspect-ratio:1.25}.fm-hero-frame{transform:rotate(1deg)}.fm-feature-label{transform:rotate(-1deg);font-size:9px}.fm-floating-tag{left:-10px;right:auto;bottom:-4px;padding:13px 16px}.fm-floating-tag strong{font-size:12px}.fm-floating-tag div>span{font-size:11px}.fm-hero-bottom{padding-top:15px;padding-bottom:20px;gap:10px;flex-direction:column}.fm-hero-thumbs{width:100%;grid-template-columns:repeat(4,minmax(174px,1fr));gap:9px;scroll-snap-type:x proximity}.fm-hero-thumb{scroll-snap-align:start;padding:10px}.fm-hero-thumb strong{font-size:12px}.fm-hero-thumb small{font-size:10px}.fm-hero-thumb img{width:45px;height:45px}.fm-hero-controls{margin-top:1px;align-self:flex-end;gap:8px}.fm-hero-controls button{height:39px;width:42px}.fm-promotions{padding:24px 0}.fm-promo-grid{grid-template-columns:1fr;gap:16px}.fm-promo{min-height:238px}.fm-promo>div{padding:25px 0 24px 25px;width:115%}.fm-promo h2{font-size:30px}.fm-promo p{max-width:225px}.fm-promo img{width:50%;opacity:1}.fm-promo-kicker{font-size:10px}.fm-flash{padding:31px 0}.fm-sale-heading{flex-direction:column;gap:15px}.fm-sale-heading h2{font-size:26px;line-height:1.3;margin:8px 0}.fm-sale-heading p{font-size:13px}.fm-sale-tools{flex-direction:row;justify-content:space-between;align-items:center;width:100%}.fm-product-grid{gap:13px}.fm-product-image{aspect-ratio:1.05}.fm-product-body{padding:14px 12px}.fm-product-body h3{font-size:14px;line-height:1.45;min-height:41px}.fm-product-category{font-size:9px}.fm-product-price strong{font-size:17px;margin-left:0;display:block}.fm-product-price del{font-size:10px}.fm-product-moq{font-size:10px;margin:9px 0 13px}.fm-product-cta{font-size:11px;padding:9px 10px;min-height:43px}.fm-product-badge{top:9px;left:9px;font-size:8px;padding:5px 7px}.fm-offer-note{font-size:11px;margin-top:18px}.fm-bundle-banner>.home-shell{flex-direction:column;align-items:flex-start;gap:18px}.fm-bundle-banner h2{font-size:23px}.fm-bundle-banner .fm-button{width:100%;justify-content:space-between}.flask-home .fh-section{padding:54px 0}.flask-home .fh-section-head{gap:17px;margin-bottom:26px}.flask-home .fh-section-head h2,.flask-home .fh-copy-block h2{font-size:33px;line-height:1.1}.flask-home .fh-trust-badge{width:auto;flex:1 1 190px}.flask-home .fh-trust h3{font-size:18px}.flask-home .fh-metrics article{padding:24px 15px;gap:4px 9px}.flask-home .fh-metrics strong{font-size:24px}.flask-home .fh-metrics p{font-size:9px}.flask-home .fh-sp-card{padding:24px}.flask-home .fh-official-partner{grid-template-columns:1fr}.flask-home .fh-official-partner-mark{justify-self:start}.flask-home .fh-logo-wall{grid-template-columns:1fr 1fr}.flask-home .fh-partner{padding:20px;min-height:280px}.flask-home .fh-partner h3{font-size:17px}.flask-home .fh-partner figure img{max-width:100%;height:auto}.flask-home .fh-partner figure{gap:10px}.flask-home .fh-kenya-wall{grid-template-columns:1fr}.flask-home .fh-faq-list summary{grid-template-columns:24px 1fr auto;gap:13px}.flask-home .fh-faq-list details p{padding:0 5px 20px 37px}.flask-home .fh-story-copy blockquote{font-size:25px}.flask-home .fh-final h2{font-size:35px}}
-@media(max-width:390px){.fm-announcement a{font-size:10px}.fm-hero-copy h1{font-size:38px}.fm-hero-actions{flex-direction:column}.fm-hero-actions .fm-button{width:100%;justify-content:space-between}.fm-hero-product>div{flex-direction:column;align-items:flex-start;gap:9px}.fm-floating-tag div>span{font-size:10px}.fm-floating-tag{padding:11px;gap:9px}.fm-promo h2{font-size:26px}.fm-promo>div{padding-left:18px}.fm-promo-kicker{font-size:9px}.fm-promo p{font-size:11px;max-width:178px}.fm-promo strong{font-size:11px;gap:8px}.fm-sale-heading h2{font-size:24px}.fm-product-grid{gap:10px}.fm-product-body{padding:12px 10px}.fm-product-price strong{font-size:15px}.fm-product-cta{font-size:10px}.fm-product-badge{font-size:7px}.fm-countdown{gap:6px}.fm-countdown b{padding:5px;min-width:24px;font-size:11px}.fm-countdown small{font-size:9px}.fm-sale-tools>a{font-size:10px}.flask-home .fh-logo-wall{grid-template-columns:1fr}}
-@media(prefers-reduced-motion:reduce){.fm-equipment-slide,.fm-button,.fm-promo img,.fm-product-card,.fm-product-image img{transition:none!important}.fm-button:hover,.fm-product-card:hover,.fm-promo:hover img,.fm-product-card:hover img{transform:none}}
-
 </style>
 
 {% endblock %}
@@ -314,64 +232,27 @@
 
 <main class="flask-home">
 
-  <div class="fm-announcement" role="note">
-    <div class="home-shell"><span><b>FABS OFFERS</b> Discover your next big attraction.</span><a href="#flash-sales">Explore equipment offers <span aria-hidden="true">→</span></a></div>
-  </div>
+  <section class="fh-hero" aria-roledescription="carousel" aria-label="FABS gaming marketplace">
 
-  <section class="fm-hero" aria-roledescription="carousel" aria-label="VR and commercial equipment highlights">
-    <div class="home-shell fm-hero-grid">
-      <div class="fm-hero-copy">
-        <span class="fm-eyebrow"><i aria-hidden="true"></i> COMMERCIAL GAMING COLLECTION</span>
-        <h1>Big machines.<br><em>Bigger experiences.</em></h1>
-        <p>Bring your venue to life with immersive VR systems, racing simulators and commercial entertainment equipment.</p>
-        <div class="fm-hero-actions"><a class="fm-button fm-button-red" href="{{ url_for('games', page=10) }}">Shop flagship equipment <span aria-hidden="true">↗</span></a><a class="fm-button fm-button-outline" href="#flash-sales">Explore offers <span aria-hidden="true">→</span></a></div>
-        <div class="fm-hero-assurance"><span>✓ Real product photography</span><span>✓ Clear minimum orders</span><span>✓ Worldwide sourcing</span></div>
-        <div class="fm-hero-product" aria-live="polite" aria-atomic="true"><span id="fm-hero-category">{{ featured_equipment[0].genre|default('Commercial equipment') }}</span><strong id="fm-hero-name">{{ featured_equipment[0].display_title|default(featured_equipment[0].title) }}</strong><div><small id="fm-hero-moq">{{ featured_equipment[0].minimum_order|default('MOQ confirmed on enquiry') }}</small><a id="fm-hero-link" href="{{ url_for('game_detail', slug=featured_equipment[0].slug) }}">View this equipment <span aria-hidden="true">→</span></a></div></div>
-      </div>
-      <div class="fm-hero-visual">
-        <div class="fm-hero-frame">
-          <span class="fm-feature-label">THE FLAGSHIP COLLECTION</span>
-          <div class="fm-hero-images">
-          {% for item in featured_equipment[:4] %}
-            <figure class="fm-equipment-slide {% if loop.first %}is-active{% endif %}" data-equipment-slide aria-hidden="{{ 'false' if loop.first else 'true' }}" data-title="{{ item.display_title|default(item.title) }}" data-category="{{ item.genre|default('Commercial equipment') }}" data-moq="{{ item.minimum_order|default('MOQ confirmed on enquiry') }}" data-href="{{ url_for('game_detail', slug=item.slug) }}">
-              <img src="{{ item.image_url }}" alt="{{ item.title }}" width="600" height="600" {% if loop.first %}fetchpriority="high" loading="eager"{% else %}loading="lazy"{% endif %} decoding="async" referrerpolicy="no-referrer">
-            </figure>
-          {% endfor %}
-          </div>
-          <div class="fm-image-caption"><span>VR · Racing · Venue equipment</span><span id="fm-slide-count">01 / {{ '%02d'|format([featured_equipment|length,4]|min) }}</span></div>
-        </div>
-        <div class="fm-floating-tag"><span class="fm-bolt" aria-hidden="true">↗</span><div><strong>Build your next attraction</strong><span>Explore the equipment. Request your offer.</span></div></div>
-      </div>
-    </div>
-    <div class="home-shell fm-hero-bottom"><div class="fm-hero-thumbs" aria-label="Choose featured equipment">
-      {% for item in featured_equipment[:4] %}<button type="button" class="fm-hero-thumb {% if loop.first %}is-active{% endif %}" data-equipment-control="{{ loop.index0 }}" aria-label="Show {{ item.title }}" aria-pressed="{{ 'true' if loop.first else 'false' }}"><img src="{{ item.image_url }}" width="56" height="56" alt="" loading="lazy" referrerpolicy="no-referrer"><span><small>{{ item.genre|default('Equipment') }}</small><strong>{{ item.display_title|default(item.title) }}</strong></span></button>{% endfor %}
-    </div><div class="fm-hero-controls"><button type="button" data-equipment-prev aria-label="Previous equipment">←</button><button type="button" data-equipment-pause aria-label="Pause slideshow" aria-pressed="false">Ⅱ</button><button type="button" data-equipment-next aria-label="Next equipment">→</button></div></div>
+    <div class="fh-slides">{% for game in games[:5] %}<article class="fh-slide {% if loop.first %}active{% endif %}" data-slide="{{ loop.index0 }}"><img src="{{ game.image_url }}" alt="{{ game.title }} real product media" {% if loop.first %}fetchpriority="high"{% endif %}><div class="fh-shade"></div></article>{% endfor %}</div>
+
+    <div class="home-shell fh-hero-layout"><div class="fh-copy"><span><i></i> FABS TRADING GLOBAL E-COMMERCE</span><h1>Millions of gaming opportunities. <em>One global source.</em></h1><p>Discover commercial arcade machines, immersive VR attractions, racing simulators and custom tabletop production with clear MOQ, real product media, <strong style="color:#fff">DHL Express delivery</strong> and <strong style="color:#fff">DPO secure card checkout</strong>.</p>
+
+      <a class="fh-hero-dhl" href="{{ url_for('games') }}#games-shipping-country" aria-label="Ships worldwide via DHL Express">
+
+        {{ dhl_logo('', 120, 32) }}
+
+        <span>Ships via DHL Express · <b>Get a rate →</b></span>
+
+      </a>
+
+      <div class="fh-actions"><a href="{{ url_for('games') }}">Explore millions of games <span>→</span></a><a href="{{ url_for('inquiry') }}">Post your RFQ</a><a class="fh-actions-dhl" href="{{ url_for('games') }}#games-shipping-country">Get shipping estimate</a></div><div class="fh-product"><small id="hero-category">{{ games[0].genre|upper }}</small><strong id="hero-product">{{ games[0].title }}</strong><span id="hero-moq">{{ games[0].minimum_order }}</span></div><span class="fh-source">● AUTHENTIC SUPPLIER MEDIA · <b id="hero-source">{{ games[0].photo_source }}</b></span></div>
+
+      <div class="fh-network" aria-label="Animated FABS global sourcing network"><span class="fh-live">LIVE GLOBAL SOURCING NETWORK</span><i class="fh-ring one"></i><i class="fh-ring two"></i><div class="fh-globe"><video autoplay muted loop playsinline preload="metadata"><source src="{{ url_for('static',filename='images/home-media/rotating-blue-marble.webm') }}" type="video/webm"></video><div><small>FABS GLOBAL SOURCING</small><strong>24/7</strong><b>DIGITAL NETWORK</b></div></div>{% for game in games[:5] %}<a class="fh-node n{{ loop.index }}" href="{{ url_for('game_detail',slug=game.slug) }}"><img src="{{ game.image_url }}" alt=""><b>{{ game.title }}</b><small>{{ game.minimum_order }}</small></a>{% endfor %}</div>
+
+    </div><div class="fh-controls">{% for game in games[:5] %}<button class="{% if loop.first %}active{% endif %}" type="button" data-hero-control="{{ loop.index0 }}" aria-label="Show {{ game.title }}"></button>{% endfor %}</div>
+
   </section>
-
-  <section class="fm-promotions" aria-label="Featured offers and collections"><div class="home-shell fm-promo-grid">
-    <a class="fm-promo fm-promo-vr" href="{{ url_for('games', page=10) }}"><div><span class="fm-promo-kicker">IMMERSIVE VR COLLECTION</span><h2>Make every<br>visit an adventure.</h2><p>Explore commercial VR and multiplayer attractions.</p><strong>Discover VR equipment <span aria-hidden="true">↗</span></strong></div><img src="{{ featured_equipment[0].image_url }}" alt="{{ featured_equipment[0].title }}" loading="lazy" width="360" height="360" referrerpolicy="no-referrer"></a>
-    <a class="fm-promo fm-promo-racing" href="{{ url_for('game_detail', slug=featured_equipment[1].slug) if featured_equipment|length > 1 else url_for('games', page=10) }}"><div><span class="fm-promo-kicker">YOUR NEXT VENUE UPGRADE</span><h2>Built for the<br>thrill of the race.</h2><p>Put commercial racing experiences at the centre of your venue.</p><strong>Explore racing simulators <span aria-hidden="true">↗</span></strong></div><img src="{{ featured_equipment[1].image_url if featured_equipment|length > 1 else featured_equipment[0].image_url }}" alt="{{ featured_equipment[1].title if featured_equipment|length > 1 else featured_equipment[0].title }}" loading="lazy" width="360" height="360" referrerpolicy="no-referrer"></a>
-  </div></section>
-
-  <section class="fm-flash" id="flash-sales" aria-labelledby="fm-flash-title" data-flash-section {% if home_campaign is defined and home_campaign and home_campaign.ends_at|default('') %}data-sale-ends="{{ home_campaign.ends_at }}"{% endif %}>
-    <div class="home-shell">
-      <header class="fm-sale-heading"><div><span class="fm-section-label">EXPLORE THE LATEST OFFERS</span><h2 id="fm-flash-title"><span class="fm-flash-icon" aria-hidden="true">ϟ</span> Flash sales &amp; special offers</h2><p>Featured equipment for your next project. Request current pricing and availability.</p></div><div class="fm-sale-tools"><div class="fm-countdown" hidden data-countdown aria-label="Offer time remaining"><span>Offers end in</span><div><b data-countdown-days>00</b><small>d</small><b data-countdown-hours>00</b><small>h</small><b data-countdown-minutes>00</b><small>m</small><b data-countdown-seconds>00</b><small>s</small></div></div><a href="{{ url_for('games', page=10) }}">View collection <span aria-hidden="true">→</span></a></div></header>
-      <div class="fm-product-grid">
-      {% for item in offer_products[:4] %}
-        {% set regular = item.price|default(0,true)|float %}
-        {% set offer = item.sale_price|default(regular,true)|float %}
-        {% set has_offer = item.is_on_sale|default(false) and offer > 0 and regular > offer %}
-        <article class="fm-product-card" {% if has_offer %}data-offer-card data-regular-price="{{ regular }}"{% endif %}>
-          <a class="fm-product-image" href="{{ url_for('game_detail',slug=item.slug) }}"><img src="{{ item.image_url }}" alt="{{ item.title }}" loading="lazy" decoding="async" width="360" height="300" referrerpolicy="no-referrer"><span class="fm-product-badge {% if has_offer %}is-discount{% endif %}" {% if has_offer %}data-discount-badge{% endif %}>{% if has_offer %}−{{ (((regular-offer)/regular)*100)|round(0,'floor')|int }}%{% else %}REQUEST OFFER{% endif %}</span></a>
-          <div class="fm-product-body"><span class="fm-product-category">{{ item.genre|default('Commercial equipment') }}</span><h3><a href="{{ url_for('game_detail',slug=item.slug) }}">{{ item.display_title|default(item.title) }}</a></h3><div class="fm-product-price"><span>{% if regular > 0 %}From <strong {% if has_offer %}data-offer-price{% endif %}>US${{ '{:,.2f}'.format(offer if has_offer else regular) }}</strong>{% else %}<strong>Request a quotation</strong>{% endif %}</span>{% if has_offer %}<del data-original-price>US${{ '{:,.2f}'.format(regular) }}</del>{% endif %}</div><p class="fm-product-moq">Minimum order <b>{{ item.minimum_order|default('Confirmed on enquiry') }}</b></p><a class="fm-product-cta" href="{{ url_for('game_detail',slug=item.slug) }}">View equipment &amp; offer <span aria-hidden="true">→</span></a></div>
-        </article>
-      {% endfor %}
-      </div>
-      <div class="fm-offer-note"><span>Listed prices are indicative. Freight, taxes, installation and final offer terms are confirmed in your quotation.</span><a href="{{ url_for('inquiry') }}">Need a volume quote? <b>Talk to us →</b></a></div>
-    </div>
-  </section>
-
-  <section class="fm-bundle-banner" aria-label="Custom equipment quotation"><div class="home-shell"><span class="fm-bundle-mark" aria-hidden="true">↗</span><div><span>PLANNING MORE THAN ONE ATTRACTION?</span><h2>Your equipment list. One tailored quotation.</h2><p>Combine VR, racing and arcade systems in a single sourcing request.</p></div><a class="fm-button fm-button-red" href="{{ url_for('inquiry') }}">Request a venue package <span aria-hidden="true">→</span></a></div></section>
 
   <section class="fh-metrics" aria-label="FABS platform data"><div class="home-shell"><article><span>01</span><strong>3,899,921</strong><p>Active buyers</p></article><article><span>02</span><strong>532+</strong><p>Trusted companies</p></article><article><span>03</span><strong>700B+</strong><p>Transactions</p></article><article><span>04</span><strong>24/7</strong><p>Digital access</p></article></div></section>
 
@@ -495,7 +376,9 @@
 
   <!-- =========================================================== -->
 
-  <section class="fh-section"><div class="home-shell fh-about-layout"><div class="fh-copy-block"><span class="home-kicker">About FABS Trading</span><h2>A professional gateway to the global gaming supply market.</h2><p>FABS Trading Global E-Commerce helps commercial buyers discover gaming platforms, equipment and custom products through a structured marketplace built around real product media, clear MOQ, direct inquiry tools, DHL Express delivery and DPO secure card checkout.</p><p>From a single arcade machine to volume OEM production, our platform keeps product discovery, supplier communication, shipping and payment in one connected experience.</p><a class="fh-red-button" href="{{ url_for('about') }}">Discover our company →</a></div><figure class="fh-about-image"><img src="{{ featured_equipment[0].image_url }}" alt="{{ featured_equipment[0].title }} at a real entertainment venue"><figcaption><span>● AUTHENTIC VENUE PHOTOGRAPHY</span><strong>{{ featured_equipment[0].title }}</strong><small>Real venue media · {{ featured_equipment[0].photo_source }}</small></figcaption><div><b>01</b><span>Connected sourcing<br>partner</span></div></figure></div></section>
+  <section class="fh-section fh-gallery"><div class="home-shell"><header class="fh-section-head"><div><span class="home-kicker">Live from the gaming market</span><h2>See the equipment buyers are sourcing.</h2></div><p>Authentic venue, manufacturer and product photography—never generated imagery.</p></header><div class="fh-gallery-grid">{% for game in games[:5] %}<a class="fh-gallery-card {% if loop.first %}featured{% endif %}" href="{{ url_for('game_detail',slug=game.slug) }}"><img src="{{ game.image_url }}" alt="{{ game.title }} authentic product photograph" loading="{% if loop.index < 3 %}eager{% else %}lazy{% endif %}"><span class="fh-real-badge">REAL MEDIA</span><div><small>{{ game.photo_source }}</small><strong>{{ game.title }}</strong><b>{{ game.minimum_order }} · VIEW PRODUCT ↗</b></div></a>{% endfor %}</div><p class="fh-gallery-note">Every image is self-hosted from a real product, manufacturer or venue source. Product availability and media rights are confirmed during quotation.</p></div></section>
+
+  <section class="fh-section"><div class="home-shell fh-about-layout"><div class="fh-copy-block"><span class="home-kicker">About FABS Trading</span><h2>A professional gateway to the global gaming supply market.</h2><p>FABS Trading Global E-Commerce helps commercial buyers discover gaming platforms, equipment and custom products through a structured marketplace built around real product media, clear MOQ, direct inquiry tools, DHL Express delivery and DPO secure card checkout.</p><p>From a single arcade machine to volume OEM production, our platform keeps product discovery, supplier communication, shipping and payment in one connected experience.</p><a class="fh-red-button" href="{{ url_for('about') }}">Discover our company →</a></div><figure class="fh-about-image"><img src="{{ games[0].image_url }}" alt="{{ games[0].title }} at a real entertainment venue"><figcaption><span>● AUTHENTIC VENUE PHOTOGRAPHY</span><strong>{{ games[0].title }}</strong><small>Real venue media · {{ games[0].photo_source }}</small></figcaption><div><b>01</b><span>Connected sourcing<br>partner</span></div></figure></div></section>
 
   <!-- ================== DHL + DPO FEATURE SECTION ================== -->
 
@@ -599,7 +482,7 @@
 
   <!-- ============================================================== -->
 
-  <section class="fh-section fh-services" id="services"><div class="home-shell"><header class="fh-section-head"><div><span class="home-kicker">Our gaming services</span><h2>Real products. Large MOQ. Direct inquiry.</h2><p>Start with a specialist category, then enter a catalogue engineered for millions of product combinations and professional buying requirements.</p></div><a href="{{ url_for('games') }}">Browse all 2,399,976 products →</a></header><div class="fh-service-grid">{% for game in home_products[:6] %}<a class="fh-service" href="{{ url_for('game_detail',slug=game.slug) }}"><figure><img src="{{ game.image_url }}" alt="{{ game.title }} real product photograph" loading="lazy"><span>● REAL PRODUCT PHOTO</span><small>{{ game.photo_source }}</small></figure><div><span>{{ game.genre }}</span><h3>{{ game.title }}</h3><p>{{ game.description }}</p><dl><dt>Starting price</dt><dd>US${{ '{:,.2f}'.format(game.price) }}</dd><dt>Minimum order</dt><dd>{{ game.minimum_order }}</dd></dl><b>Open product and inquire →</b></div></a>{% endfor %}</div><div class="fh-services-cta"><div><span>CAN’T FIND THE EXACT GAME?</span><strong>Post one sourcing request and receive a structured commercial response.</strong></div><a href="{{ url_for('inquiry') }}">Post sourcing request</a></div></div></section>
+  <section class="fh-section fh-services" id="services"><div class="home-shell"><header class="fh-section-head"><div><span class="home-kicker">Our gaming services</span><h2>Real products. Large MOQ. Direct inquiry.</h2><p>Start with a specialist category, then enter a catalogue engineered for millions of product combinations and professional buying requirements.</p></div><a href="{{ url_for('games') }}">Browse all 2,399,976 products →</a></header><div class="fh-service-grid">{% for game in games[:6] %}<a class="fh-service" href="{{ url_for('game_detail',slug=game.slug) }}"><figure><img src="{{ game.image_url }}" alt="{{ game.title }} real product photograph" loading="lazy"><span>● REAL PRODUCT PHOTO</span><small>{{ game.photo_source }}</small></figure><div><span>{{ game.genre }}</span><h3>{{ game.title }}</h3><p>{{ game.description }}</p><dl><dt>Starting price</dt><dd>US${{ '{:,.2f}'.format(game.price) }}</dd><dt>Minimum order</dt><dd>{{ game.minimum_order }}</dd></dl><b>Open product and inquire →</b></div></a>{% endfor %}</div><div class="fh-services-cta"><div><span>CAN’T FIND THE EXACT GAME?</span><strong>Post one sourcing request and receive a structured commercial response.</strong></div><a href="{{ url_for('inquiry') }}">Post sourcing request</a></div></div></section>
 
   <section class="fh-section fh-partners"><div class="home-shell"><header class="fh-section-head"><div><span class="home-kicker">Global gaming ecosystem</span><h2>The brands defining modern play.</h2></div><p>Platform owners, publishers and developers influencing product demand across the international gaming economy.</p></header>
 
@@ -677,13 +560,13 @@
 
   <div class="fh-logo-wall">
 
-    {% set partners=[('tencent.svg','Tencent','Global interactive entertainment','A major global gaming group with publishing, development, esports and investments across the industry.'),('sony-interactive.svg','Sony Interactive','PlayStation ecosystem','The company behind PlayStation hardware, network services and PlayStation Studios experiences.'),('xbox.svg','Microsoft Gaming','Xbox & Game Pass','An ecosystem spanning Xbox, Game Pass and major global development studios.'),('nintendo.svg','Nintendo','Integrated hardware & software','A games company known for integrated systems and enduring global franchises.'),('netease-games.png','NetEase Games','Global developer & publisher','A global developer and publisher working across online, mobile, console and multi-platform experiences.'),('electronic-arts.svg','Electronic Arts','Console, PC & mobile','A global publisher with leading sports, action and simulation portfolios.'),('take-two.svg','Take-Two Interactive','Rockstar Games · 2K · Zynga','A global interactive entertainment publisher operating through prominent development labels.')] %}
+    {% set partners=[('tencent.svg','Tencent','Global interactive entertainment','A major global gaming group with publishing, development, esports and investments across the industry.'),('sony-interactive.svg','Sony Interactive','PlayStation ecosystem','The company behind PlayStation hardware, network services and PlayStation Studios experiences.'),('xbox.svg','Microsoft Gaming','Xbox *&* Game Pass','An ecosystem spanning Xbox, Game Pass and major global development studios.'),('nintendo.svg','Nintendo','Integrated hardware *&* software','A games company known for integrated systems and enduring global franchises.'),('netease-games.png','NetEase Games','Global developer *&* publisher','A global developer and publisher working across online, mobile, console and multi-platform experiences.'),('electronic-arts.svg','Electronic Arts','Console, PC *&* mobile','A global publisher with leading sports, action and simulation portfolios.'),('take-two.svg','Take-Two Interactive','Rockstar Games · 2K · Zynga','A global interactive entertainment publisher operating through prominent development labels.')] %}
 
     {% for logo,name,category,copy in partners %}<article class="fh-partner"><figure><span>{{ '%02d'|format(loop.index) }}</span><img src="{{ url_for('static',filename='images/partner-media/' ~ logo) }}" alt="{{ name }} official logo" loading="lazy"></figure><small>{{ category }}</small><h3>{{ name }}</h3><p>{{ copy }}</p><b>Gaming market profile →</b></article>{% endfor %}
 
   </div>
 
-  <div class="fh-kenya-head"><div><span class="home-kicker">Kenya retail & gaming destinations</span><h3>Where entertainment meets high-footfall commerce.</h3></div><p>Selected Kenyan malls with documented gaming, bowling, simulation, cinema or family-entertainment experiences—relevant to venue equipment supply and software activation opportunities.</p></div>
+  <div class="fh-kenya-head"><div><span class="home-kicker">Kenya retail *&* gaming destinations</span><h3>Where entertainment meets high-footfall commerce.</h3></div><p>Selected Kenyan malls with documented gaming, bowling, simulation, cinema or family-entertainment experiences—relevant to venue equipment supply and software activation opportunities.</p></div>
 
   {% set kenya_venues=[
 
@@ -733,7 +616,7 @@
 
   </div></div></section>
 
-  <section class="fh-section fh-testimonials"><div class="home-shell"><header class="fh-section-head"><div><span class="home-kicker">Buyer experience</span><h2>A marketplace designed around real sourcing work.</h2></div><p>Representative buyer profiles demonstrate how professional teams can use the FABS journey.</p></header><div class="fh-story-stage"><div>{% set stories=[('Arcade procurement','East Africa','The marketplace puts MOQ, indicative pricing and inquiry actions exactly where our team needs them. DHL shipping on every product and secure card checkout made the whole process feel trustworthy.'),('Tabletop distribution','Global sourcing','Custom board-game categories are easy to scan, and the request form lets us specify materials, packaging and order volume. DHL Express handles international delivery end-to-end.'),('Family entertainment','Venue development','Real product media makes the first review much faster. We can shortlist VR, racing and arcade systems before opening a supplier conversation, and pay securely with DPO.')] %}{% for sector,region,quote in stories %}<article class="fh-story-copy {% if loop.first %}active{% endif %}" data-story="{{ loop.index0 }}"><span>“</span><blockquote>{{ quote }}</blockquote><div><strong>{{ sector }}</strong><small>{{ region }} · representative buyer profile</small></div></article>{% endfor %}</div><figure class="fh-story-media"><img id="story-image" src="{{ featured_equipment[0].image_url }}" alt="Real commercial gaming product media"></figure></div><div class="fh-story-dots">{% for item in range(3) %}<button type="button" data-story-control="{{ item }}" class="{% if item==0 %}active{% endif %}" aria-label="Show buyer experience {{ item+1 }}"></button>{% endfor %}</div></div></section>
+  <section class="fh-section fh-testimonials"><div class="home-shell"><header class="fh-section-head"><div><span class="home-kicker">Buyer experience</span><h2>A marketplace designed around real sourcing work.</h2></div><p>Representative buyer profiles demonstrate how professional teams can use the FABS journey.</p></header><div class="fh-story-stage"><div>{% set stories=[('Arcade procurement','East Africa','The marketplace puts MOQ, indicative pricing and inquiry actions exactly where our team needs them. DHL shipping on every product and secure card checkout made the whole process feel trustworthy.'),('Tabletop distribution','Global sourcing','Custom board-game categories are easy to scan, and the request form lets us specify materials, packaging and order volume. DHL Express handles international delivery end-to-end.'),('Family entertainment','Venue development','Real product media makes the first review much faster. We can shortlist VR, racing and arcade systems before opening a supplier conversation, and pay securely with DPO.')] %}{% for sector,region,quote in stories %}<article class="fh-story-copy {% if loop.first %}active{% endif %}" data-story="{{ loop.index0 }}"><span>“</span><blockquote>{{ quote }}</blockquote><div><strong>{{ sector }}</strong><small>{{ region }} · representative buyer profile</small></div></article>{% endfor %}</div><figure class="fh-story-media"><img id="story-image" src="{{ games[2].image_url }}" alt="Real commercial gaming product media"></figure></div><div class="fh-story-dots">{% for item in range(3) %}<button type="button" data-story-control="{{ item }}" class="{% if item==0 %}active{% endif %}" aria-label="Show buyer experience {{ item+1 }}"></button>{% endfor %}</div></div></section>
 
   <section class="fh-final"><div class="home-shell"><div><span>START SOURCING WITH FABS</span><h2>Millions of gaming opportunities.<br>One professional inquiry.</h2></div><div class="fh-final-links"><a href="{{ url_for('games') }}">Explore the marketplace</a><a href="{{ url_for('inquiry') }}">Post your RFQ</a></div></div></section>
 
@@ -742,131 +625,31 @@
 {% endblock %}
 
 {% block scripts %}
-{{ super() }}
+
 <script>
-(() => {
-  'use strict';
-  const root = document.querySelector('.flask-home');
-  if (!root) return;
-  const hero = root.querySelector('.fm-hero');
-  const slides = Array.from(root.querySelectorAll('[data-equipment-slide]'));
-  const controls = Array.from(root.querySelectorAll('[data-equipment-control]'));
-  const pauseButton = root.querySelector('[data-equipment-pause]');
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let current = 0;
-  let timer;
-  let paused = reducedMotion.matches;
-  let hovering = false;
-  function showSlide(index) {
-    if (!slides.length) return;
-    current = (index + slides.length) % slides.length;
-    slides.forEach((slide, i) => {
-      slide.classList.toggle('is-active', i === current);
-      slide.setAttribute('aria-hidden', String(i !== current));
-    });
-    controls.forEach((control, i) => {
-      control.classList.toggle('is-active', i === current);
-      control.setAttribute('aria-pressed', String(i === current));
-    });
-    const selected = slides[current];
-    const values = {'fm-hero-name': selected.dataset.title, 'fm-hero-category': selected.dataset.category, 'fm-hero-moq': selected.dataset.moq};
-    Object.entries(values).forEach(([id, text]) => {const el = document.getElementById(id); if (el) el.textContent = text || '';});
-    const link = document.getElementById('fm-hero-link');
-    if (link) link.setAttribute('href', selected.dataset.href);
-    const count = document.getElementById('fm-slide-count');
-    if (count) count.textContent = `${String(current + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
-  }
-  function stop() {window.clearInterval(timer);timer = undefined;}
-  function start() {
-    stop();
-    if (slides.length > 1 && !paused && !hovering && !document.hidden && !hero.contains(document.activeElement)) timer = window.setInterval(() => showSlide(current + 1), 6500);
-  }
-  function updatePause() {
-    if (!pauseButton) return;
-    pauseButton.textContent = paused ? '▶' : 'Ⅱ';
-    pauseButton.setAttribute('aria-label', paused ? 'Start slideshow' : 'Pause slideshow');
-    pauseButton.setAttribute('aria-pressed', String(paused));
-    pauseButton.disabled = slides.length < 2;
-  }
-  controls.forEach((button, index) => button.addEventListener('click', () => {showSlide(index);start();}));
-  root.querySelector('[data-equipment-prev]')?.addEventListener('click', () => {showSlide(current - 1);start();});
-  root.querySelector('[data-equipment-next]')?.addEventListener('click', () => {showSlide(current + 1);start();});
-  pauseButton?.addEventListener('click', () => {paused = !paused;updatePause();start();});
-  if (hero) {
-    hero.addEventListener('mouseenter', () => {hovering = true;stop();});
-    hero.addEventListener('mouseleave', () => {hovering = false;start();});
-    hero.addEventListener('focusin', stop);
-    hero.addEventListener('focusout', () => window.setTimeout(start, 0));
-    hero.addEventListener('keydown', event => {
-      if (event.target.matches('input,select,textarea')) return;
-      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {event.preventDefault();showSlide(current + (event.key === 'ArrowRight' ? 1 : -1));start();}
-    });
-  }
-  reducedMotion.addEventListener?.('change', () => {if (reducedMotion.matches) paused = true;updatePause();start();});
-  document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
-  root.querySelectorAll('[data-equipment-prev],[data-equipment-next]').forEach(button => {button.disabled = slides.length < 2;});
-  showSlide(0);updatePause();start();
 
-  // Only display a countdown for a configured absolute deadline with a timezone.
-  // No rolling deadlines, fabricated discounts, stock counts or automatic price changes.
-  const saleSection = root.querySelector('[data-flash-section]');
-  const countdown = saleSection?.querySelector('[data-countdown]');
-  const deadline = saleSection?.dataset.saleEnds || '';
-  const deadlineHasZone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(deadline);
-  const endsAt = deadlineHasZone ? Date.parse(deadline) : NaN;
-  let saleTimer;
-  function expireOffer() {
-    window.clearInterval(saleTimer);
-    if (countdown) countdown.hidden = true;
-    saleSection?.classList.add('fm-offer-expired');
-    const heading = document.getElementById('fm-flash-title');
-    if (heading) heading.textContent = 'Featured equipment & offers';
-    root.querySelectorAll('[data-offer-card]').forEach(card => {
-      const price = Number(card.dataset.regularPrice);
-      const amount = card.querySelector('[data-offer-price]');
-      if (amount && Number.isFinite(price)) amount.textContent = 'US$' + price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-      card.querySelector('[data-original-price]')?.remove();
-      const label = card.querySelector('[data-discount-badge]');
-      if (label) {label.classList.remove('is-discount');label.textContent = 'REQUEST OFFER';}
-    });
-  }
-  function updateCountdown() {
-    const remaining = endsAt - Date.now();
-    if (remaining <= 0) {expireOffer();return false;}
-    const seconds = Math.floor(remaining / 1000);
-    const parts = {days: Math.floor(seconds / 86400), hours: Math.floor(seconds / 3600) % 24, minutes: Math.floor(seconds / 60) % 60, seconds: seconds % 60};
-    Object.entries(parts).forEach(([unit, value]) => {const el = countdown?.querySelector(`[data-countdown-${unit}]`);if (el) el.textContent = String(value).padStart(2, '0');});
-    if (countdown) countdown.hidden = false;
-    return true;
-  }
-  if (Number.isFinite(endsAt) && updateCountdown()) saleTimer = window.setInterval(updateCountdown, 1000);
+(()=>{
 
-  // Existing representative buyer stories. Images remain valid with short catalogues.
-  const stories = Array.from(root.querySelectorAll('[data-story]'));
-  const storyControls = Array.from(root.querySelectorAll('[data-story-control]'));
-  const storyImages = {{ featured_equipment[:3]|map(attribute='image_url')|list|tojson }};
-  let story = 0;
-  let storyTimer;
-  const storyStage = root.querySelector('.fh-testimonials');
-  function showStory(index) {
-    if (!stories.length) return;
-    story = (index + stories.length) % stories.length;
-    stories.forEach((el, i) => {el.classList.toggle('active', i === story);el.setAttribute('aria-hidden', String(i !== story));});
-    storyControls.forEach((el, i) => {el.classList.toggle('active', i === story);el.setAttribute('aria-pressed', String(i === story));});
-    const image = document.getElementById('story-image');
-    if (image && storyImages.length) image.src = storyImages[story % storyImages.length];
-  }
-  function stopStories() {window.clearInterval(storyTimer);}
-  function startStories() {stopStories();if (stories.length > 1 && !document.hidden && !reducedMotion.matches && !storyStage?.contains(document.activeElement)) storyTimer = window.setInterval(() => showStory(story + 1), 8000);}
-  storyControls.forEach((button, index) => button.addEventListener('click', () => {stopStories();showStory(index);}));
-  storyStage?.addEventListener('mouseenter', stopStories);
-  storyStage?.addEventListener('mouseleave', startStories);
-  storyStage?.addEventListener('focusin', stopStories);
-  storyStage?.addEventListener('focusout', () => window.setTimeout(startStories, 0));
-  document.addEventListener('visibilitychange', () => document.hidden ? stopStories() : startStories());
-  reducedMotion.addEventListener?.('change', () => reducedMotion.matches ? stopStories() : startStories());
-  showStory(0);startStories();
+  const products={{ games[:5]|map(attribute='title')|list|tojson }};
+
+  const moqs={{ games[:5]|map(attribute='minimum_order')|list|tojson }};
+
+  const categories={{ games[:5]|map(attribute='genre')|list|tojson }};
+
+  const sources={{ games[:5]|map(attribute='photo_source')|list|tojson }};
+
+  const slides=[...document.querySelectorAll('.fh-slide')],controls=[...document.querySelectorAll('[data-hero-control]')];let active=0,timer;
+
+  const show=index=>{active=index;slides.forEach((el,i)=>el.classList.toggle('active',i===index));controls.forEach((el,i)=>el.classList.toggle('active',i===index));document.querySelector('#hero-product').textContent=products[index];document.querySelector('#hero-moq').textContent=moqs[index];document.querySelector('#hero-category').textContent=categories[index].toUpperCase();document.querySelector('#hero-source').textContent=sources[index]};
+
+  const start=()=>{clearInterval(timer);timer=setInterval(()=>show((active+1)%slides.length),6000)};controls.forEach((button,index)=>button.addEventListener('click',()=>{show(index);start()}));if(slides.length>1)start();
+
+  const stories=[...document.querySelectorAll('[data-story]')],storyControls=[...document.querySelectorAll('[data-story-control]')],storyImages={{ games[2:5]|map(attribute='image_url')|list|tojson }};let story=0;
+
+  const showStory=index=>{story=index;stories.forEach((el,i)=>el.classList.toggle('active',i===index));storyControls.forEach((el,i)=>el.classList.toggle('active',i===index));document.querySelector('#story-image').src=storyImages[index]};storyControls.forEach((button,index)=>button.addEventListener('click',()=>showStory(index)));setInterval(()=>showStory((story+1)%stories.length),7200);
+
 })();
 
 </script>
+
 {% endblock %}
