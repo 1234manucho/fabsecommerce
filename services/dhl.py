@@ -51,6 +51,15 @@ DHL_NEXT_BUSINESS_DAY = str(
     os.getenv("DHL_NEXT_BUSINESS_DAY", "true")
 ).strip().lower() not in {"0", "false", "no", "off"}
 
+# DHL shipment schema limits:
+#   content.description            -> maxLength 70
+#   content.packages[].description -> maxLength 70
+# Anything longer returns 422 ("expected maxLength: 70, actual: N").
+DHL_MAX_DESCRIPTION_LENGTH = int(os.getenv("DHL_MAX_DESCRIPTION_LENGTH", "70"))
+DHL_DEFAULT_PACKAGE_DESCRIPTION = os.getenv(
+    "DHL_DEFAULT_PACKAGE_DESCRIPTION", "Software and accessories"
+)
+
 
 def _default_product_code(is_international):
     """Return the DHL Express Kenya product code for a route."""
@@ -59,6 +68,20 @@ def _default_product_code(is_international):
         if is_international
         else DHL_DOMESTIC_PRODUCT_CODE
     )
+
+
+def _truncate_description(value, fallback=DHL_DEFAULT_PACKAGE_DESCRIPTION):
+    """
+    Return a DHL-safe content description.
+
+    DHL rejects shipment payloads when ``content.description`` or
+    ``content.packages[].description`` exceeds 70 characters, so long
+    product titles coming from the admin form are truncated here.
+    """
+    text = str(value or "").strip()
+    if not text:
+        text = fallback
+    return text[:DHL_MAX_DESCRIPTION_LENGTH]
 
 
 # ======================================================================
@@ -754,7 +777,18 @@ class DHLService:
         destination_country = order_data["receiver_country"]
         is_international = origin_country != destination_country
 
-        package_desc = order_data.get("package_description") or "Software and accessories"
+        # --------------------------------------------------------------
+        # FIX (2026-09): DHL enforces maxLength=70 on
+        #   - content.description
+        #   - content.packages[].description
+        # Long admin product titles (98+ chars) were producing
+        #   "422 ... expected maxLength: 70, actual: 98".
+        # Truncate once here and reuse everywhere in the payload.
+        # --------------------------------------------------------------
+        package_desc = _truncate_description(
+            order_data.get("package_description")
+        )
+
         order_reference = str(
             order_data.get("order_reference") or "FABS-ORDER"
         ).strip()
@@ -769,6 +803,7 @@ class DHLService:
                 "width":  float(order_data.get("package_width_cm") or 20.0),
                 "height": float(order_data.get("package_height_cm") or 10.0),
             },
+            # Already <= 70 chars; DHL maxLength=70.
             "description": package_desc,
         }
 
@@ -936,6 +971,7 @@ class DHLService:
         content_block = {
             "packages": [package_block],
             "isCustomsDeclarable": is_customs_declarable,
+            # Already <= 70 chars (see _truncate_description above).
             "description": package_desc,
             "unitOfMeasurement": "metric",
             "declaredValue": declared_value,
@@ -1455,6 +1491,7 @@ class DHLService:
             # diagnostic run shows exactly what would be sent.
             "default_product_code": _default_product_code(is_international),
             "next_business_day": DHL_NEXT_BUSINESS_DAY,
+            "max_description_length": DHL_MAX_DESCRIPTION_LENGTH,
             "products": [],
             "error": None,
         }
