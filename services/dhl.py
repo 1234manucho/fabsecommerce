@@ -64,10 +64,10 @@ DHL_DEFAULT_PACKAGE_DESCRIPTION = os.getenv(
 # HS code defaults (international customs).
 #
 # DHL requires a 6-12 digit commodity code on every export line item.
-# When the order data does not carry one and no env override is present,
-# fall back to 950450 ("Video game consoles and machines — other than
-# those of subheading 9504.30"), which is the correct HS code for FABS's
-# core gaming products.
+# When the order data does not carry a valid one and no env override is
+# present, fall back to 950450 ("Video game consoles and machines —
+# other than those of subheading 9504.30"), which is the correct HS
+# code for FABS's core gaming products.
 #
 # You can also set per-order codes in `order_data["hs_code"]` or a
 # business default via `DHL_DEFAULT_HS_CODE` in .env.
@@ -422,17 +422,36 @@ def _normalise_hs_code(value, field_name="HS code"):
     """
     Return a 6-12 digit customs commodity code.
 
-    Prefers the caller-supplied value; falls back to DHL_DEFAULT_HS_CODE
-    (which itself defaults to 950450 — video game consoles/machines).
+    FIX (2026-09, bulletproof): DHL_DEFAULT_HS_CODE is used whenever the
+    caller-supplied value is missing, blank, OR contains no usable
+    digits.  This covers admin-form inputs such as ``"N/A"``, ``"-"``,
+    ``"null"``, ``"0"``, or a value with fewer than 6 digits — all of
+    which previously slipped past the ``or`` fallback chain (because
+    they are truthy strings) and then failed inside this function.
+
+    Only raises if the caller-supplied value AND every configured
+    fallback are unusable, which should never happen because
+    DHL_DEFAULT_HS_CODE itself defaults to ``"950450"``.
     """
-    raw = value if value not in (None, "") else DHL_DEFAULT_HS_CODE
-    digits = re.sub(r"\D", "", str(raw or ""))
-    if not 6 <= len(digits) <= 12:
-        raise DHLConfigurationError(
-            f"{field_name} is required for international goods and must contain "
-            "6 to 12 digits"
-        )
-    return digits
+    def _extract_digits(raw):
+        return re.sub(r"\D", "", str(raw or ""))
+
+    # 1. Try the value the caller passed in.
+    digits = _extract_digits(value)
+    if 6 <= len(digits) <= 12:
+        return digits
+
+    # 2. Fall back to the env override, then the built-in default.
+    for fallback in (os.getenv("DHL_DEFAULT_HS_CODE"), DHL_DEFAULT_HS_CODE):
+        fallback_digits = _extract_digits(fallback)
+        if 6 <= len(fallback_digits) <= 12:
+            return fallback_digits
+
+    # 3. Nothing usable — raise a clear error.
+    raise DHLConfigurationError(
+        f"{field_name} is required for international goods and must contain "
+        f"6 to 12 digits (got {value!r})"
+    )
 
 
 def _build_export_line_items(order_data, origin_country, package_weight, declared_value):
@@ -498,6 +517,8 @@ def _build_export_line_items(order_data, origin_country, package_weight, declare
 
         # HS code: prefer the line item's own value, then the order-level
         # value, then the env override, then the built-in default.
+        # _normalise_hs_code now handles non-numeric-but-truthy inputs
+        # (e.g. "N/A", "-", "null") by falling back to the default.
         hs_code = _normalise_hs_code(
             raw_item.get("hs_code")
             or order_data.get("hs_code")
