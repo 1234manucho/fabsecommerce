@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+
+{% macro dhl_logo(class_name='', width=180, height=52) -%}
+<svg class="dhl-logo {{ class_name }}" viewBox="0 0 320 90" width="{{ width }}" height="{{ height }}" role="img" aria-label="DHL Express logo" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <g fill="#d40511">
+    <path d="M5 21h49l-4 8H3zm-4 14h47l-4 8H0zm7 14h34l-4 8H5z"/>
+    <text x="58" y="62" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="58" font-style="italic" font-weight="900" letter-spacing="-5">DHL</text>
+    <path d="M267 21h49l-4 8h-49zm7 14h46l-4 8h-46zm7 14h34l-4 8h-34z"/>
+  </g>
+</svg>
+{%- endmacro %}
+
+{% macro dhl_plane(class_name='', width=150, height=68) -%}
+<svg class="dhl-plane {{ class_name }}" viewBox="0 0 240 108" width="{{ width }}" height="{{ height }}" role="img" aria-label="DHL Express cargo plane" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <path d="M52 64 L34 12 L64 12 L92 60 Z" fill="#d40511"/>
+  <path d="M60 68 L18 96 L54 96 L86 70 Z" fill="#e0b400"/>
+  <path d="M130 68 L76 106 L116 106 L170 70 Z" fill="#e0b400"/>
+  <path d="M40 52 C40 39 60 33 90 32 L176 29 C208 28 230 40 238 54 C230 67 208 75 176 74 L90 73 C60 72 40 65 40 52 Z" fill="#ffcc00"/>
+  <path d="M204 36 C220 40 231 46 236 54 L210 54 Z" fill="#0b0e12" opacity=".85"/>
+  <g fill="#0b0e12" opacity=".8">
+    <circle cx="96" cy="39" r="3"/><circle cx="114" cy="38" r="3"/><circle cx="132" cy="37.5" r="3"/>
+    <circle cx="150" cy="37" r="3"/><circle cx="168" cy="36.5" r="3"/><circle cx="186" cy="36" r="3"/>
+  </g>
+  <text x="128" y="66" text-anchor="middle" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="24" font-style="italic" font-weight="900" fill="#d40511" letter-spacing="-1.2">DHL</text>
+</svg>
+{%- endmacro %}
+
+{% block title %}Order confirmed · {{ order.reference }} | FABS Trading{% endblock %}
+
+{% block head %}
+
+<style>
+  .os-wrap{
+    --red:#ed3138;--red-dark:#c11b23;
+    --ink:#0b0e12;--muted:#69717a;
+    --paper:#f3f4f5;--line:#e4e7ea;
+    --dhl-yellow:#ffcc00;--dhl-red:#d40511;
+    --emerald:#22c55e;--emerald-dark:#15803d;
+    --amber:#f59e0b;--rose:#e11d48;
+    background:#fff;color:var(--ink);overflow-x:clip;
+    -webkit-font-smoothing:antialiased;
+  }
+  .os-wrap *,.os-wrap *::before,.os-wrap *::after{box-sizing:border-box}
+  .os-shell{width:min(1100px,calc(100% - 40px));margin-inline:auto}
+  .dhl-logo,.dhl-plane{display:block;overflow:visible;flex:none}
+  .os-wrap a{color:inherit;text-decoration:none}
+
+  /* ================= HERO ================= */
+  .os-hero{position:relative;background:#05070a;color:#fff;overflow:hidden;padding:88px 0 96px;isolation:isolate}
+  .os-hero::before{content:"";position:absolute;inset:0;z-index:-1;
+    background:
+      radial-gradient(900px 420px at 78% 12%,rgba(34,197,94,.24),transparent 65%),
+      radial-gradient(900px 420px at 8% 100%,rgba(255,204,0,.14),transparent 62%),
+      linear-gradient(180deg,#05070a,#0b0f15 55%,#080b10)}
+  .os-hero-grid{position:absolute;inset:0;z-index:-1;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+    background-size:70px 70px;
+    -webkit-mask-image:radial-gradient(ellipse at 50% 45%,#000,transparent 76%);
+    mask-image:radial-gradient(ellipse at 50% 45%,#000,transparent 76%)}
+  .os-hero-flight{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .os-hero-route{position:absolute;top:120px;left:0;width:100%;height:1px;
+    background:repeating-linear-gradient(90deg,rgba(255,204,0,.45) 0 12px,transparent 12px 26px);
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
+  .os-hero-plane{position:absolute;top:86px;left:-16%;width:130px;
+    filter:drop-shadow(0 16px 26px rgba(0,0,0,.55)) drop-shadow(0 0 26px rgba(255,204,0,.28));
+    will-change:left,transform;animation:osFly 19s linear infinite}
+  @keyframes osFly{
+    0%{left:-16%;transform:translateY(30px) rotate(4deg) scale(.86);opacity:0}
+    7%{opacity:1}
+    50%{transform:translateY(-24px) rotate(-2deg) scale(1)}
+    93%{opacity:1}
+    100%{left:108%;transform:translateY(-46px) rotate(-6deg) scale(.9);opacity:0}
+  }
+
+  .os-hero-inner{position:relative;z-index:2;text-align:center}
+  .os-badge{display:inline-flex;align-items:center;gap:12px;padding:10px 20px;border-radius:999px;
+    background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.55);
+    font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#86efac}
+  .os-badge i{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 14px #22c55e;animation:osPulse 1.6s ease-in-out infinite}
+  @keyframes osPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+  .os-hero h1{margin:22px auto 14px;font-size:clamp(38px,5.4vw,72px);line-height:1.02;letter-spacing:-.05em;max-width:920px}
+  .os-hero h1 em{font-style:normal;background:linear-gradient(100deg,#86efac,#22c55e 70%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .os-hero p{margin:0 auto;max-width:640px;color:#c1c6cc;font-size:15px;line-height:1.75}
+  .os-hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+  .os-hero-actions a{height:52px;padding:0 22px;display:inline-flex;align-items:center;gap:14px;
+    font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;
+    border:1px solid rgba(255,255,255,.22);color:#fff;transition:.22s}
+  .os-hero-actions a:hover{transform:translateY(-2px);background:rgba(255,255,255,.06)}
+  .os-hero-actions a.primary{background:var(--red);border-color:var(--red);box-shadow:0 14px 34px rgba(237,49,56,.34)}
+  .os-hero-actions a.primary:hover{background:var(--red-dark);border-color:var(--red-dark)}
+  .os-hero-actions a.dhl{border-color:var(--dhl-yellow);color:var(--dhl-yellow)}
+  .os-hero-actions a.dhl:hover{background:var(--dhl-yellow);color:#111}
+
+  /* ================= ORDER CARD ================= */
+  .os-main{background:var(--paper);padding:0 0 96px;margin-top:-36px;position:relative;z-index:3}
+  .os-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
+
+  .os-card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    box-shadow:0 18px 46px rgba(21,25,30,.06)}
+  .os-card + .os-card{margin-top:18px}
+  .os-card-head{padding:22px 26px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .os-card-head h2{margin:0;font-size:17px;letter-spacing:-.02em;font-weight:900}
+  .os-card-head small{font-size:9px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .os-card-body{padding:26px}
+
+  /* status pill */
+  .os-status{display:inline-flex;align-items:center;gap:10px;padding:8px 14px;border-radius:999px;
+    font-size:9px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+  .os-status.paid{background:#ecfdf5;color:#15803d;border:1px solid #86efac}
+  .os-status.pending{background:#fffbeb;color:#b45309;border:1px solid #fcd34d}
+  .os-status.failed{background:#fef2f2;color:#b91c1c;border:1px solid #fca5a5}
+  .os-status i{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
+
+  /* reference block */
+  .os-ref{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .os-ref-cell{padding:18px;border:1px dashed #cbd2da;border-radius:10px;background:#fafbfc}
+  .os-ref-cell small{display:block;font-size:9px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .os-ref-cell b{display:block;font-size:15px;letter-spacing:.02em;color:var(--ink);word-break:break-all}
+  .os-ref-cell span{display:block;font-size:10px;color:var(--muted);margin-top:4px}
+
+  /* items */
+  .os-items{margin:0;padding:0;list-style:none;display:grid;gap:14px}
+  .os-item{display:grid;grid-template-columns:80px 1fr auto;gap:16px;align-items:center;
+    padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .os-item:last-child{border-bottom:0;padding-bottom:0}
+  .os-item-media{width:80px;height:80px;border-radius:8px;overflow:hidden;background:#0b0e12}
+  .os-item-media img{width:100%;height:100%;object-fit:cover;display:block}
+  .os-item-info strong{display:block;font-size:14px;letter-spacing:-.01em;margin-bottom:4px}
+  .os-item-info small{font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:800}
+  .os-item-price{text-align:right;font-weight:900;font-size:15px;letter-spacing:-.02em}
+  .os-item-price small{display:block;font-size:9px;color:var(--muted);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
+
+  /* totals */
+  .os-totals{margin-top:22px;padding-top:22px;border-top:1px solid var(--line);display:grid;gap:10px}
+  .os-totals div{display:flex;justify-content:space-between;font-size:13px;color:#4f5860}
+  .os-totals div b{font-weight:900;color:var(--ink)}
+  .os-totals div.grand{margin-top:8px;padding-top:14px;border-top:1px solid var(--line);font-size:18px;color:var(--ink)}
+  .os-totals div.grand b{font-size:22px;letter-spacing:-.02em}
+
+  /* address */
+  .os-address{font-size:13px;line-height:1.7;color:#4f5860}
+  .os-address strong{display:block;color:var(--ink);font-size:14px;margin-bottom:6px}
+  .os-address span{display:block}
+
+  /* shipping block */
+  .os-ship{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;padding:20px;background:#fafbfc;border:1px solid var(--line);border-radius:10px}
+  .os-ship-logo{display:grid;place-items:center;padding:12px 16px;background:var(--dhl-yellow);border-radius:8px;border:1px solid #e6b800}
+  .os-ship-logo .dhl-logo{height:38px;width:132px}
+  .os-ship-copy strong{display:block;font-size:14px;letter-spacing:-.01em}
+  .os-ship-copy p{margin:4px 0 0;font-size:12px;color:var(--muted);line-height:1.6}
+  .os-ship-copy a{display:inline-flex;align-items:center;gap:8px;margin-top:10px;color:var(--red);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid var(--red);padding-bottom:3px}
+
+  /* side panel — help */
+  .os-help{position:sticky;top:24px}
+  .os-help-body{padding:26px}
+  .os-help-body h3{margin:0 0 12px;font-size:16px;letter-spacing:-.02em}
+  .os-help-body p{margin:0 0 18px;font-size:12px;line-height:1.7;color:var(--muted)}
+  .os-help-list{list-style:none;margin:0 0 22px;padding:0;display:grid;gap:12px}
+  .os-help-list li{display:grid;grid-template-columns:auto 1fr;gap:12px;font-size:12px;color:#4f5860;line-height:1.6}
+  .os-help-list li::before{content:"→";color:var(--red);font-weight:900}
+  .os-help-cta{display:flex;flex-direction:column;gap:10px}
+  .os-help-cta a{display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    height:46px;padding:0 16px;border-radius:6px;font-size:10px;font-weight:900;
+    letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);transition:.2s}
+  .os-help-cta a:hover{transform:translateY(-2px);border-color:var(--red);color:var(--red)}
+  .os-help-cta a.primary{background:var(--red);border-color:var(--red);color:#fff}
+  .os-help-cta a.primary:hover{background:var(--red-dark)}
+
+  .os-final{padding:26px;background:#0b0e12;color:#fff;border-radius:14px;margin-top:18px;text-align:center}
+  .os-final strong{display:block;font-size:15px;letter-spacing:-.02em;margin-bottom:6px}
+  .os-final p{margin:0;font-size:12px;color:#9aa2ab;line-height:1.7}
+
+  @media(max-width:900px){
+    .os-grid{grid-template-columns:1fr}
+    .os-help{position:static}
+    .os-ref{grid-template-columns:1fr}
+    .os-hero-flight{display:none}
+  }
+  @media(max-width:520px){
+    .os-shell{width:min(100% - 24px,1100px)}
+    .os-hero{padding:64px 0 76px}
+    .os-card-body,.os-card-head{padding:20px}
+    .os-item{grid-template-columns:64px 1fr;gap:12px}
+    .os-item-media{width:64px;height:64px}
+    .os-item-price{grid-column:2;text-align:left;margin-top:6px}
+    .os-ship{grid-template-columns:1fr}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .os-hero-plane,.os-badge i{animation:none!important}
+    .os-hero-plane{left:38%!important;opacity:1!important}
+  }
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="os-wrap">
+
+  <!-- ================= HERO ================= -->
+  <section class="os-hero">
+    <span class="os-hero-grid" aria-hidden="true"></span>
+    <div class="os-hero-flight" aria-hidden="true">
+      <span class="os-hero-route"></span>
+      <div class="os-hero-plane">{{ dhl_plane('', 130, 58) }}</div>
+    </div>
+
+    <div class="os-shell os-hero-inner">
+      {% if order.payment_status == 'paid' %}
+        <span class="os-badge"><i aria-hidden="true"></i> Payment received</span>
+        <h1>Thank you — your order is <em>confirmed.</em></h1>
+        <p>We've received your payment and our team is preparing your shipment. A confirmation email is on its way to <strong style="color:#fff">{{ order.email }}</strong>.</p>
+      {% elif order.payment_status == 'failed' %}
+        <span class="os-badge" style="background:rgba(225,29,72,.18);border-color:rgba(225,29,72,.55);color:#fda4af"><i style="background:#e11d48;box-shadow:0 0 14px #e11d48" aria-hidden="true"></i> Payment not completed</span>
+        <h1>We couldn't complete your <em>payment.</em></h1>
+        <p>Your order <strong style="color:#fff">{{ order.reference }}</strong> was saved, but the payment was not approved. You can retry the payment or contact our support team.</p>
+      {% else %}
+        <span class="os-badge" style="background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.55);color:#fcd34d"><i style="background:#f59e0b;box-shadow:0 0 14px #f59e0b" aria-hidden="true"></i> Awaiting confirmation</span>
+        <h1>We're confirming your <em>payment.</em></h1>
+        <p>Your order <strong style="color:#fff">{{ order.reference }}</strong> is being verified with the payment provider. This usually takes less than a minute — refresh this page shortly.</p>
+      {% endif %}
+
+      <div class="os-hero-actions">
+        <a class="primary" href="{{ url_for('games') }}">Continue shopping <span aria-hidden="true">→</span></a>
+        {% if order.payment_status == 'failed' %}
+          <a class="dhl" href="{{ url_for('start_payment', order_id=order.id) }}">Retry payment <span aria-hidden="true">→</span></a>
+        {% endif %}
+        <a href="{{ url_for('support') }}">Contact support</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MAIN ================= -->
+  <section class="os-main">
+    <div class="os-shell os-grid">
+
+      <!-- --------- LEFT COLUMN --------- -->
+      <div>
+
+        <!-- Order summary -->
+        <article class="os-card">
+          <header class="os-card-head">
+            <div>
+              <small>Order reference</small>
+              <h2>{{ order.reference }}</h2>
+            </div>
+            {% if order.payment_status == 'paid' %}
+              <span class="os-status paid"><i aria-hidden="true"></i> Paid</span>
+            {% elif order.payment_status == 'failed' %}
+              <span class="os-status failed"><i aria-hidden="true"></i> Failed</span>
+            {% else %}
+              <span class="os-status pending"><i aria-hidden="true"></i> Pending</span>
+            {% endif %}
+          </header>
+
+          <div class="os-card-body">
+            <!-- References -->
+            <div class="os-ref">
+              <div class="os-ref-cell">
+                <small>FABS order reference</small>
+                <b>{{ order.reference }}</b>
+                <span>Keep this for any support enquiry.</span>
+              </div>
+              {% if transaction and transaction.provider_reference %}
+              <div class="os-ref-cell">
+                <small>DPO transaction reference</small>
+                <b>{{ transaction.provider_reference }}</b>
+                <span>Your secure payment reference.</span>
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- Items -->
+            <ul class="os-items" style="margin-top:24px">
+              {% for item in order.items %}
+              <li class="os-item">
+                <div class="os-item-media">
+                  {% if item.game and item.game.image_url %}
+                    <img src="{{ item.game.image_url }}" alt="{{ item.title }}">
+                  {% endif %}
+                </div>
+                <div class="os-item-info">
+                  <strong>{{ item.title }}</strong>
+                  <small>{% if item.platform %}{{ item.platform }} · {% endif %}Qty {{ item.quantity }}</small>
+                </div>
+                <div class="os-item-price">
+                  {{ item.unit_price|money_usd }}
+                  <small>× {{ item.quantity }}</small>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+
+            <!-- Totals -->
+            <div class="os-totals">
+              <div><span>Subtotal</span><b>{{ order.subtotal|money_usd }}</b></div>
+              {% if order.shipping_cost and order.shipping_cost > 0 %}
+              <div><span>DHL Express shipping</span><b>{{ order.shipping_cost|money_usd }}</b></div>
+              {% endif %}
+              <div class="grand"><span>Total paid</span><b>{{ order.total|money_usd }}</b></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Delivery address -->
+        <article class="os-card">
+          <header class="os-card-head">
+            <small>Delivery address</small>
+          </header>
+          <div class="os-card-body">
+            <div class="os-address">
+              <strong>{{ order.full_name }}{% if order.company %} · {{ order.company }}{% endif %}</strong>
+              {% if order.address_line1 %}<span>{{ order.address_line1 }}</span>{% endif %}
+              {% if order.address_line2 %}<span>{{ order.address_line2 }}</span>{% endif %}
+              {% if order.city or order.postal_code %}
+                <span>{% if order.city %}{{ order.city }}{% endif %}{% if order.postal_code %}, {{ order.postal_code }}{% endif %}</span>
+              {% endif %}
+              {% if order.country %}<span>{{ order.country }}</span>{% endif %}
+              {% if order.phone %}<span style="margin-top:8px">📞 {{ order.phone }}</span>{% endif %}
+              {% if order.email %}<span>✉ {{ order.email }}</span>{% endif %}
+            </div>
+          </div>
+        </article>
+
+        <!-- Shipping / tracking -->
+        <article class="os-card">
+          <header class="os-card-head">
+            <small>Shipping</small>
+          </header>
+          <div class="os-card-body">
+            <div class="os-ship">
+              <span class="os-ship-logo">{{ dhl_logo('', 132, 38) }}</span>
+              <div class="os-ship-copy">
+                <strong>
+                  {% if shipment and shipment.tracking_number %}
+                    Shipped via DHL Express
+                  {% else %}
+                    Preparing for DHL Express pickup
+                  {% endif %}
+                </strong>
+                {% if shipment and shipment.tracking_number %}
+                  <p>Tracking number: <strong>{{ shipment.tracking_number }}</strong></p>
+                  <a href="{{ url_for('order_tracking', reference=order.reference) }}">Track your shipment →</a>
+                {% else %}
+                  <p>We'll email your DHL tracking number as soon as your order leaves our Nairobi warehouse.</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- --------- RIGHT COLUMN --------- -->
+      <aside class="os-help">
+        <article class="os-card">
+          <div class="os-help-body">
+            <h3>What happens next</h3>
+            <p>Here's the typical journey of your order from now on:</p>
+            <ul class="os-help-list">
+              <li><strong>Payment confirmed</strong> — we've received your card authorisation.</li>
+              <li><strong>Order prepared</strong> — our team picks and packs your items in Nairobi.</li>
+              <li><strong>DHL pickup</strong> — the shipment is handed to DHL Express with a real tracking number.</li>
+              <li><strong>Delivery</strong> — track your order all the way to your door from the tracking page.</li>
+            </ul>
+
+            <div class="os-help-cta">
+              <a class="primary" href="{{ url_for('account') }}">View my orders</a>
+              <a href="{{ url_for('support') }}">Support &amp; FAQ</a>
+              <a href="mailto:{{ support_email }}">Email {{ support_email }}</a>
+            </div>
+          </div>
+        </article>
+
+        <div class="os-final">
+          <strong>Need help with this order?</strong>
+          <p>Quote reference <b>{{ order.reference }}</b> in any email or WhatsApp message and our team will find it instantly.</p>
+        </div>
+      </aside>
+
+    </div>
+  </section>
+</div>
+
+{% endblock %}

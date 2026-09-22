@@ -1664,13 +1664,16 @@ def register_routes(app):
                 transaction.status = "approved"
                 for item in order.items:
                     db.session.add(DigitalEntitlement(order_item_id=item.id, delivery_status="pending"))
-                flash("Sandbox payment approved. The order is ready for fulfilment.", "success")
+                audit("sandbox_payment_result", "order", order.id, outcome)
+                db.session.commit()
+                # Sandbox parity: land on the same success page as live payments
+                return redirect(url_for("order_success", reference=order.reference))
             else:
                 order.payment_status, order.status = "failed", "payment_failed"
                 transaction.status = "declined"
+                audit("sandbox_payment_result", "order", order.id, outcome)
+                db.session.commit()
                 flash("Sandbox payment declined.", "danger")
-            audit("sandbox_payment_result", "order", order.id, outcome)
-            db.session.commit()
             return redirect(url_for("order_detail", reference=order.reference))
         return render_template("payment_mock.html", order=order)
 
@@ -1722,15 +1725,17 @@ def register_routes(app):
                     )
 
             audit("payment_verified", "order", order.id, trans_token)
-            flash("Payment approved. Your order is now being processed.", "success")
-        else:
-            order.payment_status, order.status = "failed", "payment_failed"
-            transaction.status = "declined"
-            transaction.raw_status = result.get("result", "")
-            audit("payment_failed", "order", order.id, result.get("explanation", ""))
-            flash("Payment was not approved. Please try again or contact support.", "danger")
+            db.session.commit()
+            # NEW: dedicated success page
+            return redirect(url_for("order_success", reference=order.reference))
 
+        # Declined / failed path: stay on the order detail page
+        order.payment_status, order.status = "failed", "payment_failed"
+        transaction.status = "declined"
+        transaction.raw_status = result.get("result", "")
+        audit("payment_failed", "order", order.id, result.get("explanation", ""))
         db.session.commit()
+        flash("Payment was not approved. Please try again or contact support.", "danger")
         return redirect(url_for("order_detail", reference=order.reference))
 
     @app.post("/webhooks/dpo")
@@ -1781,6 +1786,49 @@ def register_routes(app):
     # ================================================================
     # ORDERS
     # ================================================================
+
+    # ----- NEW: post-payment success page -----
+    @app.get("/order/success/<reference>")
+    def order_success(reference):
+        """
+        Landing page the buyer sees after DPO redirects them back.
+        Shows a clear success / pending / failed state, the DPO
+        transaction reference, shipping status and next steps.
+        """
+        order = Order.query.filter_by(reference=reference).first_or_404()
+
+        # Same access checks as order_detail
+        if order.user_id:
+            if not current_user.is_authenticated:
+                abort(403)
+            if order.user_id != current_user.id and not current_user.is_admin:
+                abort(403)
+        elif not (
+            current_user.is_authenticated and current_user.is_admin
+        ) and session.get("last_order_reference") != order.reference:
+            abort(403)
+
+        # Most recent DPO transaction (reference + status shown on the page)
+        transaction = (
+            PaymentTransaction.query
+            .filter_by(order_id=order.id)
+            .order_by(PaymentTransaction.id.desc())
+            .first()
+        )
+
+        # First-class shipment row if the admin has already created a label
+        shipment = Shipment.query.filter_by(
+            order_id=order.id, is_active=True
+        ).first()
+
+        return render_template(
+            "order_success.html",
+            order=order,
+            transaction=transaction,
+            shipment=shipment,
+        )
+
+    # ----- Existing order detail page -----
     @app.get("/orders/<reference>")
     def order_detail(reference):
         order = Order.query.filter_by(reference=reference).first_or_404()
@@ -2331,8 +2379,8 @@ def register_errors(app):
         db.session.rollback()
         return render_template("error.html", code=500, title="We could not complete that request", message="Please try again or contact support."), 500
 
- 
+
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true") 
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true")
