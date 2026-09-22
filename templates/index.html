@@ -10,219 +10,686 @@
 </svg>
 {%- endmacro %}
 
+{% macro dhl_plane(class_name='', width=150, height=68) -%}
+<svg class="dhl-plane {{ class_name }}" viewBox="0 0 240 108" width="{{ width }}" height="{{ height }}" role="img" aria-label="DHL Express cargo plane" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <path d="M52 64 L34 12 L64 12 L92 60 Z" fill="#d40511"/>
+  <path d="M60 68 L18 96 L54 96 L86 70 Z" fill="#e0b400"/>
+  <path d="M130 68 L76 106 L116 106 L170 70 Z" fill="#e0b400"/>
+  <path d="M40 52 C40 39 60 33 90 32 L176 29 C208 28 230 40 238 54 C230 67 208 75 176 74 L90 73 C60 72 40 65 40 52 Z" fill="#ffcc00"/>
+  <path d="M204 36 C220 40 231 46 236 54 L210 54 Z" fill="#0b0e12" opacity=".85"/>
+  <g fill="#0b0e12" opacity=".8">
+    <circle cx="96" cy="39" r="3"/><circle cx="114" cy="38" r="3"/><circle cx="132" cy="37.5" r="3"/>
+    <circle cx="150" cy="37" r="3"/><circle cx="168" cy="36.5" r="3"/><circle cx="186" cy="36" r="3"/>
+  </g>
+  <text x="128" y="66" text-anchor="middle" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="24" font-style="italic" font-weight="900" fill="#d40511" letter-spacing="-1.2">DHL</text>
+</svg>
+{%- endmacro %}
+
 {% block title %}FABS Trading Global E-Commerce | Gaming Marketplace{% endblock %}
 
 {% block head %}
 
 <style>
 
-  .dhl-logo{display:block;overflow:visible;flex:none;color:#d40511}
+  /* ============================================================
+     TOKENS
+     ============================================================ */
+  .flask-home{
+    --red:#ed3138;--red-2:#ff5a61;--red-dark:#c11b23;
+    --ink:#0b0e12;--ink-2:#151920;--muted:#69717a;
+    --paper:#f3f4f5;--line:#e4e7ea;
+    --dhl-yellow:#ffcc00;--dhl-red:#d40511;
+    --gold:#f5b400;--flash:#ff2d55;--emerald:#22c55e;
+    background:#fff;color:var(--ink);overflow-x:clip;
+    -webkit-font-smoothing:antialiased;
+  }
+  .flask-home *,.flask-home *::before,.flask-home *::after{box-sizing:border-box}
+  .home-shell{width:min(1440px,calc(100% - 64px));margin-inline:auto}
+  .home-kicker{display:inline-flex;align-items:center;gap:10px;color:var(--red);font-size:9px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
+  .home-kicker:before{content:"";width:23px;height:2px;background:currentColor;flex:none}
+  .dhl-logo,.dhl-plane{display:block;overflow:visible;flex:none}
 
-  .flask-home{--red:#ed3138;--ink:#11151a;--muted:#69717a;--paper:#f4f5f6;--dhl-yellow:#ffcc00;--dhl-red:#d40511;background:#fff;color:var(--ink);overflow:hidden}.home-shell{width:min(1440px,calc(100% - 64px));margin-inline:auto}.home-kicker{display:flex;align-items:center;gap:10px;color:var(--red);font-size:9px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.home-kicker:before{content:"";width:23px;height:2px;background:var(--red)}
+  [data-reveal]{opacity:0;transform:translateY(28px);transition:opacity .85s cubic-bezier(.2,.7,.3,1),transform .85s cubic-bezier(.2,.7,.3,1)}
+  [data-reveal].is-in{opacity:1;transform:none}
 
-  .fh-hero{position:relative;min-height:760px;background:#07090c;color:#fff;overflow:hidden}.fh-slides,.fh-slide,.fh-shade{position:absolute;inset:0}.fh-slide{opacity:0;transform:scale(1.05);transition:opacity 1s ease,transform 7s ease}.fh-slide.active{opacity:1;transform:scale(1)}.fh-slide img{width:100%;height:100%;object-fit:cover}.fh-shade{background:linear-gradient(90deg,rgba(4,6,9,.97) 0%,rgba(4,6,9,.82) 36%,rgba(4,6,9,.38) 64%,rgba(4,6,9,.75) 100%),linear-gradient(0deg,rgba(4,6,9,.88),transparent 55%)}.fh-hero-layout{position:relative;z-index:4;min-height:760px;display:grid;grid-template-columns:1fr .9fr;gap:50px;align-items:center;padding-block:74px}.fh-copy{max-width:690px}.fh-copy>span:first-child{display:flex;align-items:center;gap:10px;font-size:9px;font-weight:850;letter-spacing:.2em;color:#ff7075}.fh-copy>span:first-child i{width:30px;height:1px;background:#ff5d63}.fh-copy h1{font-size:clamp(54px,6.4vw,92px);line-height:.94;letter-spacing:-.06em;margin:24px 0 28px;max-width:820px}.fh-copy h1 em{font-style:normal;color:#ff5159}.fh-copy>p{max-width:620px;color:#c1c6cc;font-size:16px;line-height:1.75}
+  /* ============================================================
+     HERO
+     ============================================================ */
+  .fh-hero{position:relative;min-height:820px;background:#05070a;color:#fff;overflow:hidden;isolation:isolate}
+  .fh-slides,.fh-slide,.fh-shade{position:absolute;inset:0}
+  .fh-slide{opacity:0;transform:scale(1.06);transition:opacity 1.1s ease,transform 7.5s ease}
+  .fh-slide.active{opacity:1;transform:scale(1)}
+  .fh-slide img{width:100%;height:100%;object-fit:cover}
+  .fh-shade{background:
+    linear-gradient(90deg,rgba(4,6,9,.97) 0%,rgba(4,6,9,.86) 34%,rgba(4,6,9,.34) 66%,rgba(4,6,9,.78) 100%),
+    linear-gradient(0deg,rgba(4,6,9,.9),transparent 58%)}
+  .fh-hero-glow{position:absolute;z-index:2;right:-8%;top:-14%;width:760px;height:760px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,204,0,.16),rgba(237,49,56,.10) 42%,transparent 68%);
+    filter:blur(12px);pointer-events:none}
 
-  /* ============ HERO DHL CHIP — yellow background, larger logo ============ */
+  .fh-hero-flight{position:absolute;z-index:6;inset:0;pointer-events:none;overflow:hidden}
+  .fh-hero-route{position:absolute;top:132px;left:0;width:100%;height:1px;
+    background:repeating-linear-gradient(90deg,rgba(255,204,0,.45) 0 12px,transparent 12px 26px);
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
+  .fh-hero-plane{position:absolute;top:98px;left:-16%;width:150px;
+    filter:drop-shadow(0 16px 26px rgba(0,0,0,.55)) drop-shadow(0 0 26px rgba(255,204,0,.28));
+    will-change:left,transform;animation:fhHeroFly 19s linear infinite}
+  .fh-hero-plane::after{content:"";position:absolute;right:100%;top:56%;width:200px;height:7px;margin-right:6px;
+    border-radius:99px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5));filter:blur(4px)}
+  @keyframes fhHeroFly{
+    0%{left:-16%;transform:translateY(30px) rotate(4deg) scale(.86);opacity:0}
+    7%{opacity:1}
+    50%{transform:translateY(-24px) rotate(-2deg) scale(1)}
+    93%{opacity:1}
+    100%{left:108%;transform:translateY(-46px) rotate(-6deg) scale(.9);opacity:0}
+  }
 
-  .fh-hero-dhl{display:inline-flex;align-items:center;gap:14px;margin-top:26px;padding:10px 18px 10px 14px;background:var(--dhl-yellow);color:var(--dhl-red);text-decoration:none;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border-radius:4px;transition:transform .18s ease,box-shadow .18s ease;border:1px solid #e6b800}
+  /* floating flash badge in hero */
+  .fh-hero-flash{position:absolute;z-index:8;left:50%;top:26px;transform:translateX(-50%);
+    display:inline-flex;align-items:center;gap:12px;padding:10px 18px;
+    background:linear-gradient(90deg,#ff2d55,#ff5f4a);color:#fff;border-radius:999px;
+    font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;
+    box-shadow:0 14px 38px rgba(255,45,85,.42);white-space:nowrap}
+  .fh-hero-flash i{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 12px #fff;animation:fhPulse 1.4s ease-in-out infinite}
+  .fh-hero-flash b{background:#fff;color:#ff2d55;padding:3px 8px;border-radius:999px;font-size:9px;letter-spacing:.08em}
+  @keyframes fhPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
 
-  .fh-hero-dhl:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(255,204,0,.45)}
+  .fh-hero-layout{position:relative;z-index:4;min-height:820px;display:grid;grid-template-columns:1fr .9fr;gap:50px;align-items:center;padding-block:110px 96px}
+  .fh-copy{max-width:700px}
+  .fh-copy>span:first-child{display:flex;align-items:center;gap:10px;font-size:9px;font-weight:850;letter-spacing:.2em;color:#ff7075}
+  .fh-copy>span:first-child i{width:30px;height:1px;background:#ff5d63;flex:none}
+  .fh-copy h1{font-size:clamp(52px,6.3vw,92px);line-height:.94;letter-spacing:-.06em;margin:24px 0 26px;max-width:820px}
+  .fh-copy h1 em{font-style:normal;background:linear-gradient(100deg,#ff5159,#ff9a6a 70%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .fh-copy>p{max-width:620px;color:#c1c6cc;font-size:16px;line-height:1.78}
 
+  .fh-hero-dhl{display:inline-flex;align-items:center;gap:14px;margin-top:26px;padding:10px 20px 10px 14px;
+    background:var(--dhl-yellow);color:var(--dhl-red);text-decoration:none;font-size:10px;font-weight:900;
+    letter-spacing:.08em;text-transform:uppercase;border-radius:6px;border:1px solid #e6b800;
+    box-shadow:0 10px 30px rgba(255,204,0,.16);
+    transition:transform .2s ease,box-shadow .2s ease}
+  .fh-hero-dhl:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(255,204,0,.42)}
   .fh-hero-dhl .dhl-logo{height:32px;width:120px;min-width:96px}
-
   .fh-hero-dhl span{display:flex;align-items:center;gap:8px}
-
   .fh-hero-dhl b{color:var(--dhl-red);font-size:11px}
 
-  .fh-actions{display:flex;gap:10px;margin-top:34px;flex-wrap:wrap}.fh-actions a{height:53px;padding:0 22px;display:flex;align-items:center;gap:18px;font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;border:1px solid rgba(255,255,255,.24)}.fh-actions a:first-child{background:var(--red);border-color:var(--red)}.fh-actions a.fh-actions-dhl{border-color:var(--dhl-yellow);color:var(--dhl-yellow)}.fh-actions a.fh-actions-dhl:hover{background:var(--dhl-yellow);color:#111}.fh-product{margin-top:52px;padding-top:20px;border-top:1px solid rgba(255,255,255,.15);display:grid;grid-template-columns:140px 1fr;gap:6px 18px;max-width:590px}.fh-product small{grid-row:1/3;color:#8f969e;font-size:8px;letter-spacing:.12em}.fh-product strong{font-size:15px}.fh-product span{font-size:9px;color:#ff7378}.fh-source{display:block!important;margin-top:15px;color:#707881!important;font-size:7px!important;letter-spacing:.1em!important}
+  .fh-actions{display:flex;gap:10px;margin-top:34px;flex-wrap:wrap}
+  .fh-actions a{height:54px;padding:0 24px;display:inline-flex;align-items:center;gap:18px;font-size:10px;font-weight:900;
+    letter-spacing:.07em;text-transform:uppercase;border:1px solid rgba(255,255,255,.24);border-radius:6px;
+    color:#fff;text-decoration:none;transition:.22s ease;backdrop-filter:blur(6px)}
+  .fh-actions a:hover{transform:translateY(-2px);background:rgba(255,255,255,.08)}
+  .fh-actions a:first-child{background:var(--red);border-color:var(--red);box-shadow:0 14px 34px rgba(237,49,56,.34)}
+  .fh-actions a:first-child:hover{background:var(--red-dark);border-color:var(--red-dark)}
+  .fh-actions a.fh-actions-dhl{border-color:var(--dhl-yellow);color:var(--dhl-yellow)}
+  .fh-actions a.fh-actions-dhl:hover{background:var(--dhl-yellow);color:#111;border-color:var(--dhl-yellow)}
+  .fh-actions a.fh-actions-flash{background:linear-gradient(100deg,#ff2d55,#ff5f4a);border-color:transparent;box-shadow:0 14px 34px rgba(255,45,85,.34)}
 
-  .fh-network{position:relative;width:600px;height:600px;margin:auto}.fh-network:before{content:"";position:absolute;inset:4%;border:1px solid rgba(255,255,255,.08);border-radius:50%;background:radial-gradient(circle,rgba(237,49,56,.12),transparent 62%)}.fh-ring{position:absolute;left:50%;top:50%;border:1px solid rgba(255,103,109,.25);border-radius:50%;transform:translate(-50%,-50%);animation:fhspin 32s linear infinite}.fh-ring.one{width:410px;height:410px}.fh-ring.two{width:540px;height:540px;animation-direction:reverse;animation-duration:45s}.fh-ring:before,.fh-ring:after{content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:#ff5159;box-shadow:0 0 18px #ff5159}.fh-ring:before{left:-4px;top:50%}.fh-ring:after{right:14%;top:12%}.fh-globe{position:absolute;z-index:5;left:50%;top:50%;width:250px;height:250px;border-radius:50%;overflow:hidden;transform:translate(-50%,-50%);box-shadow:0 0 0 1px rgba(143,191,255,.4),0 0 85px rgba(31,116,243,.43);background:#02050a}.fh-globe video{width:100%;height:100%;object-fit:cover}.fh-globe:after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:inset -55px -10px 70px rgba(0,0,0,.78),inset 16px 8px 24px rgba(255,255,255,.15)}.fh-globe div{position:absolute;z-index:3;inset:auto 0 34px;text-align:center}.fh-globe small{display:block;color:#9fc4ef;font-size:7px;letter-spacing:.14em}.fh-globe strong{display:block;font-size:31px;line-height:1}.fh-globe b{font-size:7px;letter-spacing:.16em;color:#ff6a70}.fh-node{position:absolute;z-index:8;width:130px;background:rgba(8,12,18,.88);border:1px solid rgba(255,255,255,.18);padding:7px;backdrop-filter:blur(12px);box-shadow:0 15px 35px rgba(0,0,0,.25);animation:fhfloat 5s ease-in-out infinite}.fh-node img{width:100%;height:70px;object-fit:cover;display:block}.fh-node b{display:block;font-size:7px;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fh-node small{display:block;font-size:6px;color:#ff7479;margin-top:3px}.fh-node.n1{left:0;top:95px}.fh-node.n2{right:0;top:110px;animation-delay:.7s}.fh-node.n3{left:0;bottom:82px;animation-delay:1.4s}.fh-node.n4{right:0;bottom:82px;animation-delay:2.1s}.fh-node.n5{left:235px;bottom:-2px;animation-delay:2.8s}.fh-live{position:absolute;right:8px;top:20px;font-size:7px;letter-spacing:.13em;color:#aab1b9}.fh-live:before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#39db79;margin-right:7px;box-shadow:0 0 10px #39db79}.fh-controls{position:absolute;z-index:9;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:8px}.fh-controls button{width:42px;height:3px;border:0;background:rgba(255,255,255,.25);padding:0;cursor:pointer}.fh-controls button.active{background:#ef4148}@keyframes fhspin{to{transform:translate(-50%,-50%) rotate(360deg)}}@keyframes fhfloat{50%{transform:translateY(-10px)}}
+  .fh-product{margin-top:52px;padding-top:20px;border-top:1px solid rgba(255,255,255,.15);display:grid;
+    grid-template-columns:140px 1fr;gap:6px 18px;max-width:590px}
+  .fh-product small{grid-row:1/3;color:#8f969e;font-size:8px;letter-spacing:.12em;align-self:center}
+  .fh-product strong{font-size:15px}
+  .fh-product span{font-size:9px;color:#ff7378}
+  .fh-source{display:block!important;margin-top:15px;color:#707881!important;font-size:7px!important;letter-spacing:.1em!important}
 
-  .fh-metrics{background:#fff;border-bottom:1px solid #e5e7e9}.fh-metrics>div{display:grid;grid-template-columns:repeat(4,1fr)}.fh-metrics article{padding:31px 28px;border-right:1px solid #e5e7e9;display:grid;grid-template-columns:auto 1fr;gap:3px 18px;align-items:center}.fh-metrics article:last-child{border-right:0}.fh-metrics span{grid-row:1/3;color:#c2c6ca;font-size:9px}.fh-metrics strong{font-size:28px;line-height:1}.fh-metrics p{font-size:9px;color:#6f767e;text-transform:uppercase;letter-spacing:.1em;margin:0}
+  /* network globe */
+  .fh-network{position:relative;width:600px;height:600px;margin:auto}
+  .fh-network:before{content:"";position:absolute;inset:4%;border:1px solid rgba(255,255,255,.08);border-radius:50%;
+    background:radial-gradient(circle,rgba(237,49,56,.13),transparent 62%)}
+  .fh-ring{position:absolute;left:50%;top:50%;border:1px solid rgba(255,103,109,.25);border-radius:50%;
+    transform:translate(-50%,-50%);animation:fhspin 32s linear infinite}
+  .fh-ring.one{width:410px;height:410px}
+  .fh-ring.two{width:540px;height:540px;animation-direction:reverse;animation-duration:45s}
+  .fh-ring:before,.fh-ring:after{content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:#ff5159;box-shadow:0 0 18px #ff5159}
+  .fh-ring:before{left:-4px;top:50%}
+  .fh-ring:after{right:14%;top:12%}
+  .fh-globe{position:absolute;z-index:5;left:50%;top:50%;width:250px;height:250px;border-radius:50%;overflow:hidden;
+    transform:translate(-50%,-50%);box-shadow:0 0 0 1px rgba(143,191,255,.4),0 0 85px rgba(31,116,243,.43);background:#02050a}
+  .fh-globe video{width:100%;height:100%;object-fit:cover}
+  .fh-globe:after{content:"";position:absolute;inset:0;border-radius:50%;
+    box-shadow:inset -55px -10px 70px rgba(0,0,0,.78),inset 16px 8px 24px rgba(255,255,255,.15)}
+  .fh-globe div{position:absolute;z-index:3;inset:auto 0 34px;text-align:center}
+  .fh-globe small{display:block;color:#9fc4ef;font-size:7px;letter-spacing:.14em}
+  .fh-globe strong{display:block;font-size:31px;line-height:1}
+  .fh-globe b{font-size:7px;letter-spacing:.16em;color:#ff6a70}
+  .fh-node{position:absolute;z-index:8;width:130px;background:rgba(8,12,18,.88);border:1px solid rgba(255,255,255,.18);
+    padding:7px;backdrop-filter:blur(12px);box-shadow:0 15px 35px rgba(0,0,0,.25);border-radius:5px;
+    text-decoration:none;color:#fff;animation:fhfloat 5s ease-in-out infinite;transition:border-color .2s}
+  .fh-node:hover{border-color:rgba(255,204,0,.7)}
+  .fh-node img{width:100%;height:70px;object-fit:cover;display:block;border-radius:3px}
+  .fh-node b{display:block;font-size:7px;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fh-node small{display:block;font-size:6px;color:#ff7479;margin-top:3px}
+  .fh-node.n1{left:0;top:95px}
+  .fh-node.n2{right:0;top:110px;animation-delay:.7s}
+  .fh-node.n3{left:0;bottom:82px;animation-delay:1.4s}
+  .fh-node.n4{right:0;bottom:82px;animation-delay:2.1s}
+  .fh-node.n5{left:235px;bottom:-2px;animation-delay:2.8s}
+  .fh-live{position:absolute;right:8px;top:20px;font-size:7px;letter-spacing:.13em;color:#aab1b9}
+  .fh-live:before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#39db79;margin-right:7px;box-shadow:0 0 10px #39db79}
+  .fh-controls{position:absolute;z-index:9;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+  .fh-controls button{width:44px;height:3px;border:0;background:rgba(255,255,255,.25);padding:0;cursor:pointer;border-radius:99px;transition:.25s}
+  .fh-controls button.active{background:var(--dhl-yellow);box-shadow:0 0 14px rgba(255,204,0,.6)}
+  @keyframes fhspin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+  @keyframes fhfloat{50%{transform:translateY(-10px)}}
 
-  /* ============ DHL EXPRESS BANNER — bigger logo on white ============ */
+  /* ============================================================
+     FLASH SALE STRIP (countdown + ribbons)
+     ============================================================ */
+  .fh-flashstrip{position:relative;background:linear-gradient(100deg,#ed3138,#c11b23 55%,#8f1218);color:#fff;overflow:hidden;padding:26px 0}
+  .fh-flashstrip::before{content:"";position:absolute;inset:0;
+    background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 24px,transparent 24px 48px);pointer-events:none}
+  .fh-flashstrip-inner{position:relative;z-index:2;display:grid;grid-template-columns:auto 1fr auto;gap:34px;align-items:center}
+  .fh-flash-tag{display:inline-flex;align-items:center;gap:12px;background:#fff;color:#ed3138;
+    padding:10px 18px;border-radius:999px;font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+  .fh-flash-tag i{width:8px;height:8px;border-radius:50%;background:#ed3138;animation:fhPulse 1.2s ease-in-out infinite}
+  .fh-flashstrip-copy strong{display:block;font-size:clamp(1.3rem,2vw,1.7rem);letter-spacing:-.02em;line-height:1.2}
+  .fh-flashstrip-copy p{margin:4px 0 0;font-size:11px;color:rgba(255,255,255,.78);letter-spacing:.02em}
+  .fh-countdown{display:flex;gap:10px}
+  .fh-countdown span{display:grid;place-items:center;min-width:64px;padding:10px 8px;background:rgba(0,0,0,.28);
+    border:1px solid rgba(255,255,255,.16);border-radius:8px;line-height:1}
+  .fh-countdown span b{font-size:22px;font-weight:900;letter-spacing:-.02em}
+  .fh-countdown span small{display:block;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-top:5px}
 
-  .fh-dhl-banner{background:var(--dhl-yellow);color:var(--dhl-red);border-bottom:1px solid #e6b800}
+  /* ============================================================
+     FLASH DEALS GRID
+     ============================================================ */
+  .fh-flash{padding:96px 0 40px;background:#fff}
+  .fh-flash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .fh-deal{position:relative;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    display:flex;flex-direction:column;text-decoration:none;color:inherit;
+    transition:transform .32s cubic-bezier(.2,.7,.3,1),box-shadow .32s,border-color .32s}
+  .fh-deal:hover{transform:translateY(-6px);box-shadow:0 28px 56px rgba(21,25,30,.14);border-color:rgba(237,49,56,.5)}
+  .fh-deal-media{position:relative;aspect-ratio:4/3;overflow:hidden;background:#0b0e12}
+  .fh-deal-media img{width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.3,1)}
+  .fh-deal:hover .fh-deal-media img{transform:scale(1.06)}
+  .fh-deal-media::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(0deg,rgba(4,7,10,.5),transparent 55%)}
+  .fh-deal-flash{position:absolute;z-index:3;left:12px;top:12px;display:inline-flex;align-items:center;gap:8px;
+    padding:7px 12px;background:linear-gradient(100deg,#ff2d55,#ff5f4a);color:#fff;border-radius:999px;
+    font-size:8px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;
+    box-shadow:0 10px 24px rgba(255,45,85,.4)}
+  .fh-deal-flash::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff;animation:fhPulse 1.3s ease-in-out infinite}
+  .fh-deal-off{position:absolute;z-index:3;right:12px;top:12px;display:grid;place-items:center;
+    min-width:56px;height:56px;padding:0 10px;border-radius:50%;
+    background:var(--dhl-yellow);color:var(--dhl-red);font-size:16px;font-weight:900;letter-spacing:-.03em;
+    box-shadow:0 10px 24px rgba(255,204,0,.5)}
+  .fh-deal-off small{display:block;font-size:7px;letter-spacing:.12em;margin-top:-2px;font-weight:900;color:#7a5410}
+  .fh-deal-body{padding:18px 20px 22px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .fh-deal-cat{font-size:8px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--red)}
+  .fh-deal h3{margin:2px 0 0;font-size:16px;line-height:1.25;letter-spacing:-.02em;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:42px}
+  .fh-deal-price{display:flex;align-items:baseline;gap:10px;margin-top:4px}
+  .fh-deal-price b{font-size:20px;letter-spacing:-.03em;color:var(--ink)}
+  .fh-deal-price s{font-size:12px;color:#a1a7ae}
+  .fh-deal-meta{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;font-size:9px;color:#6f767e;
+    text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+  .fh-deal-meta i{color:var(--red);font-style:normal;font-weight:900}
 
-  .fh-dhl-banner-inner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:34px;align-items:center;padding:24px 0}
+  /* ============================================================
+     OFFERS / PROMO BANNERS (big + small mix)
+     ============================================================ */
+  .fh-offers{padding:56px 0 20px}
+  .fh-offer-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;grid-template-rows:auto auto}
+  .fh-offer{position:relative;border-radius:14px;overflow:hidden;min-height:250px;
+    display:flex;flex-direction:column;justify-content:flex-end;padding:34px;color:#fff;text-decoration:none;
+    isolation:isolate;transition:transform .34s cubic-bezier(.2,.7,.3,1),box-shadow .34s}
+  .fh-offer:hover{transform:translateY(-4px);box-shadow:0 26px 60px rgba(0,0,0,.24)}
+  .fh-offer img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform .7s ease}
+  .fh-offer:hover img{transform:scale(1.05)}
+  .fh-offer::after{content:"";position:absolute;inset:0;z-index:-1;
+    background:linear-gradient(0deg,rgba(4,7,10,.9),rgba(4,7,10,.35) 55%,rgba(4,7,10,.15))}
+  .fh-offer.hero-offer{grid-row:span 2;min-height:520px;padding:44px}
+  .fh-offer.vr-offer{background:linear-gradient(135deg,#121a3f,#1e5cd7)}
+  .fh-offer.arcade-offer{background:linear-gradient(135deg,#7a1218,#ed3138)}
+  .fh-offer.flash-offer{background:linear-gradient(135deg,#ff8a00,#ff2d55)}
+  .fh-offer-tag{display:inline-flex;align-items:center;gap:10px;font-size:9px;font-weight:900;
+    letter-spacing:.14em;text-transform:uppercase;color:#ffd9dc;margin-bottom:14px}
+  .fh-offer-tag::before{content:"";width:24px;height:2px;background:currentColor}
+  .fh-offer h3{margin:0 0 10px;font-size:clamp(24px,2.6vw,40px);line-height:1.06;letter-spacing:-.04em;max-width:560px}
+  .fh-offer.hero-offer h3{font-size:clamp(30px,3.6vw,54px);max-width:640px}
+  .fh-offer p{margin:0;max-width:480px;font-size:13px;line-height:1.7;color:rgba(255,255,255,.82)}
+  .fh-offer-cta{display:inline-flex;align-items:center;gap:12px;margin-top:22px;align-self:flex-start;
+    padding:12px 18px;background:#fff;color:#0b0e12;border-radius:6px;
+    font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;transition:transform .2s}
+  .fh-offer:hover .fh-offer-cta{transform:translateX(4px)}
+  .fh-offer .fh-offer-badge{position:absolute;top:24px;right:24px;display:grid;place-items:center;
+    min-width:78px;height:78px;padding:0 12px;border-radius:50%;background:var(--dhl-yellow);color:var(--dhl-red);
+    font-size:22px;font-weight:900;letter-spacing:-.04em;box-shadow:0 14px 32px rgba(0,0,0,.35)}
+  .fh-offer .fh-offer-badge small{display:block;font-size:8px;letter-spacing:.12em;font-weight:900}
 
-  .fh-dhl-banner-logo{display:grid;place-items:center;background:#fff;padding:18px 24px;border-radius:6px;box-shadow:0 6px 20px rgba(212,5,17,.14);border:1px solid #e6b800}
+  /* ============================================================
+     METRICS
+     ============================================================ */
+  .fh-metrics{background:#fff;border-block:1px solid var(--line);margin-top:56px}
+  .fh-metrics>div{display:grid;grid-template-columns:repeat(4,1fr)}
+  .fh-metrics article{padding:31px 28px;border-right:1px solid var(--line);display:grid;grid-template-columns:auto 1fr;gap:3px 18px;align-items:center}
+  .fh-metrics article:last-child{border-right:0}
+  .fh-metrics span{grid-row:1/3;color:#c2c6ca;font-size:9px;font-weight:900}
+  .fh-metrics strong{font-size:28px;line-height:1;letter-spacing:-.03em}
+  .fh-metrics p{font-size:9px;color:#6f767e;text-transform:uppercase;letter-spacing:.1em;margin:0;font-weight:700}
 
+  /* ============================================================
+     FLIGHT BAND — the plane flies the route
+     ============================================================ */
+  .fh-flight{position:relative;padding:66px 0 76px;overflow:hidden;color:#fff;
+    background:radial-gradient(1200px 420px at 78% 0%,rgba(255,204,0,.13),transparent 62%),
+               radial-gradient(900px 400px at 8% 100%,rgba(237,49,56,.16),transparent 65%),
+               linear-gradient(180deg,#080b10,#12161d 55%,#0b0e13);
+    border-bottom:1px solid #1e242c}
+  .fh-flight-grid-lines{position:absolute;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+    background-size:70px 70px;
+    -webkit-mask-image:radial-gradient(ellipse at 50% 45%,#000,transparent 76%);
+    mask-image:radial-gradient(ellipse at 50% 45%,#000,transparent 76%)}
+  .fh-flight-inner{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:56px;align-items:center}
+  .fh-flight-copy .home-kicker{color:var(--dhl-yellow)}
+  .fh-flight-copy h3{margin:16px 0 14px;font-size:clamp(28px,3.4vw,46px);line-height:1.08;letter-spacing:-.045em;color:#fff}
+  .fh-flight-copy h3 b{color:var(--dhl-yellow);font-weight:900}
+  .fh-flight-copy p{margin:0;color:#9aa2ab;font-size:13px;line-height:1.8;max-width:560px}
+
+  .fh-track{display:flex;gap:10px;margin-top:26px;max-width:560px}
+  .fh-track input{flex:1;min-width:0;height:54px;padding:0 18px;border-radius:6px;border:1px solid rgba(255,255,255,.16);
+    background:rgba(255,255,255,.05);color:#fff;font-size:13px;letter-spacing:.04em;outline:none;transition:.2s}
+  .fh-track input::placeholder{color:#767e87}
+  .fh-track input:focus{border-color:var(--dhl-yellow);background:rgba(255,204,0,.08);box-shadow:0 0 0 4px rgba(255,204,0,.12)}
+  .fh-track-btn{display:inline-flex;align-items:center;gap:10px;height:54px;padding:0 26px;border-radius:6px;
+    background:var(--dhl-yellow);color:var(--dhl-red);font-size:10px;font-weight:900;letter-spacing:.1em;
+    text-transform:uppercase;text-decoration:none;white-space:nowrap;transition:.2s}
+  .fh-track-btn:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(255,204,0,.36)}
+  .fh-flight-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .fh-flight-chips span{font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#c8ced5;
+    padding:8px 12px;border:1px solid rgba(255,255,255,.12);border-radius:99px;background:rgba(255,255,255,.03)}
+  .fh-flight-chips span:before{content:"✈";color:var(--dhl-yellow);margin-right:7px}
+
+  .fh-route{position:relative;padding-top:78px}
+  .fh-route-track{position:relative;height:2px;border-radius:99px;
+    background:repeating-linear-gradient(90deg,rgba(255,204,0,.7) 0 12px,transparent 12px 26px)}
+  .fh-route-track:before,.fh-route-track:after{content:"";position:absolute;top:50%;width:13px;height:13px;border-radius:50%;
+    transform:translateY(-50%);background:var(--dhl-yellow);box-shadow:0 0 0 5px rgba(255,204,0,.16),0 0 22px rgba(255,204,0,.7)}
+  .fh-route-track:before{left:0}
+  .fh-route-track:after{right:0;background:#fff;box-shadow:0 0 0 5px rgba(255,255,255,.14),0 0 22px rgba(255,255,255,.55)}
+  .fh-route-plane{position:absolute;top:40px;left:-20%;width:168px;will-change:left,transform;
+    filter:drop-shadow(0 16px 30px rgba(0,0,0,.5)) drop-shadow(0 0 26px rgba(255,204,0,.35));
+    animation:fhRouteFly 11s linear infinite}
+  .fh-route-plane::after{content:"";position:absolute;right:100%;top:56%;width:150px;height:6px;margin-right:4px;
+    border-radius:99px;background:linear-gradient(90deg,transparent,rgba(255,204,0,.75));filter:blur(3px)}
+  @keyframes fhRouteFly{
+    0%{left:-20%;transform:translateY(10px) rotate(3deg);opacity:0}
+    8%{opacity:1}
+    50%{transform:translateY(-12px) rotate(-1.5deg)}
+    92%{opacity:1}
+    100%{left:114%;transform:translateY(-20px) rotate(-5deg);opacity:0}
+  }
+  .fh-route-stops{display:flex;justify-content:space-between;margin-top:74px}
+  .fh-route-stop{display:flex;flex-direction:column}
+  .fh-route-stop.is-dest{text-align:right}
+  .fh-route-stop b{font-size:20px;letter-spacing:-.02em;color:#fff;line-height:1}
+  .fh-route-stop small{margin-top:6px;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#8d949c;font-weight:800}
+  .fh-route-stop.is-hub b{color:var(--dhl-yellow)}
+
+  /* ============================================================
+     DHL BANNER
+     ============================================================ */
+  .fh-dhl-banner{position:relative;background:var(--dhl-yellow);color:var(--dhl-red);border-bottom:1px solid #e6b800;overflow:hidden}
+  .fh-dhl-banner-plane{position:absolute;right:-30px;top:50%;width:190px;transform:translateY(-50%);opacity:.16;pointer-events:none}
+  .fh-dhl-banner-inner{position:relative;z-index:2;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:34px;align-items:center;padding:24px 0}
+  .fh-dhl-banner-logo{display:grid;place-items:center;background:#fff;padding:18px 24px;border-radius:8px;
+    box-shadow:0 8px 24px rgba(212,5,17,.14);border:1px solid #e6b800}
   .fh-dhl-banner-logo .dhl-logo{height:52px;width:180px;min-width:150px}
-
   .fh-dhl-banner-copy strong{display:block;font-size:clamp(1.25rem,1.9vw,1.6rem);letter-spacing:-.02em;color:#5a1006;font-weight:900}
-
   .fh-dhl-banner-copy p{margin:6px 0 0;color:#7a1a0c;font-size:12px;line-height:1.55;max-width:640px}
-
   .fh-dhl-banner-copy p b{color:#5a1006}
+  .fh-dhl-banner-cta{display:inline-flex;align-items:center;gap:12px;min-height:52px;padding:0 24px;background:var(--dhl-red);
+    color:#fff;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;
+    border-radius:6px;white-space:nowrap;transition:transform .2s ease,box-shadow .2s ease}
+  .fh-dhl-banner-cta:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(122,26,12,.32)}
 
-  .fh-dhl-banner-cta{display:inline-flex;align-items:center;gap:12px;min-height:52px;padding:0 24px;background:var(--dhl-red);color:#fff;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;border-radius:4px;white-space:nowrap;transition:transform .18s ease,box-shadow .18s ease}
-
-  .fh-dhl-banner-cta:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(122,26,12,.3)}
-
-  .fh-dhl-banner-cta span{font-size:13px;line-height:1}
-
-  /* ============ TRUST / PARTNERS BAND ============ */
-
+  /* ============================================================
+     TRUST BAND
+     ============================================================ */
   .fh-trust{background:#0d1014;color:#fff;border-bottom:1px solid #1d2127}
-
-  .fh-trust-inner{padding:34px 0;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center}
-
+  .fh-trust-inner{padding:36px 0;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center}
   .fh-trust-kicker{display:flex;align-items:center;gap:10px;color:#ff7479;font-size:9px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;margin-bottom:14px}
-
   .fh-trust-kicker::before{content:"";width:23px;height:2px;background:#ff7479}
-
-  .fh-trust h3{margin:0;font-size:clamp(1.15rem,1.7vw,1.5rem);letter-spacing:-.02em;color:#fff;max-width:640px;line-height:1.35}
-
+  .fh-trust h3{margin:0;font-size:clamp(1.15rem,1.7vw,1.5rem);letter-spacing:-.02em;color:#fff;max-width:660px;line-height:1.4}
   .fh-trust h3 b{color:var(--dhl-yellow);font-weight:900}
-
   .fh-trust-badges{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:flex-end}
-
-  .fh-trust-badge{display:inline-flex;align-items:center;gap:14px;padding:14px 20px;background:#16191d;border:1px solid rgba(255,255,255,.08);border-radius:4px;text-decoration:none;color:#fff;min-height:72px}
-
-  .fh-trust-badge:hover{border-color:rgba(255,204,0,.5);background:#1b1f24}
-
+  .fh-trust-badge{display:inline-flex;align-items:center;gap:14px;padding:14px 20px;background:#16191d;
+    border:1px solid rgba(255,255,255,.08);border-radius:8px;text-decoration:none;color:#fff;min-height:74px;transition:.22s}
+  .fh-trust-badge:hover{border-color:rgba(255,204,0,.5);background:#1b1f24;transform:translateY(-2px)}
   .fh-trust-logo{display:block;max-width:100px;max-height:48px;width:auto;height:auto;object-fit:contain}
-
-  .fh-trust-logo.is-dhl{max-width:140px;max-height:52px}
-
-  .fh-trust-logo.is-dpo{max-width:130px;max-height:48px}
-
-  /* Yellow band wrapper so the DHL red-on-white logo pops on the dark trust band */
-
-  .fh-trust-logo-wrap{display:grid;place-items:center;padding:10px 14px;background:#fff;border-radius:4px}
-
+  .fh-trust-logo-wrap{display:grid;place-items:center;padding:10px 14px;background:#fff;border-radius:6px}
   .fh-trust-logo-wrap.is-dhl{background:var(--dhl-yellow);border:1px solid #e6b800}
-
-  .fh-trust-logo-wrap.is-dpo{background:#fff}
-
   .fh-trust-text{display:flex;flex-direction:column;text-align:left;line-height:1.2}
-
   .fh-trust-text strong{font-size:12px;font-weight:900;letter-spacing:.02em;color:#fff}
-
   .fh-trust-text small{font-size:8px;color:#8a9096;letter-spacing:.06em;text-transform:uppercase;margin-top:3px;font-weight:700}
+  .fh-trust-mark{display:grid;place-items:center;min-width:54px;height:28px;padding:0 8px;background:var(--dhl-yellow);
+    color:var(--dhl-red);font-weight:900;font-size:13px;letter-spacing:-.02em;border-radius:4px}
+  .fh-trust-mark-pci{background:linear-gradient(135deg,#1e5cd7,#0f2f80)!important;color:#fff!important;font-size:10px!important}
+  .fh-trust-mark-3ds{background:#121a3f!important;color:#fff!important;font-size:11px!important}
 
-  .fh-trust-mark{display:grid;place-items:center;min-width:54px;height:28px;padding:0 8px;background:var(--dhl-yellow);color:var(--dhl-red);font-weight:900;font-size:13px;letter-spacing:-.02em;border-radius:3px}
-
-  .fh-trust-mark.fh-trust-mark-pci{background:linear-gradient(135deg,#1e5cd7,#0f2f80);color:#fff;font-size:10px;letter-spacing:.02em}
-
-  .fh-trust-mark.fh-trust-mark-3ds{background:#121a3f;color:#fff;font-size:11px;letter-spacing:.02em}
-
-  /* ============ SHIPPING & PAYMENT FEATURE SECTION ============ */
-
+  /* ============================================================
+     SHIPPING / PAYMENT FEATURE
+     ============================================================ */
   .fh-shipping-payment{background:#f1f2f3}
-
   .fh-sp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-
-  .fh-sp-card{padding:34px;background:#fff;border:1px solid #e0e3e5;display:flex;flex-direction:column;transition:.3s}
-
-  .fh-sp-card:hover{transform:translateY(-4px);box-shadow:0 22px 48px rgba(21,25,30,.09)}
-
-  .fh-sp-card.is-dhl{border-left:6px solid var(--dhl-yellow)}
-
-  .fh-sp-card.is-dpo{border-left:6px solid #1e5cd7}
-
+  .fh-sp-card{padding:36px;background:#fff;border:1px solid #e0e3e5;border-radius:10px;display:flex;flex-direction:column;
+    transition:transform .32s cubic-bezier(.2,.7,.3,1),box-shadow .32s}
+  .fh-sp-card:hover{transform:translateY(-6px);box-shadow:0 26px 54px rgba(21,25,30,.11)}
+  .fh-sp-card.is-dhl{border-top:5px solid var(--dhl-yellow)}
+  .fh-sp-card.is-dpo{border-top:5px solid #1e5cd7}
   .fh-sp-head{display:flex;align-items:center;gap:16px;margin-bottom:22px}
-
-  /* DHL logo on yellow chip inside the shipping feature card */
-
-  .fh-sp-logo{display:grid;place-items:center;padding:14px 18px;background:var(--dhl-yellow);border-radius:5px;border:1px solid #e6b800}
-
+  .fh-sp-logo{display:grid;place-items:center;padding:14px 18px;background:var(--dhl-yellow);border-radius:8px;border:1px solid #e6b800}
   .fh-sp-logo .dhl-logo{height:52px;width:180px;min-width:150px}
-
   .fh-sp-logo.is-dpo{background:#fff;border:2px solid #1e5cd7;padding:14px 16px}
-
-  .fh-sp-logo.is-dpo img{height:38px}
-
+  .fh-sp-logo.is-dpo img{height:38px;max-width:190px;object-fit:contain}
   .fh-sp-head small{font-size:8px;color:#7a828a;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
-
   .fh-sp-card h3{margin:0 0 12px;font-size:clamp(1.3rem,1.8vw,1.6rem);letter-spacing:-.03em;line-height:1.2;color:var(--ink)}
-
-  .fh-sp-card > p{margin:0 0 22px;color:#69727a;font-size:13px;line-height:1.75}
-
+  .fh-sp-card>p{margin:0 0 22px;color:#69727a;font-size:13px;line-height:1.75}
   .fh-sp-list{margin:0 0 26px;padding:0;list-style:none;display:grid;gap:11px}
-
   .fh-sp-list li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;font-size:12px;color:#4f5860;line-height:1.55}
-
   .fh-sp-list li::before{content:"✓";color:#28a95a;font-weight:900}
-
   .fh-sp-card.is-dpo .fh-sp-list li::before{color:#1e5cd7}
-
-  .fh-sp-cta{display:inline-flex;align-items:center;gap:12px;margin-top:auto;font-size:10px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;color:var(--red);border-bottom:2px solid var(--red);padding-bottom:5px;width:fit-content}
-
+  .fh-sp-cta{display:inline-flex;align-items:center;gap:12px;margin-top:auto;font-size:10px;font-weight:900;
+    letter-spacing:.06em;text-transform:uppercase;text-decoration:none;color:var(--red);border-bottom:2px solid var(--red);
+    padding-bottom:5px;width:fit-content;transition:.2s}
+  .fh-sp-cta:hover{gap:18px}
   .fh-sp-card.is-dhl .fh-sp-cta{color:#7a5410;border-color:var(--dhl-yellow)}
 
-  .fh-sp-card.is-dhl .fh-sp-cta:hover{background:#fffdf3}
+  /* ============================================================
+     SHARED SECTION
+     ============================================================ */
+  .fh-section{padding:108px 0}
+  .fh-section-head{display:flex;align-items:end;justify-content:space-between;gap:40px;margin-bottom:40px}
+  .fh-section-head h2,.fh-copy-block h2{font-size:clamp(38px,4.6vw,64px);line-height:1.03;letter-spacing:-.05em;margin:14px 0}
+  .fh-section-head p,.fh-copy-block p{max-width:650px;color:#68717a;line-height:1.8;font-size:13px}
+  .fh-section-head>a{display:flex;align-items:center;gap:15px;color:#d4252d;font-size:10px;font-weight:900;
+    text-transform:uppercase;letter-spacing:.07em;text-decoration:none;white-space:nowrap}
+  .fh-section-head>a:hover{gap:20px}
 
-  .fh-section{padding:105px 0}.fh-section-head{display:flex;align-items:end;justify-content:space-between;gap:40px;margin-bottom:38px}.fh-section-head h2,.fh-copy-block h2{font-size:clamp(38px,4.6vw,64px);line-height:1.03;letter-spacing:-.05em;margin:14px 0}.fh-section-head p,.fh-copy-block p{max-width:650px;color:#68717a;line-height:1.8;font-size:13px}.fh-section-head>a{display:flex;align-items:center;gap:15px;color:#d4252d;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+  /* gallery */
+  .fh-gallery{background:#f2f3f4}
+  .fh-gallery-grid{display:grid;grid-template-columns:1.5fr repeat(2,1fr);grid-template-rows:300px 300px;gap:14px}
+  .fh-gallery-card{position:relative;overflow:hidden;background:#111;color:#fff;border-radius:10px;text-decoration:none;display:block}
+  .fh-gallery-card.featured{grid-row:1/3}
+  .fh-gallery-card img{width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.3,1)}
+  .fh-gallery-card:hover img{transform:scale(1.05)}
+  .fh-gallery-card:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(4,7,10,.9),transparent 62%)}
+  .fh-real-badge{position:absolute;z-index:3;left:16px;top:16px;background:#fff;color:#111;padding:7px 10px;
+    font-size:7px;font-weight:900;letter-spacing:.1em;border-radius:3px}
+  .fh-real-badge:before{content:"";display:inline-block;width:6px;height:6px;background:#31bf68;border-radius:50%;margin-right:5px}
+  .fh-gallery-card>div{position:absolute;z-index:3;left:22px;right:22px;bottom:20px;display:flex;flex-direction:column}
+  .fh-gallery-card small{font-size:7px;color:#b9bec4}
+  .fh-gallery-card strong{font-size:22px;margin:5px 0}
+  .fh-gallery-card b{font-size:8px;color:#ff6c71}
+  .fh-gallery-note{font-size:8px;color:#818990;margin:18px 0 0}
+  .fh-gallery-note:before{content:"✓";color:#28a95a;margin-right:8px}
 
-  .fh-gallery{background:#f2f3f4}.fh-gallery-grid{display:grid;grid-template-columns:1.5fr repeat(2,1fr);grid-template-rows:300px 300px;gap:12px}.fh-gallery-card{position:relative;overflow:hidden;background:#111;color:#fff}.fh-gallery-card.featured{grid-row:1/3}.fh-gallery-card img{width:100%;height:100%;object-fit:cover;transition:.55s}.fh-gallery-card:hover img{transform:scale(1.035)}.fh-gallery-card:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(4,7,10,.87),transparent 60%)}.fh-real-badge{position:absolute;z-index:3;left:16px;top:16px;background:#fff;color:#111;padding:7px 9px;font-size:7px;font-weight:900;letter-spacing:.1em}.fh-real-badge:before{content:"";display:inline-block;width:6px;height:6px;background:#31bf68;border-radius:50%;margin-right:5px}.fh-gallery-card>div{position:absolute;z-index:3;left:22px;right:22px;bottom:20px;display:flex;flex-direction:column}.fh-gallery-card small{font-size:7px;color:#b9bec4}.fh-gallery-card strong{font-size:22px;margin:5px 0}.fh-gallery-card b{font-size:8px;color:#ff6c71}.fh-gallery-note{font-size:8px;color:#818990;margin:18px 0 0}.fh-gallery-note:before{content:"✓";color:#28a95a;margin-right:8px}
+  /* about */
+  .fh-about-layout{display:grid;grid-template-columns:.82fr 1.18fr;gap:90px;align-items:center}
+  .fh-copy-block p{font-size:14px}
+  .fh-red-button{height:53px;padding:0 24px;display:inline-flex;align-items:center;gap:16px;background:var(--red);
+    color:#fff;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-top:18px;
+    border-radius:6px;text-decoration:none;transition:.22s;box-shadow:0 14px 32px rgba(237,49,56,.24)}
+  .fh-red-button:hover{transform:translateY(-2px);background:var(--red-dark)}
+  .fh-about-image{position:relative;margin:0;height:600px;background:#111;overflow:hidden;border-radius:12px}
+  .fh-about-image>img{width:100%;height:100%;object-fit:cover;object-position:center}
+  .fh-about-image:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(4,7,10,.8),transparent 52%)}
+  .fh-about-image figcaption{position:absolute;z-index:3;left:28px;right:28px;bottom:26px;color:#fff;display:flex;flex-direction:column}
+  .fh-about-image figcaption span{font-size:7px;color:#64e395;letter-spacing:.12em}
+  .fh-about-image figcaption strong{font-size:25px;margin:8px 0}
+  .fh-about-image figcaption small{color:#bec3c9;font-size:8px}
+  .fh-about-image>div{position:absolute;z-index:4;right:0;top:0;background:var(--red);color:#fff;padding:22px;border-bottom-left-radius:12px}
+  .fh-about-image>div b{font-size:30px}
+  .fh-about-image>div span{display:block;font-size:7px;letter-spacing:.1em}
 
-  .fh-about-layout{display:grid;grid-template-columns:.82fr 1.18fr;gap:90px;align-items:center}.fh-copy-block p{font-size:14px}.fh-red-button{height:51px;padding:0 20px;display:inline-flex;align-items:center;gap:16px;background:var(--red);color:#fff;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-top:18px}.fh-about-image{position:relative;margin:0;height:600px;background:#111;overflow:hidden}.fh-about-image>img{width:100%;height:100%;object-fit:cover;object-position:center}.fh-about-image:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(4,7,10,.78),transparent 50%)}.fh-about-image figcaption{position:absolute;z-index:3;left:28px;right:28px;bottom:26px;color:#fff;display:flex;flex-direction:column}.fh-about-image figcaption span{font-size:7px;color:#64e395;letter-spacing:.12em}.fh-about-image figcaption strong{font-size:25px;margin:8px 0}.fh-about-image figcaption small{color:#bec3c9;font-size:8px}.fh-about-image>div{position:absolute;z-index:4;right:0;top:0;background:var(--red);color:#fff;padding:22px}.fh-about-image>div b{font-size:30px}.fh-about-image>div span{display:block;font-size:7px;letter-spacing:.1em}
+  /* services */
+  .fh-services{background:#121519;color:#fff}
+  .fh-services .fh-section-head p{color:#999fa7}
+  .fh-services .fh-section-head>a{color:#ff6b71}
+  .fh-service-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .fh-service{background:#1a1e23;border:1px solid rgba(255,255,255,.09);border-radius:10px;overflow:hidden;
+    transition:.34s cubic-bezier(.2,.7,.3,1);text-decoration:none;color:#fff;display:block}
+  .fh-service:hover{transform:translateY(-6px);border-color:rgba(238,59,66,.65);box-shadow:0 26px 50px rgba(0,0,0,.4)}
+  .fh-service figure{height:310px;margin:0;position:relative;overflow:hidden;background:#080a0d}
+  .fh-service figure img{width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.3,1)}
+  .fh-service:hover figure img{transform:scale(1.05)}
+  .fh-service figure span{position:absolute;top:14px;left:14px;background:#fff;color:#111;padding:7px 9px;font-size:7px;font-weight:900;border-radius:3px}
+  .fh-service figure small{position:absolute;left:14px;right:14px;bottom:12px;color:#fff;font-size:7px;text-shadow:0 2px 8px #000}
+  .fh-service>div{padding:24px}
+  .fh-service>div>span{font-size:7px;color:#ff6d73;text-transform:uppercase;letter-spacing:.12em}
+  .fh-service h3{font-size:20px;margin:8px 0}
+  .fh-service p{font-size:10px;color:#969da6;line-height:1.7;min-height:52px}
+  .fh-service dl{border-top:1px solid rgba(255,255,255,.09);padding-top:14px;display:grid;grid-template-columns:1fr auto;gap:7px;margin:16px 0}
+  .fh-service dt{font-size:8px;color:#7f8790}
+  .fh-service dd{font-size:9px;margin:0;font-weight:800}
+  .fh-service>div>b{display:block;color:#ff6c72;font-size:8px;text-transform:uppercase;letter-spacing:.08em}
+  .fh-services-cta{margin-top:16px;padding:28px;background:linear-gradient(100deg,var(--red),#ff5f4a);border-radius:10px;
+    display:flex;align-items:center;justify-content:space-between;gap:25px;color:#fff}
+  .fh-services-cta span{display:block;font-size:8px;letter-spacing:.12em}
+  .fh-services-cta strong{font-size:19px}
+  .fh-services-cta a{background:#fff;color:#16191d;padding:15px 20px;font-size:9px;font-weight:900;
+    text-transform:uppercase;white-space:nowrap;border-radius:6px;text-decoration:none;transition:.2s}
+  .fh-services-cta a:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(0,0,0,.22)}
 
-  .fh-services{background:#121519;color:#fff}.fh-services .fh-section-head p{color:#999fa7}.fh-services .fh-section-head>a{color:#ff6b71}.fh-service-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.fh-service{background:#1a1e23;border:1px solid rgba(255,255,255,.09);overflow:hidden;transition:.3s}.fh-service:hover{transform:translateY(-5px);border-color:rgba(238,59,66,.65)}.fh-service figure{height:310px;margin:0;position:relative;overflow:hidden;background:#080a0d}.fh-service figure img{width:100%;height:100%;object-fit:cover}.fh-service figure span{position:absolute;top:14px;left:14px;background:#fff;color:#111;padding:7px 9px;font-size:7px;font-weight:900}.fh-service figure small{position:absolute;left:14px;right:14px;bottom:12px;color:#fff;font-size:7px;text-shadow:0 2px 8px #000}.fh-service>div{padding:23px}.fh-service>div>span{font-size:7px;color:#ff6d73;text-transform:uppercase;letter-spacing:.12em}.fh-service h3{font-size:20px;margin:8px 0}.fh-service p{font-size:10px;color:#969da6;line-height:1.7;min-height:52px}.fh-service dl{border-top:1px solid rgba(255,255,255,.09);padding-top:14px;display:grid;grid-template-columns:1fr auto;gap:7px;margin:16px 0}.fh-service dt{font-size:8px;color:#7f8790}.fh-service dd{font-size:9px;margin:0;font-weight:800}.fh-service>div>b{display:block;color:#ff6c72;font-size:8px;text-transform:uppercase;letter-spacing:.08em}.fh-services-cta{margin-top:14px;padding:26px;background:var(--red);display:flex;align-items:center;justify-content:space-between;gap:25px}.fh-services-cta span{display:block;font-size:8px;letter-spacing:.12em}.fh-services-cta strong{font-size:19px}.fh-services-cta a{background:#fff;color:#16191d;padding:14px 18px;font-size:9px;font-weight:900;text-transform:uppercase;white-space:nowrap}
-
-  /* ============ PARTNER RIBBON — DHL chip on yellow ============ */
-
-  .fh-partners{background:#f1f2f3}.fh-partner-ribbon{background:#171a1e;color:#fff;padding:24px 27px;display:grid;grid-template-columns:230px 1fr auto;align-items:center;gap:35px}
-
+  /* partners */
+  .fh-partners{background:#f1f2f3}
+  .fh-partner-ribbon{background:#171a1e;color:#fff;padding:26px 28px;border-radius:10px;display:grid;
+    grid-template-columns:230px 1fr auto;align-items:center;gap:35px}
   .fh-partner-ribbon img.fh-partner-ribbon-brand{width:210px;filter:brightness(0) invert(1)}
-
   .fh-partner-ribbon strong{font-size:18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
-
-  .fh-partner-ribbon-dhl{display:inline-flex;align-items:center;gap:12px;padding:8px 14px;background:var(--dhl-yellow);border-radius:4px;border:1px solid #e6b800}
-
+  .fh-partner-ribbon-dhl{display:inline-flex;align-items:center;gap:12px;padding:8px 14px;background:var(--dhl-yellow);
+    border-radius:6px;border:1px solid #e6b800}
   .fh-partner-ribbon-dhl .dhl-logo{height:36px;width:140px;min-width:110px;filter:none}
-
   .fh-partner-ribbon-dhl span{font-size:9px;font-weight:900;color:var(--dhl-red);letter-spacing:.06em;text-transform:uppercase}
+  .fh-partner-ribbon a{font-size:8px;color:#ff6b71;text-transform:uppercase;font-weight:900;text-decoration:none}
 
-  .fh-partner-ribbon a{font-size:8px;color:#ff6b71;text-transform:uppercase;font-weight:900}
-
-  /* ============ OFFICIAL PARTNERS ============ */
-
-  .fh-official-partners{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
-
-  .fh-official-partner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:24px;align-items:center;padding:26px 30px;background:#fff;border:1px solid #e0e3e5}
-
-  .fh-official-partner.is-dhl{border-left:6px solid var(--dhl-yellow)}
-
-  .fh-official-partner.is-dpo{border-left:6px solid #1e5cd7}
-
-  .fh-official-partner-mark{display:grid;place-items:center;min-width:140px;height:96px;padding:16px 20px;border-radius:6px}
-
-  .fh-official-partner.is-dhl .fh-official-partner-mark{background:var(--dhl-yellow);box-shadow:0 6px 20px rgba(255,204,0,.28);border:1px solid #e6b800}
-
-  .fh-official-partner.is-dpo .fh-official-partner-mark{background:#fff;border:2px solid #1e5cd7;box-shadow:0 6px 20px rgba(30,92,215,.12)}
-
-  .fh-official-partner-logo{display:block;max-width:200px;max-height:64px;width:auto;height:auto;object-fit:contain}
-
+  .fh-official-partners{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+  .fh-official-partner{display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:center;
+    padding:28px 30px;background:#fff;border:1px solid #e0e3e5;border-radius:10px;transition:.28s}
+  .fh-official-partner:hover{transform:translateY(-4px);box-shadow:0 22px 46px rgba(21,25,30,.09)}
+  .fh-official-partner.is-dhl{border-top:5px solid var(--dhl-yellow)}
+  .fh-official-partner.is-dpo{border-top:5px solid #1e5cd7}
+  .fh-official-partner-mark{display:grid;place-items:center;min-width:150px;height:100px;padding:16px 20px;border-radius:8px}
+  .fh-official-partner.is-dhl .fh-official-partner-mark{background:var(--dhl-yellow);box-shadow:0 8px 22px rgba(255,204,0,.3);border:1px solid #e6b800}
+  .fh-official-partner.is-dpo .fh-official-partner-mark{background:#fff;border:2px solid #1e5cd7;box-shadow:0 8px 22px rgba(30,92,215,.12)}
   .fh-official-partner-logo.is-dhl{max-width:200px;max-height:64px;min-width:160px}
-
-  .fh-official-partner-logo.is-dpo{max-width:180px;max-height:56px}
-
+  .fh-official-partner-logo.is-dpo{max-width:180px;max-height:56px;object-fit:contain}
   .fh-official-partner-copy strong{display:block;font-size:17px;color:var(--ink);letter-spacing:-.02em}
-
   .fh-official-partner-copy small{display:block;margin-top:5px;color:#68717a;font-size:9px;letter-spacing:.08em;text-transform:uppercase;font-weight:800}
-
   .fh-official-partner-copy p{margin:10px 0 0;color:#69727a;font-size:11px;line-height:1.6}
-
   .fh-official-partner-copy b{display:block;margin-top:10px;color:#d8272f;font-size:8px;letter-spacing:.08em;text-transform:uppercase}
 
-  .fh-logo-wall{display:grid;grid-template-columns:repeat(4,1fr);background:#dfe2e4;gap:1px;margin-top:12px}.fh-partner{background:#fff;padding:27px;min-height:270px}.fh-partner figure{height:75px;margin:0 0 25px;display:flex;align-items:center;justify-content:space-between}.fh-partner figure span{font-size:8px;color:#b9bec3}.fh-partner figure img{max-width:150px;max-height:52px;object-fit:contain}.fh-partner small{font-size:7px;color:#df3138;text-transform:uppercase;letter-spacing:.1em}.fh-partner h3{font-size:20px;margin:7px 0}.fh-partner p{font-size:9px;color:#707982;line-height:1.7}.fh-partner b{font-size:7px;text-transform:uppercase;color:#d8272f}.fh-kenya-head{margin:54px 0 22px;padding-top:34px;border-top:1px solid #d7dadd;display:flex;align-items:end;justify-content:space-between;gap:30px}.fh-kenya-head h3{font-size:clamp(28px,3.1vw,42px);letter-spacing:-.04em;margin:7px 0 0}.fh-kenya-head p{max-width:560px;margin:0;color:#707982;font-size:10px;line-height:1.75}.fh-kenya-wall{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.fh-venue{position:relative;min-height:310px;padding:25px;background:#fff;border:1px solid #e0e3e5;display:flex;flex-direction:column;transition:.3s}.fh-venue:hover{transform:translateY(-5px);border-color:#dc3138;box-shadow:0 20px 45px rgba(21,25,30,.09)}.fh-venue-top{min-height:88px;display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.fh-venue-logo{width:165px;height:82px;display:flex;align-items:center;justify-content:flex-start}.fh-venue-logo img{display:block;max-width:155px;max-height:76px;width:auto;height:auto;object-fit:contain}.fh-venue-index{font-size:8px;color:#b6bbc0;white-space:nowrap}.fh-venue small{display:block;margin-top:18px;color:#dc3138;font-size:7px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}.fh-venue h4{font-size:20px;margin:7px 0}.fh-venue p{font-size:9px;color:#707982;line-height:1.7;margin:0 0 22px}.fh-venue a{margin-top:auto;color:#d8272f;font-size:8px;font-weight:900;letter-spacing:.07em;text-transform:uppercase}.fh-notice{font-size:8px;color:#787f86;line-height:1.7;margin:18px 0 0}
+  .fh-logo-wall{display:grid;grid-template-columns:repeat(4,1fr);background:#dfe2e4;gap:1px;margin-top:14px;border-radius:10px;overflow:hidden}
+  .fh-partner{background:#fff;padding:28px;min-height:270px;transition:.28s}
+  .fh-partner:hover{background:#fcfcfd}
+  .fh-partner figure{height:75px;margin:0 0 25px;display:flex;align-items:center;justify-content:space-between}
+  .fh-partner figure span{font-size:8px;color:#b9bec3;font-weight:900}
+  .fh-partner figure img{max-width:150px;max-height:52px;object-fit:contain}
+  .fh-partner small{font-size:7px;color:#df3138;text-transform:uppercase;letter-spacing:.1em}
+  .fh-partner h3{font-size:20px;margin:7px 0}
+  .fh-partner p{font-size:9px;color:#707982;line-height:1.7}
+  .fh-partner b{font-size:7px;text-transform:uppercase;color:#d8272f}
 
-  .fh-faq-layout{display:grid;grid-template-columns:.7fr 1.3fr;gap:80px}.fh-faq-list details{border-top:1px solid #dfe2e5}.fh-faq-list details:last-child{border-bottom:1px solid #dfe2e5}.fh-faq-list summary{list-style:none;display:grid;grid-template-columns:38px 1fr auto;gap:18px;align-items:center;padding:23px 0;cursor:pointer}.fh-faq-list summary::-webkit-details-marker{display:none}.fh-faq-list summary span{font-size:8px;color:#b4b9be}.fh-faq-list summary strong{font-size:14px}.fh-faq-list summary i{font-style:normal;color:#e43038;font-size:21px}.fh-faq-list details p{margin:0;padding:0 50px 24px 56px;color:#69727b;font-size:11px;line-height:1.8}
+  .fh-kenya-head{margin:56px 0 22px;padding-top:36px;border-top:1px solid #d7dadd;display:flex;align-items:end;justify-content:space-between;gap:30px}
+  .fh-kenya-head h3{font-size:clamp(28px,3.1vw,42px);letter-spacing:-.04em;margin:7px 0 0}
+  .fh-kenya-head p{max-width:560px;margin:0;color:#707982;font-size:10px;line-height:1.75}
+  .fh-kenya-wall{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .fh-venue{position:relative;min-height:310px;padding:26px;background:#fff;border:1px solid #e0e3e5;border-radius:10px;
+    display:flex;flex-direction:column;transition:.3s}
+  .fh-venue:hover{transform:translateY(-6px);border-color:#dc3138;box-shadow:0 22px 48px rgba(21,25,30,.1)}
+  .fh-venue-top{min-height:88px;display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+  .fh-venue-logo{width:165px;height:82px;display:flex;align-items:center;justify-content:flex-start}
+  .fh-venue-logo img{display:block;max-width:155px;max-height:76px;width:auto;height:auto;object-fit:contain}
+  .fh-venue-index{font-size:8px;color:#b6bbc0;white-space:nowrap}
+  .fh-venue small{display:block;margin-top:18px;color:#dc3138;font-size:7px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+  .fh-venue h4{font-size:20px;margin:7px 0}
+  .fh-venue p{font-size:9px;color:#707982;line-height:1.7;margin:0 0 22px}
+  .fh-venue a{margin-top:auto;color:#d8272f;font-size:8px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;text-decoration:none}
+  .fh-notice{font-size:8px;color:#787f86;line-height:1.7;margin:18px 0 0}
 
-  .fh-testimonials{background:#15181c;color:#fff}.fh-testimonials .fh-section-head p{color:#999fa6}.fh-story-stage{position:relative;min-height:360px;background:#20242a;display:grid;grid-template-columns:1fr 460px}.fh-story-copy{padding:60px;display:none}.fh-story-copy.active{display:block}.fh-story-copy>span{color:#ed3a42;font-size:60px;line-height:.6}.fh-story-copy blockquote{font-size:clamp(24px,3vw,39px);line-height:1.35;letter-spacing:-.03em;margin:30px 0 45px}.fh-story-copy strong{display:block;font-size:11px}.fh-story-copy small{color:#9198a0;font-size:8px}.fh-story-media img{width:100%;height:100%;object-fit:cover}.fh-story-dots{display:flex;gap:7px;margin-top:18px}.fh-story-dots button{width:34px;height:3px;background:#484e55;border:0}.fh-story-dots button.active{background:#ed3a42}
+  /* faq */
+  .fh-faq-layout{display:grid;grid-template-columns:.7fr 1.3fr;gap:80px}
+  .fh-faq-list details{border-top:1px solid #dfe2e5}
+  .fh-faq-list details:last-child{border-bottom:1px solid #dfe2e5}
+  .fh-faq-list summary{list-style:none;display:grid;grid-template-columns:38px 1fr auto;gap:18px;align-items:center;
+    padding:23px 0;cursor:pointer;transition:.2s}
+  .fh-faq-list summary:hover strong{color:var(--red)}
+  .fh-faq-list summary::-webkit-details-marker{display:none}
+  .fh-faq-list summary span{font-size:8px;color:#b4b9be;font-weight:900}
+  .fh-faq-list summary strong{font-size:14px;transition:.2s}
+  .fh-faq-list summary i{font-style:normal;color:#e43038;font-size:21px;transition:transform .25s}
+  .fh-faq-list details[open] summary i{transform:rotate(45deg)}
+  .fh-faq-list details p{margin:0;padding:0 50px 24px 56px;color:#69727b;font-size:11px;line-height:1.8}
 
-  .fh-final{background:var(--red);color:#fff;padding:76px 0}.fh-final>div{display:flex;align-items:center;justify-content:space-between;gap:40px}.fh-final span{font-size:8px;letter-spacing:.13em}.fh-final h2{font-size:clamp(38px,4.5vw,65px);line-height:1.03;letter-spacing:-.05em;margin:10px 0 0}.fh-final-links{display:flex;gap:10px}.fh-final-links a{background:#fff;color:#171a1e;padding:17px 20px;font-size:9px;font-weight:900;text-transform:uppercase}.fh-final-links a:last-child{background:#171a1e;color:#fff}
+  /* testimonials */
+  .fh-testimonials{background:#15181c;color:#fff}
+  .fh-testimonials .fh-section-head p{color:#999fa6}
+  .fh-story-stage{position:relative;min-height:360px;background:#20242a;border-radius:12px;overflow:hidden;
+    display:grid;grid-template-columns:1fr 460px}
+  .fh-story-copy{padding:60px;display:none}
+  .fh-story-copy.active{display:block;animation:fhFade .5s ease}
+  @keyframes fhFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .fh-story-copy>span{color:#ed3a42;font-size:60px;line-height:.6}
+  .fh-story-copy blockquote{font-size:clamp(24px,3vw,39px);line-height:1.35;letter-spacing:-.03em;margin:30px 0 45px}
+  .fh-story-copy strong{display:block;font-size:11px}
+  .fh-story-copy small{color:#9198a0;font-size:8px}
+  .fh-story-media{margin:0}
+  .fh-story-media img{width:100%;height:100%;object-fit:cover}
+  .fh-story-dots{display:flex;gap:7px;margin-top:18px}
+  .fh-story-dots button{width:34px;height:3px;background:#484e55;border:0;cursor:pointer;border-radius:99px;transition:.25s}
+  .fh-story-dots button.active{background:#ed3a42}
 
-  @media(max-width:1100px){.fh-hero-layout{grid-template-columns:1fr}.fh-network{position:absolute;right:-220px;bottom:-120px;opacity:.55}.fh-copy{position:relative;z-index:10}.fh-gallery-grid{grid-template-columns:1fr 1fr}.fh-gallery-card.featured{grid-row:auto;grid-column:1/-1}.fh-about-layout{gap:45px}.fh-service-grid{grid-template-columns:1fr 1fr}.fh-logo-wall,.fh-kenya-wall{grid-template-columns:repeat(2,1fr)}.fh-story-stage{grid-template-columns:1fr 340px}.fh-trust-inner{grid-template-columns:1fr;gap:22px}.fh-trust-badges{justify-content:flex-start}.fh-official-partners{grid-template-columns:1fr}.fh-dhl-banner-inner{grid-template-columns:auto 1fr;gap:24px}.fh-dhl-banner-cta{grid-column:1/-1;justify-self:start}}
+  /* final CTA */
+  .fh-final{position:relative;background:linear-gradient(100deg,#ed3138,#c11b23 62%,#8f1218);color:#fff;padding:78px 0;overflow:hidden}
+  .fh-final-plane{position:absolute;right:4%;top:14%;width:210px;opacity:.16;pointer-events:none;
+    animation:fhFinalFly 13s ease-in-out infinite}
+  @keyframes fhFinalFly{0%,100%{transform:translate(0,0) rotate(-3deg)}50%{transform:translate(-40px,-22px) rotate(2deg)}}
+  .fh-final>div{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:40px}
+  .fh-final span{font-size:8px;letter-spacing:.13em}
+  .fh-final h2{font-size:clamp(38px,4.5vw,65px);line-height:1.03;letter-spacing:-.05em;margin:10px 0 0}
+  .fh-final-links{display:flex;gap:10px}
+  .fh-final-links a{background:#fff;color:#171a1e;padding:17px 22px;font-size:9px;font-weight:900;
+    text-transform:uppercase;border-radius:6px;text-decoration:none;transition:.2s}
+  .fh-final-links a:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(0,0,0,.24)}
+  .fh-final-links a:last-child{background:#171a1e;color:#fff}
 
-  @media(max-width:760px){.home-shell{width:min(100% - 30px,1440px)}.fh-hero,.fh-hero-layout{min-height:720px}.fh-copy h1{font-size:52px}.fh-copy>p{font-size:13px}.fh-network{transform:scale(.72);right:-280px;bottom:-170px}.fh-product{margin-top:38px}.fh-metrics>div{grid-template-columns:1fr 1fr}.fh-metrics article:nth-child(2){border-right:0}.fh-metrics article{border-bottom:1px solid #e5e7e9}.fh-section{padding:74px 0}.fh-section-head{align-items:flex-start;flex-direction:column}.fh-gallery-grid{display:grid;grid-template-columns:1fr;grid-template-rows:repeat(5,310px)}.fh-gallery-card.featured{grid-column:auto}.fh-about-layout{grid-template-columns:1fr}.fh-about-image{height:480px}.fh-service-grid,.fh-logo-wall,.fh-kenya-wall,.fh-sp-grid,.fh-official-partners{grid-template-columns:1fr}.fh-partner-ribbon{grid-template-columns:1fr}.fh-partner-ribbon img.fh-partner-ribbon-brand{width:185px}.fh-partner-ribbon strong{font-size:15px;gap:12px}.fh-kenya-head{align-items:flex-start;flex-direction:column}.fh-venue{min-height:250px}.fh-faq-layout{grid-template-columns:1fr;gap:35px}.fh-story-stage{grid-template-columns:1fr}.fh-story-media{height:280px}.fh-story-copy{padding:35px}.fh-final>div{align-items:flex-start;flex-direction:column}.fh-final-links{width:100%;flex-direction:column}.fh-final-links a{text-align:center}.fh-services-cta{align-items:flex-start;flex-direction:column}.fh-services-cta a{width:100%;text-align:center}.fh-trust-badge{width:100%}.fh-official-partner{grid-template-columns:auto minmax(0,1fr)}.fh-official-partner-copy b{grid-column:2}.fh-dhl-banner-inner{grid-template-columns:1fr;text-align:left}.fh-dhl-banner-logo{justify-self:start}.fh-dhl-banner-cta{justify-self:stretch;justify-content:center}.fh-hero-dhl{font-size:9px}}
-
-  @media(max-width:520px){.fh-trust-badge{padding:12px 16px;gap:12px;min-height:64px}.fh-trust-logo{max-width:84px;max-height:40px}.fh-trust-logo.is-dhl{max-width:110px;max-height:44px}.fh-trust-text strong{font-size:11px}.fh-trust-text small{font-size:7px}.fh-actions a.fh-actions-dhl{width:100%;justify-content:center}.fh-hero-dhl{padding:8px 12px;gap:10px}.fh-hero-dhl .dhl-logo{height:26px;width:98px;min-width:80px}.fh-hero-dhl span{font-size:9px}.fh-dhl-banner-logo{padding:12px 16px}.fh-dhl-banner-logo .dhl-logo{height:40px;width:138px;min-width:110px}.fh-dhl-banner-cta{font-size:9px;min-height:48px;padding:0 18px}.fh-sp-logo{padding:10px 14px}.fh-sp-logo .dhl-logo{height:40px;width:138px;min-width:110px}.fh-partner-ribbon-dhl{padding:6px 10px}.fh-partner-ribbon-dhl .dhl-logo{height:28px;width:105px;min-width:84px}.fh-official-partner-mark{min-width:120px;height:80px;padding:12px 14px}.fh-official-partner-logo.is-dhl{max-width:150px;max-height:50px;min-width:120px}.fh-official-partner-logo.is-dpo{max-width:140px;max-height:44px}}
-
-  @media(prefers-reduced-motion:reduce){.fh-ring,.fh-node{animation:none!important}.fh-slide{transition:none}}
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media(max-width:1180px){
+    .fh-flash-grid{grid-template-columns:repeat(3,1fr)}
+    .fh-offer-grid{grid-template-columns:1fr 1fr}
+    .fh-offer.hero-offer{grid-row:auto;grid-column:1/-1;min-height:380px}
+  }
+  @media(max-width:1100px){
+    .fh-hero-layout{grid-template-columns:1fr}
+    .fh-network{position:absolute;right:-220px;bottom:-120px;opacity:.55}
+    .fh-copy{position:relative;z-index:10}
+    .fh-gallery-grid{grid-template-columns:1fr 1fr}
+    .fh-gallery-card.featured{grid-row:auto;grid-column:1/-1}
+    .fh-about-layout{gap:45px}
+    .fh-service-grid{grid-template-columns:1fr 1fr}
+    .fh-logo-wall,.fh-kenya-wall{grid-template-columns:repeat(2,1fr)}
+    .fh-story-stage{grid-template-columns:1fr 340px}
+    .fh-trust-inner{grid-template-columns:1fr;gap:22px}
+    .fh-trust-badges{justify-content:flex-start}
+    .fh-official-partners{grid-template-columns:1fr}
+    .fh-dhl-banner-inner{grid-template-columns:auto 1fr;gap:24px}
+    .fh-dhl-banner-cta{grid-column:1/-1;justify-self:start}
+    .fh-flight-inner{grid-template-columns:1fr;gap:38px}
+    .fh-route{padding-top:64px}
+    .fh-flashstrip-inner{grid-template-columns:1fr;gap:20px}
+    .fh-countdown{justify-content:flex-start}
+  }
+  @media(max-width:760px){
+    .home-shell{width:min(100% - 30px,1440px)}
+    .fh-hero,.fh-hero-layout{min-height:760px}
+    .fh-hero-flight{display:none}
+    .fh-copy h1{font-size:48px}
+    .fh-copy>p{font-size:13px}
+    .fh-network{transform:scale(.72);right:-280px;bottom:-170px}
+    .fh-product{margin-top:38px}
+    .fh-metrics>div{grid-template-columns:1fr 1fr}
+    .fh-metrics article:nth-child(2){border-right:0}
+    .fh-metrics article{border-bottom:1px solid var(--line)}
+    .fh-section{padding:76px 0}
+    .fh-section-head{align-items:flex-start;flex-direction:column}
+    .fh-gallery-grid{display:grid;grid-template-columns:1fr;grid-template-rows:repeat(5,310px)}
+    .fh-gallery-card.featured{grid-column:auto}
+    .fh-about-layout{grid-template-columns:1fr}
+    .fh-about-image{height:480px}
+    .fh-service-grid,.fh-logo-wall,.fh-kenya-wall,.fh-sp-grid,.fh-official-partners{grid-template-columns:1fr}
+    .fh-partner-ribbon{grid-template-columns:1fr}
+    .fh-partner-ribbon img.fh-partner-ribbon-brand{width:185px}
+    .fh-partner-ribbon strong{font-size:15px;gap:12px}
+    .fh-kenya-head{align-items:flex-start;flex-direction:column}
+    .fh-venue{min-height:250px}
+    .fh-faq-layout{grid-template-columns:1fr;gap:35px}
+    .fh-story-stage{grid-template-columns:1fr}
+    .fh-story-media{height:280px}
+    .fh-story-copy{padding:35px}
+    .fh-final>div{align-items:flex-start;flex-direction:column}
+    .fh-final-links{width:100%;flex-direction:column}
+    .fh-final-links a{text-align:center}
+    .fh-final-plane{display:none}
+    .fh-services-cta{align-items:flex-start;flex-direction:column}
+    .fh-services-cta a{width:100%;text-align:center}
+    .fh-trust-badge{width:100%}
+    .fh-official-partner{grid-template-columns:auto minmax(0,1fr)}
+    .fh-dhl-banner-inner{grid-template-columns:1fr;text-align:left}
+    .fh-dhl-banner-logo{justify-self:start}
+    .fh-dhl-banner-cta{justify-self:stretch;justify-content:center}
+    .fh-dhl-banner-plane{display:none}
+    .fh-hero-dhl{font-size:9px}
+    .fh-track{flex-direction:column}
+    .fh-track-btn{justify-content:center}
+    .fh-route-plane{width:130px;top:44px}
+    .fh-route-stops{margin-top:62px}
+    .fh-flash{padding:70px 0 20px}
+    .fh-flash-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+    .fh-offer-grid{grid-template-columns:1fr}
+    .fh-offer{padding:26px;min-height:220px}
+    .fh-offer.hero-offer{min-height:340px;padding:30px}
+    .fh-offer .fh-offer-badge{top:18px;right:18px;min-width:64px;height:64px;font-size:18px}
+    .fh-countdown span{min-width:54px;padding:8px 6px}
+    .fh-countdown span b{font-size:18px}
+    .fh-hero-flash{font-size:9px;padding:8px 14px;gap:8px}
+  }
+  @media(max-width:520px){
+    .fh-trust-badge{padding:12px 16px;gap:12px;min-height:64px}
+    .fh-trust-logo{max-width:84px;max-height:40px}
+    .fh-trust-text strong{font-size:11px}
+    .fh-trust-text small{font-size:7px}
+    .fh-actions a.fh-actions-dhl,.fh-actions a.fh-actions-flash{width:100%;justify-content:center}
+    .fh-hero-dhl{padding:8px 12px;gap:10px}
+    .fh-hero-dhl .dhl-logo{height:26px;width:98px;min-width:80px}
+    .fh-hero-dhl span{font-size:9px}
+    .fh-dhl-banner-logo{padding:12px 16px}
+    .fh-dhl-banner-logo .dhl-logo{height:40px;width:138px;min-width:110px}
+    .fh-dhl-banner-cta{font-size:9px;min-height:48px;padding:0 18px}
+    .fh-sp-logo{padding:10px 14px}
+    .fh-sp-logo .dhl-logo{height:40px;width:138px;min-width:110px}
+    .fh-partner-ribbon-dhl{padding:6px 10px}
+    .fh-partner-ribbon-dhl .dhl-logo{height:28px;width:105px;min-width:84px}
+    .fh-official-partner-mark{min-width:120px;height:80px;padding:12px 14px}
+    .fh-official-partner-logo.is-dhl{max-width:150px;max-height:50px;min-width:120px}
+    .fh-official-partner-logo.is-dpo{max-width:140px;max-height:44px}
+    .fh-flash-grid{grid-template-columns:1fr}
+    .fh-deal h3{font-size:15px}
+    .fh-countdown span{min-width:48px;padding:7px 5px}
+    .fh-countdown span b{font-size:16px}
+    .fh-countdown span small{font-size:7px;letter-spacing:.1em}
+    .fh-flashstrip-copy strong{font-size:1.1rem}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .fh-ring,.fh-node,.fh-hero-plane,.fh-route-plane,.fh-final-plane{animation:none!important}
+    .fh-hero-plane,.fh-route-plane{left:38%!important;opacity:1!important}
+    .fh-slide{transition:none}
+    [data-reveal]{opacity:1;transform:none;transition:none}
+    .fh-hero-flash i,.fh-deal-flash::before{animation:none}
+  }
 
 </style>
 
@@ -232,393 +699,584 @@
 
 <main class="flask-home">
 
+  <!-- ============================================================
+       HERO — showcases VR + arcade machines from the games catalogue
+       ============================================================ -->
   <section class="fh-hero" aria-roledescription="carousel" aria-label="FABS gaming marketplace">
 
-    <div class="fh-slides">{% for game in games[:5] %}<article class="fh-slide {% if loop.first %}active{% endif %}" data-slide="{{ loop.index0 }}"><img src="{{ game.image_url }}" alt="{{ game.title }} real product media" {% if loop.first %}fetchpriority="high"{% endif %}><div class="fh-shade"></div></article>{% endfor %}</div>
-
-    <div class="home-shell fh-hero-layout"><div class="fh-copy"><span><i></i> FABS TRADING GLOBAL E-COMMERCE</span><h1>Millions of gaming opportunities. <em>One global source.</em></h1><p>Discover commercial arcade machines, immersive VR attractions, racing simulators and custom tabletop production with clear MOQ, real product media, <strong style="color:#fff">DHL Express delivery</strong> and <strong style="color:#fff">DPO secure card checkout</strong>.</p>
-
-      <a class="fh-hero-dhl" href="{{ url_for('games') }}#games-shipping-country" aria-label="Ships worldwide via DHL Express">
-
-        {{ dhl_logo('', 120, 32) }}
-
-        <span>Ships via DHL Express · <b>Get a rate →</b></span>
-
-      </a>
-
-      <div class="fh-actions"><a href="{{ url_for('games') }}">Explore millions of games <span>→</span></a><a href="{{ url_for('inquiry') }}">Post your RFQ</a><a class="fh-actions-dhl" href="{{ url_for('games') }}#games-shipping-country">Get shipping estimate</a></div><div class="fh-product"><small id="hero-category">{{ games[0].genre|upper }}</small><strong id="hero-product">{{ games[0].title }}</strong><span id="hero-moq">{{ games[0].minimum_order }}</span></div><span class="fh-source">● AUTHENTIC SUPPLIER MEDIA · <b id="hero-source">{{ games[0].photo_source }}</b></span></div>
-
-      <div class="fh-network" aria-label="Animated FABS global sourcing network"><span class="fh-live">LIVE GLOBAL SOURCING NETWORK</span><i class="fh-ring one"></i><i class="fh-ring two"></i><div class="fh-globe"><video autoplay muted loop playsinline preload="metadata"><source src="{{ url_for('static',filename='images/home-media/rotating-blue-marble.webm') }}" type="video/webm"></video><div><small>FABS GLOBAL SOURCING</small><strong>24/7</strong><b>DIGITAL NETWORK</b></div></div>{% for game in games[:5] %}<a class="fh-node n{{ loop.index }}" href="{{ url_for('game_detail',slug=game.slug) }}"><img src="{{ game.image_url }}" alt=""><b>{{ game.title }}</b><small>{{ game.minimum_order }}</small></a>{% endfor %}</div>
-
-    </div><div class="fh-controls">{% for game in games[:5] %}<button class="{% if loop.first %}active{% endif %}" type="button" data-hero-control="{{ loop.index0 }}" aria-label="Show {{ game.title }}"></button>{% endfor %}</div>
-
-  </section>
-
-  <section class="fh-metrics" aria-label="FABS platform data"><div class="home-shell"><article><span>01</span><strong>3,899,921</strong><p>Active buyers</p></article><article><span>02</span><strong>532+</strong><p>Trusted companies</p></article><article><span>03</span><strong>700B+</strong><p>Transactions</p></article><article><span>04</span><strong>24/7</strong><p>Digital access</p></article></div></section>
-
-  <!-- ================== DHL EXPRESS BANNER ================== -->
-
-  <section class="fh-dhl-banner" aria-label="DHL Express shipping">
-
-    <div class="home-shell fh-dhl-banner-inner">
-
-      <div class="fh-dhl-banner-logo">
-
-        {{ dhl_logo('', 180, 52) }}
-
-      </div>
-
-      <div class="fh-dhl-banner-copy">
-
-        <strong>Ships worldwide via DHL Express</strong>
-
-        <p>Every order travels with a real DHL tracking number, live rates at checkout, and an estimated duties &amp; taxes figure. <b>Official FABS shipping partner.</b></p>
-
-      </div>
-
-      <a class="fh-dhl-banner-cta" href="{{ url_for('games') }}#games-shipping-country">
-
-        Get a shipping estimate <span aria-hidden="true">→</span>
-
-      </a>
-
+    <!-- Hero background slides: first 10 games (VR and arcade machines) -->
+    <div class="fh-slides">
+      {% for game in games[:10] %}
+      <article class="fh-slide {% if loop.first %}active{% endif %}" data-slide="{{ loop.index0 }}">
+        <img src="{{ game.image_url }}" alt="{{ game.title }} real product media" {% if loop.first %}fetchpriority="high"{% endif %}>
+        <div class="fh-shade"></div>
+      </article>
+      {% endfor %}
     </div>
 
-  </section>
+    <span class="fh-hero-glow" aria-hidden="true"></span>
 
-  <!-- ============================================================ -->
-
-  <!-- ================== TRUST / PARTNERS BAND ================== -->
-
-  <section class="fh-trust" aria-label="Shipping and payment partners">
-
-    <div class="home-shell fh-trust-inner">
-
-      <div>
-
-        <div class="fh-trust-kicker">Official shipping &amp; payment partners</div>
-
-        <h3>Powered by <b>DHL Express</b> for tracked international delivery, and <b>DPO · 3G Direct Pay</b> for PCI-DSS Level 1 secure card checkout in USD and KES.</h3>
-
-      </div>
-
-      <div class="fh-trust-badges">
-
-        <a class="fh-trust-badge" href="{{ url_for('games') }}#games-shipping-country" title="Official DHL Express shipping partner">
-
-          <span class="fh-trust-logo-wrap is-dhl">
-
-            {{ dhl_logo('fh-trust-logo is-dhl', 140, 52) }}
-
-          </span>
-
-          <span class="fh-trust-text">
-
-            <strong>DHL Express</strong>
-
-            <small>Official shipping partner</small>
-
-          </span>
-
-        </a>
-
-        <a class="fh-trust-badge" href="{{ url_for('compliance') }}" title="DPO · 3G Direct Pay secure payment partner">
-
-          <span class="fh-trust-logo-wrap is-dpo">
-
-            <img class="fh-trust-logo is-dpo" src="https://payment.dpo.co.tz/assets/main-brand-logo-wider.005a3964.png" alt="DPO Group · 3G Direct Pay official logo" loading="lazy" decoding="async">
-
-          </span>
-
-          <span class="fh-trust-text">
-
-            <strong>DPO · 3G Direct Pay</strong>
-
-            <small>Secure card checkout</small>
-
-          </span>
-
-        </a>
-
-        <a class="fh-trust-badge" href="{{ url_for('compliance') }}" title="PCI-DSS Level 1">
-
-          <span class="fh-trust-mark fh-trust-mark-pci">PCI</span>
-
-          <span class="fh-trust-text">
-
-            <strong>PCI-DSS L1</strong>
-
-            <small>Card data secured</small>
-
-          </span>
-
-        </a>
-
-        <a class="fh-trust-badge" href="{{ url_for('compliance') }}" title="3-D Secure">
-
-          <span class="fh-trust-mark fh-trust-mark-3ds">3DS</span>
-
-          <span class="fh-trust-text">
-
-            <strong>3-D Secure</strong>
-
-            <small>Bank verification</small>
-
-          </span>
-
-        </a>
-
-      </div>
-
+    <!-- flying DHL plane -->
+    <div class="fh-hero-flight" aria-hidden="true">
+      <span class="fh-hero-route"></span>
+      <div class="fh-hero-plane">{{ dhl_plane('', 150, 68) }}</div>
     </div>
 
-  </section>
+    <!-- flash sale ribbon -->
+    <a class="fh-hero-flash" href="{{ url_for('games') }}?flash=1">
+      <i aria-hidden="true"></i>
+      Flash sale live · up to 45% off arcade &amp; VR
+      <b>Shop now</b>
+    </a>
 
-  <!-- =========================================================== -->
+    <div class="home-shell fh-hero-layout">
+      <div class="fh-copy">
+        <span><i></i> FABS TRADING GLOBAL E-COMMERCE</span>
+        <h1>Millions of gaming opportunities. <em>One global source.</em></h1>
+        <p>Discover commercial arcade machines, immersive VR attractions, racing simulators and custom tabletop production with clear MOQ, real product media, <strong style="color:#fff">DHL Express delivery</strong> and <strong style="color:#fff">DPO secure card checkout</strong>.</p>
 
-  <section class="fh-section fh-gallery"><div class="home-shell"><header class="fh-section-head"><div><span class="home-kicker">Live from the gaming market</span><h2>See the equipment buyers are sourcing.</h2></div><p>Authentic venue, manufacturer and product photography—never generated imagery.</p></header><div class="fh-gallery-grid">{% for game in games[:5] %}<a class="fh-gallery-card {% if loop.first %}featured{% endif %}" href="{{ url_for('game_detail',slug=game.slug) }}"><img src="{{ game.image_url }}" alt="{{ game.title }} authentic product photograph" loading="{% if loop.index < 3 %}eager{% else %}lazy{% endif %}"><span class="fh-real-badge">REAL MEDIA</span><div><small>{{ game.photo_source }}</small><strong>{{ game.title }}</strong><b>{{ game.minimum_order }} · VIEW PRODUCT ↗</b></div></a>{% endfor %}</div><p class="fh-gallery-note">Every image is self-hosted from a real product, manufacturer or venue source. Product availability and media rights are confirmed during quotation.</p></div></section>
+        <a class="fh-hero-dhl" href="{{ url_for('games') }}#games-shipping-country" aria-label="Ships worldwide via DHL Express">
+          {{ dhl_logo('', 120, 32) }}
+          <span>Ships via DHL Express · <b>Get a rate →</b></span>
+        </a>
 
-  <section class="fh-section"><div class="home-shell fh-about-layout"><div class="fh-copy-block"><span class="home-kicker">About FABS Trading</span><h2>A professional gateway to the global gaming supply market.</h2><p>FABS Trading Global E-Commerce helps commercial buyers discover gaming platforms, equipment and custom products through a structured marketplace built around real product media, clear MOQ, direct inquiry tools, DHL Express delivery and DPO secure card checkout.</p><p>From a single arcade machine to volume OEM production, our platform keeps product discovery, supplier communication, shipping and payment in one connected experience.</p><a class="fh-red-button" href="{{ url_for('about') }}">Discover our company →</a></div><figure class="fh-about-image"><img src="{{ games[0].image_url }}" alt="{{ games[0].title }} at a real entertainment venue"><figcaption><span>● AUTHENTIC VENUE PHOTOGRAPHY</span><strong>{{ games[0].title }}</strong><small>Real venue media · {{ games[0].photo_source }}</small></figcaption><div><b>01</b><span>Connected sourcing<br>partner</span></div></figure></div></section>
-
-  <!-- ================== DHL + DPO FEATURE SECTION ================== -->
-
-  <section class="fh-section fh-shipping-payment" aria-label="Shipping and payment">
-
-    <div class="home-shell">
-
-      <header class="fh-section-head">
-
-        <div>
-
-          <span class="home-kicker">Shipping &amp; payment</span>
-
-          <h2>Delivered by DHL. Paid securely with DPO.</h2>
-
+        <div class="fh-actions">
+          <a href="{{ url_for('games') }}">Explore millions of games <span>→</span></a>
+          <a class="fh-actions-flash" href="{{ url_for('games') }}?flash=1">Flash sale <span>→</span></a>
+          <a href="{{ url_for('inquiry') }}">Post your RFQ</a>
+          <a class="fh-actions-dhl" href="{{ url_for('games') }}#games-shipping-country">Get shipping estimate</a>
         </div>
 
-        <p>Every order ships via DHL Express with a real tracking number, and every card payment is captured on DPO's PCI-DSS Level 1 hosted checkout page. FABS never sees or stores your card data.</p>
+        <div class="fh-product">
+          <small id="hero-category">{{ games[0].genre|upper }}</small>
+          <strong id="hero-product">{{ games[0].title }}</strong>
+          <span id="hero-moq">{{ games[0].minimum_order }}</span>
+        </div>
+        <span class="fh-source">● AUTHENTIC SUPPLIER MEDIA · <b id="hero-source">{{ games[0].photo_source }}</b></span>
+      </div>
 
+      <div class="fh-network" aria-label="Animated FABS global sourcing network">
+        <span class="fh-live">LIVE GLOBAL SOURCING NETWORK</span>
+        <i class="fh-ring one"></i><i class="fh-ring two"></i>
+        <div class="fh-globe">
+          <video autoplay muted loop playsinline preload="metadata"><source src="{{ url_for('static',filename='images/home-media/rotating-blue-marble.webm') }}" type="video/webm"></video>
+          <div><small>FABS GLOBAL SOURCING</small><strong>24/7</strong><b>DIGITAL NETWORK</b></div>
+        </div>
+        {% for game in games[:5] %}<a class="fh-node n{{ loop.index }}" href="{{ url_for('game_detail',slug=game.slug) }}"><img src="{{ game.image_url }}" alt=""><b>{{ game.title }}</b><small>{{ game.minimum_order }}</small></a>{% endfor %}
+      </div>
+    </div>
+
+    <div class="fh-controls">
+      {% for game in games[:10] %}
+      <button class="{% if loop.first %}active{% endif %}" type="button" data-hero-control="{{ loop.index0 }}" aria-label="Show {{ game.title }}"></button>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FLASH SALE STRIP — countdown timer
+       ============================================================ -->
+  <section class="fh-flashstrip" aria-label="Flash sale countdown">
+    <div class="home-shell fh-flashstrip-inner">
+      <span class="fh-flash-tag"><i aria-hidden="true"></i> Flash Sale</span>
+      <div class="fh-flashstrip-copy">
+        <strong>Up to 45% off arcade machines, VR attractions &amp; racing simulators</strong>
+        <p>Limited stock · DHL Express shipping · Secure DPO card checkout · Ends this week</p>
+      </div>
+      <div class="fh-countdown" id="fh-countdown" aria-live="polite">
+        <span><b data-cd="days">00</b><small>Days</small></span>
+        <span><b data-cd="hours">00</b><small>Hours</small></span>
+        <span><b data-cd="mins">00</b><small>Mins</small></span>
+        <span><b data-cd="secs">00</b><small>Secs</small></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       FLASH DEALS GRID — 8 featured products with % off
+       ============================================================ -->
+  <section class="fh-flash" aria-label="Flash deals">
+    <div class="home-shell">
+      <header class="fh-section-head" data-reveal>
+        <div>
+          <span class="home-kicker">⚡ Flash deals · today only</span>
+          <h2>Save big on the machines buyers want most.</h2>
+        </div>
+        <a href="{{ url_for('games') }}?flash=1">See all flash deals →</a>
+      </header>
+
+      <div class="fh-flash-grid">
+        {% set deal_discounts = [45, 30, 25, 20, 40, 35, 15, 28] %}
+        {% set deal_old = [1.35, 1.28, 1.2, 1.15, 1.5, 1.4, 1.12, 1.25] %}
+        {% for game in games[:8] %}
+        {% set disc = deal_discounts[loop.index0] %}
+        {% set old_price = game.price * deal_old[loop.index0] %}
+        <a class="fh-deal" href="{{ url_for('game_detail',slug=game.slug) }}" data-reveal>
+          <div class="fh-deal-media">
+            <img src="{{ game.image_url }}" alt="{{ game.title }} flash deal" loading="lazy">
+            <span class="fh-deal-flash">Flash</span>
+            <span class="fh-deal-off">-{{ disc }}%<small>OFF</small></span>
+          </div>
+          <div class="fh-deal-body">
+            <span class="fh-deal-cat">{{ game.genre }}</span>
+            <h3>{{ game.title }}</h3>
+            <div class="fh-deal-price">
+              <b>US${{ '{:,.2f}'.format(game.price) }}</b>
+              <s>US${{ '{:,.2f}'.format(old_price) }}</s>
+            </div>
+            <div class="fh-deal-meta">
+              <span>{{ game.minimum_order }}</span>
+              <i>View deal →</i>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       OFFERS / PROMO BANNERS
+       ============================================================ -->
+  <section class="fh-offers" aria-label="Featured offers">
+    <div class="home-shell">
+      <header class="fh-section-head" data-reveal>
+        <div>
+          <span class="home-kicker">Featured offers</span>
+          <h2>Bigger bundles. Better value.</h2>
+        </div>
+        <a href="{{ url_for('games') }}">Browse all offers →</a>
+      </header>
+
+      <div class="fh-offer-grid">
+        <!-- Hero offer — VR attractions -->
+        {% set vr = games[0] %}
+        <a class="fh-offer hero-offer vr-offer" href="{{ url_for('games') }}?category=vr" data-reveal>
+          {% if vr.image_url %}<img src="{{ vr.image_url }}" alt="VR attractions offer">{% endif %}
+          <span class="fh-offer-badge">-40%<small>OFF</small></span>
+          <span class="fh-offer-tag">VR &amp; immersive experiences</span>
+          <h3>Immersive VR attractions at factory-direct pricing.</h3>
+          <p>Multiplayer VR arenas, 9D cinema pods and racing simulators — bundled with installation guidance and DHL Express delivery to 220+ countries.</p>
+          <span class="fh-offer-cta">Shop VR deals →</span>
+        </a>
+
+        <!-- Arcade machines offer -->
+        {% set arcade = games[1] if games|length > 1 else games[0] %}
+        <a class="fh-offer arcade-offer" href="{{ url_for('games') }}?category=arcade" data-reveal>
+          {% if arcade.image_url %}<img src="{{ arcade.image_url }}" alt="Arcade machines offer">{% endif %}
+          <span class="fh-offer-badge">-30%<small>OFF</small></span>
+          <span class="fh-offer-tag">Arcade machines</span>
+          <h3>Classic arcade cabinets, modern software.</h3>
+          <p>Coin-op, ticket-redemption and multiplayer arcade systems — ready to plug into your venue.</p>
+          <span class="fh-offer-cta">Shop arcade →</span>
+        </a>
+
+        <!-- Flash bundle offer -->
+        <a class="fh-offer flash-offer" href="{{ url_for('games') }}?flash=1" data-reveal>
+          <span class="fh-offer-badge">-45%<small>OFF</small></span>
+          <span class="fh-offer-tag">Limited time</span>
+          <h3>Flash sale: up to 45% off select machines.</h3>
+          <p>Today only · Ends when the counter hits zero.</p>
+          <span class="fh-offer-cta">Shop flash sale →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       METRICS
+       ============================================================ -->
+  <section class="fh-metrics" aria-label="FABS platform data">
+    <div class="home-shell">
+      <article><span>01</span><strong>3,899,921</strong><p>Active buyers</p></article>
+      <article><span>02</span><strong>532+</strong><p>Trusted companies</p></article>
+      <article><span>03</span><strong>700B+</strong><p>Transactions</p></article>
+      <article><span>04</span><strong>24/7</strong><p>Digital access</p></article>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       DHL FLIGHT BAND — moving plane + tracking input
+       ============================================================ -->
+  <section class="fh-flight" aria-label="DHL Express worldwide air freight">
+    <span class="fh-flight-grid-lines" aria-hidden="true"></span>
+    <div class="home-shell fh-flight-inner">
+
+      <div class="fh-flight-copy" data-reveal>
+        <span class="home-kicker">DHL Express air freight</span>
+        <h3>Watch your order leave Nairobi — and <b>land at your door.</b></h3>
+        <p>Every FABS order flies DHL Express from our Nairobi hub to more than 220 countries, with live rates, a duties &amp; taxes estimate, and a real tracking number from the moment it ships.</p>
+
+        <div class="fh-track">
+          <input id="fh-track-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Enter your DHL tracking number" aria-label="DHL tracking number">
+          <a id="fh-track-btn" class="fh-track-btn" href="https://www.dhl.com/global-en/home/tracking.html" target="_blank" rel="noopener noreferrer">Track <span aria-hidden="true">→</span></a>
+        </div>
+
+        <div class="fh-flight-chips">
+          <span>220+ countries</span><span>Real tracking numbers</span><span>Duties estimated at checkout</span>
+        </div>
+      </div>
+
+      <div class="fh-route" data-reveal>
+        <div class="fh-route-track" aria-hidden="true"></div>
+        <div class="fh-route-plane" aria-hidden="true">{{ dhl_plane('', 168, 76) }}</div>
+        <div class="fh-route-stops">
+          <span class="fh-route-stop is-hub"><b>NBO</b><small>Nairobi hub</small></span>
+          <span class="fh-route-stop is-dest"><b>YOU</b><small>220+ destinations</small></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       DHL BANNER
+       ============================================================ -->
+  <section class="fh-dhl-banner" aria-label="DHL Express shipping">
+    <div class="fh-dhl-banner-plane" aria-hidden="true">{{ dhl_plane('', 190, 86) }}</div>
+    <div class="home-shell fh-dhl-banner-inner">
+      <div class="fh-dhl-banner-logo">{{ dhl_logo('', 180, 52) }}</div>
+      <div class="fh-dhl-banner-copy">
+        <strong>Ships worldwide via DHL Express</strong>
+        <p>Every order travels with a real DHL tracking number, live rates at checkout, and an estimated duties &amp; taxes figure. <b>Official FABS shipping partner.</b></p>
+      </div>
+      <a class="fh-dhl-banner-cta" href="{{ url_for('games') }}#games-shipping-country">Get a shipping estimate <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TRUST BAND
+       ============================================================ -->
+  <section class="fh-trust" aria-label="Shipping and payment partners">
+    <div class="home-shell fh-trust-inner">
+      <div>
+        <div class="fh-trust-kicker">Official shipping &amp; payment partners</div>
+        <h3>Powered by <b>DHL Express</b> for tracked international delivery, and <b>DPO · 3G Direct Pay</b> for PCI-DSS Level 1 secure card checkout in USD and KES.</h3>
+      </div>
+      <div class="fh-trust-badges">
+        <a class="fh-trust-badge" href="{{ url_for('games') }}#games-shipping-country" title="Official DHL Express shipping partner">
+          <span class="fh-trust-logo-wrap is-dhl">{{ dhl_logo('fh-trust-logo is-dhl', 140, 52) }}</span>
+          <span class="fh-trust-text"><strong>DHL Express</strong><small>Official shipping partner</small></span>
+        </a>
+        <a class="fh-trust-badge" href="{{ url_for('compliance') }}" title="DPO · 3G Direct Pay secure payment partner">
+          <span class="fh-trust-logo-wrap is-dpo"><img class="fh-trust-logo is-dpo" src="https://payment.dpo.co.tz/assets/main-brand-logo-wider.005a3964.png" alt="DPO Group · 3G Direct Pay official logo" loading="lazy" decoding="async"></span>
+          <span class="fh-trust-text"><strong>DPO · 3G Direct Pay</strong><small>Secure card checkout</small></span>
+        </a>
+        <a class="fh-trust-badge" href="{{ url_for('compliance') }}" title="PCI-DSS Level 1">
+          <span class="fh-trust-mark fh-trust-mark-pci">PCI</span>
+          <span class="fh-trust-text"><strong>PCI-DSS L1</strong><small>Card data secured</small></span>
+        </a>
+        <a class="fh-trust-badge" href="{{ url_for('compliance') }}" title="3-D Secure">
+          <span class="fh-trust-mark fh-trust-mark-3ds">3DS</span>
+          <span class="fh-trust-text"><strong>3-D Secure</strong><small>Bank verification</small></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       GALLERY
+       ============================================================ -->
+  <section class="fh-section fh-gallery">
+    <div class="home-shell">
+      <header class="fh-section-head" data-reveal>
+        <div><span class="home-kicker">Live from the gaming market</span><h2>See the equipment buyers are sourcing.</h2></div>
+        <p>Authentic venue, manufacturer and product photography—never generated imagery.</p>
+      </header>
+      <div class="fh-gallery-grid" data-reveal>
+        {% for game in games[:5] %}
+        <a class="fh-gallery-card {% if loop.first %}featured{% endif %}" href="{{ url_for('game_detail',slug=game.slug) }}">
+          <img src="{{ game.image_url }}" alt="{{ game.title }} authentic product photograph" loading="{% if loop.index < 3 %}eager{% else %}lazy{% endif %}">
+          <span class="fh-real-badge">REAL MEDIA</span>
+          <div><small>{{ game.photo_source }}</small><strong>{{ game.title }}</strong><b>{{ game.minimum_order }} · VIEW PRODUCT ↗</b></div>
+        </a>
+        {% endfor %}
+      </div>
+      <p class="fh-gallery-note">Every image is self-hosted from a real product, manufacturer or venue source. Product availability and media rights are confirmed during quotation.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ABOUT
+       ============================================================ -->
+  <section class="fh-section">
+    <div class="home-shell fh-about-layout">
+      <div class="fh-copy-block" data-reveal>
+        <span class="home-kicker">About FABS Trading</span>
+        <h2>A professional gateway to the global gaming supply market.</h2>
+        <p>FABS Trading Global E-Commerce helps commercial buyers discover gaming platforms, equipment and custom products through a structured marketplace built around real product media, clear MOQ, direct inquiry tools, DHL Express delivery and DPO secure card checkout.</p>
+        <p>From a single arcade machine to volume OEM production, our platform keeps product discovery, supplier communication, shipping and payment in one connected experience.</p>
+        <a class="fh-red-button" href="{{ url_for('about') }}">Discover our company →</a>
+      </div>
+      <figure class="fh-about-image" data-reveal>
+        <img src="{{ games[0].image_url }}" alt="{{ games[0].title }} at a real entertainment venue">
+        <figcaption>
+          <span>● AUTHENTIC VENUE PHOTOGRAPHY</span>
+          <strong>{{ games[0].title }}</strong>
+          <small>Real venue media · {{ games[0].photo_source }}</small>
+        </figcaption>
+        <div><b>01</b><span>Connected sourcing<br>partner</span></div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SHIPPING & PAYMENT
+       ============================================================ -->
+  <section class="fh-section fh-shipping-payment" aria-label="Shipping and payment">
+    <div class="home-shell">
+      <header class="fh-section-head" data-reveal>
+        <div>
+          <span class="home-kicker">Shipping &amp; payment</span>
+          <h2>Delivered by DHL. Paid securely with DPO.</h2>
+        </div>
+        <p>Every order ships via DHL Express with a real tracking number, and every card payment is captured on DPO's PCI-DSS Level 1 hosted checkout page. FABS never sees or stores your card data.</p>
       </header>
 
       <div class="fh-sp-grid">
-
-        <!-- DHL card -->
-
-        <article class="fh-sp-card is-dhl">
-
+        <article class="fh-sp-card is-dhl" data-reveal>
           <div class="fh-sp-head">
-
-            <span class="fh-sp-logo">
-
-              {{ dhl_logo('', 180, 52) }}
-
-            </span>
-
+            <span class="fh-sp-logo">{{ dhl_logo('', 180, 52) }}</span>
             <small>Official shipping partner</small>
-
           </div>
-
           <h3>Worldwide delivery via DHL Express</h3>
-
           <p>Live shipping rates appear on every product page and at checkout. Track your order from our Nairobi warehouse to your door.</p>
-
           <ul class="fh-sp-list">
-
             <li>Real-time DHL Express rate quotes based on your destination</li>
-
             <li>Automatic duties &amp; taxes estimate at checkout for international buyers</li>
-
             <li>Fully traceable shipments with tracking number on every order</li>
-
             <li>Optional pickup from nearby DHL service points</li>
-
           </ul>
-
           <a class="fh-sp-cta" href="{{ url_for('games') }}#games-shipping-country">Get a shipping estimate →</a>
-
         </article>
 
-        <!-- DPO card -->
-
-        <article class="fh-sp-card is-dpo">
-
+        <article class="fh-sp-card is-dpo" data-reveal>
           <div class="fh-sp-head">
-
             <span class="fh-sp-logo is-dpo">
-
               <img src="https://payment.dpo.co.tz/assets/main-brand-logo-wider.005a3964.png" alt="DPO Group · 3G Direct Pay official logo" loading="lazy" decoding="async">
-
             </span>
-
             <small>Secure payment provider</small>
-
           </div>
-
           <h3>Card payments via DPO · 3G Direct Pay</h3>
-
           <p>Visa and Mastercard accepted in USD and KES. Your card details are entered on DPO's PCI-DSS Level 1 hosted page — never on FABS servers.</p>
-
           <ul class="fh-sp-list">
-
             <li>PCI-DSS Level 1 certified merchant gateway</li>
-
             <li>3-D Secure bank verification on every payment</li>
-
             <li>USD and KES currency support for African and global buyers</li>
-
             <li>Instant order confirmation with verifiable transaction reference</li>
-
           </ul>
-
           <a class="fh-sp-cta" href="{{ url_for('compliance') }}">Read our compliance policy →</a>
-
         </article>
-
       </div>
-
     </div>
-
   </section>
 
-  <!-- ============================================================== -->
+  <!-- ============================================================
+       SERVICES
+       ============================================================ -->
+  <section class="fh-section fh-services" id="services">
+    <div class="home-shell">
+      <header class="fh-section-head" data-reveal>
+        <div>
+          <span class="home-kicker">Our gaming services</span>
+          <h2>Real products. Large MOQ. Direct inquiry.</h2>
+          <p>Start with a specialist category, then enter a catalogue engineered for millions of product combinations and professional buying requirements.</p>
+        </div>
+        <a href="{{ url_for('games') }}">Browse all 2,399,976 products →</a>
+      </header>
 
-  <section class="fh-section fh-services" id="services"><div class="home-shell"><header class="fh-section-head"><div><span class="home-kicker">Our gaming services</span><h2>Real products. Large MOQ. Direct inquiry.</h2><p>Start with a specialist category, then enter a catalogue engineered for millions of product combinations and professional buying requirements.</p></div><a href="{{ url_for('games') }}">Browse all 2,399,976 products →</a></header><div class="fh-service-grid">{% for game in games[:6] %}<a class="fh-service" href="{{ url_for('game_detail',slug=game.slug) }}"><figure><img src="{{ game.image_url }}" alt="{{ game.title }} real product photograph" loading="lazy"><span>● REAL PRODUCT PHOTO</span><small>{{ game.photo_source }}</small></figure><div><span>{{ game.genre }}</span><h3>{{ game.title }}</h3><p>{{ game.description }}</p><dl><dt>Starting price</dt><dd>US${{ '{:,.2f}'.format(game.price) }}</dd><dt>Minimum order</dt><dd>{{ game.minimum_order }}</dd></dl><b>Open product and inquire →</b></div></a>{% endfor %}</div><div class="fh-services-cta"><div><span>CAN’T FIND THE EXACT GAME?</span><strong>Post one sourcing request and receive a structured commercial response.</strong></div><a href="{{ url_for('inquiry') }}">Post sourcing request</a></div></div></section>
-
-  <section class="fh-section fh-partners"><div class="home-shell"><header class="fh-section-head"><div><span class="home-kicker">Global gaming ecosystem</span><h2>The brands defining modern play.</h2></div><p>Platform owners, publishers and developers influencing product demand across the international gaming economy.</p></header>
-
-  <div class="fh-partner-ribbon">
-
-    <img class="fh-partner-ribbon-brand" src="{{ url_for('static',filename='images/fabs-brand-v2.png') }}" alt="FABS Trading Global E-Commerce">
-
-    <strong>Connecting commercial buyers with a global gaming supply network
-
-      <span class="fh-partner-ribbon-dhl">
-
-        {{ dhl_logo('', 140, 36) }}
-
-        <span>Shipped by DHL Express</span>
-
-      </span>
-
-    </strong>
-
-    <a href="{{ url_for('media_page',page_name='partners') }}">Explore the FABS network →</a>
-
-  </div>
-
-  <!-- ============ OFFICIAL FABS PARTNERS (DHL + DPO) ============ -->
-
-  <div class="fh-official-partners" aria-label="Official FABS shipping and payment partners">
-
-    <article class="fh-official-partner is-dhl">
-
-      <span class="fh-official-partner-mark">
-
-        {{ dhl_logo('fh-official-partner-logo is-dhl', 200, 64) }}
-
-      </span>
-
-      <div class="fh-official-partner-copy">
-
-        <strong>DHL Express</strong>
-
-        <small>Official shipping partner</small>
-
-        <p>Tracked international delivery with real-time rates, duties estimation and full traceability on every order shipped from Nairobi.</p>
-
-        <b>Learn more →</b>
-
+      <div class="fh-service-grid">
+        {% for game in games[:6] %}
+        <a class="fh-service" href="{{ url_for('game_detail',slug=game.slug) }}" data-reveal>
+          <figure>
+            <img src="{{ game.image_url }}" alt="{{ game.title }} real product photograph" loading="lazy">
+            <span>● REAL PRODUCT PHOTO</span>
+            <small>{{ game.photo_source }}</small>
+          </figure>
+          <div>
+            <span>{{ game.genre }}</span>
+            <h3>{{ game.title }}</h3>
+            <p>{{ game.description }}</p>
+            <dl>
+              <dt>Starting price</dt><dd>US${{ '{:,.2f}'.format(game.price) }}</dd>
+              <dt>Minimum order</dt><dd>{{ game.minimum_order }}</dd>
+            </dl>
+            <b>Open product and inquire →</b>
+          </div>
+        </a>
+        {% endfor %}
       </div>
 
-    </article>
+      <div class="fh-services-cta" data-reveal>
+        <div><span>CAN’T FIND THE EXACT GAME?</span><strong>Post one sourcing request and receive a structured commercial response.</strong></div>
+        <a href="{{ url_for('inquiry') }}">Post sourcing request</a>
+      </div>
+    </div>
+  </section>
 
-    <article class="fh-official-partner is-dpo">
+  <!-- ============================================================
+       PARTNERS
+       ============================================================ -->
+  <section class="fh-section fh-partners">
+    <div class="home-shell">
+      <header class="fh-section-head" data-reveal>
+        <div><span class="home-kicker">Global gaming ecosystem</span><h2>The brands defining modern play.</h2></div>
+        <p>Platform owners, publishers and developers influencing product demand across the international gaming economy.</p>
+      </header>
 
-      <span class="fh-official-partner-mark">
-
-        <img class="fh-official-partner-logo is-dpo" src="https://payment.dpo.co.tz/assets/main-brand-logo-wider.005a3964.png" alt="DPO Group · 3G Direct Pay official logo" loading="lazy" decoding="async">
-
-      </span>
-
-      <div class="fh-official-partner-copy">
-
-        <strong>DPO · 3G Direct Pay</strong>
-
-        <small>Secure payment provider</small>
-
-        <p>PCI-DSS Level 1 hosted card checkout in USD and KES. FABS Trading never sees or stores card numbers or security codes.</p>
-
-        <b>Learn more →</b>
-
+      <div class="fh-partner-ribbon" data-reveal>
+        <img class="fh-partner-ribbon-brand" src="{{ url_for('static',filename='images/fabs-brand-v2.png') }}" alt="FABS Trading Global E-Commerce">
+        <strong>Connecting commercial buyers with a global gaming supply network
+          <span class="fh-partner-ribbon-dhl">
+            {{ dhl_logo('', 140, 36) }}
+            <span>Shipped by DHL Express</span>
+          </span>
+        </strong>
+        <a href="{{ url_for('media_page',page_name='partners') }}">Explore the FABS network →</a>
       </div>
 
-    </article>
+      <div class="fh-official-partners" aria-label="Official FABS shipping and payment partners" data-reveal>
+        <article class="fh-official-partner is-dhl">
+          <span class="fh-official-partner-mark">{{ dhl_logo('fh-official-partner-logo is-dhl', 200, 64) }}</span>
+          <div class="fh-official-partner-copy">
+            <strong>DHL Express</strong>
+            <small>Official shipping partner</small>
+            <p>Tracked international delivery with real-time rates, duties estimation and full traceability on every order shipped from Nairobi.</p>
+            <b>Learn more →</b>
+          </div>
+        </article>
+        <article class="fh-official-partner is-dpo">
+          <span class="fh-official-partner-mark">
+            <img class="fh-official-partner-logo is-dpo" src="https://payment.dpo.co.tz/assets/main-brand-logo-wider.005a3964.png" alt="DPO Group · 3G Direct Pay official logo" loading="lazy" decoding="async">
+          </span>
+          <div class="fh-official-partner-copy">
+            <strong>DPO · 3G Direct Pay</strong>
+            <small>Secure payment provider</small>
+            <p>PCI-DSS Level 1 hosted card checkout in USD and KES. FABS Trading never sees or stores card numbers or security codes.</p>
+            <b>Learn more →</b>
+          </div>
+        </article>
+      </div>
 
-  </div>
+      <div class="fh-logo-wall" data-reveal>
+        {% set partners=[('tencent.svg','Tencent','Global interactive entertainment','A major global gaming group with publishing, development, esports and investments across the industry.'),('sony-interactive.svg','Sony Interactive','PlayStation ecosystem','The company behind PlayStation hardware, network services and PlayStation Studios experiences.'),('xbox.svg','Microsoft Gaming','Xbox *&* Game Pass','An ecosystem spanning Xbox, Game Pass and major global development studios.'),('nintendo.svg','Nintendo','Integrated hardware *&* software','A games company known for integrated systems and enduring global franchises.'),('netease-games.png','NetEase Games','Global developer *&* publisher','A global developer and publisher working across online, mobile, console and multi-platform experiences.'),('electronic-arts.svg','Electronic Arts','Console, PC *&* mobile','A global publisher with leading sports, action and simulation portfolios.'),('take-two.svg','Take-Two Interactive','Rockstar Games · 2K · Zynga','A global interactive entertainment publisher operating through prominent development labels.')] %}
+        {% for logo,name,category,copy in partners %}
+        <article class="fh-partner">
+          <figure><span>{{ '%02d'|format(loop.index) }}</span><img src="{{ url_for('static',filename='images/partner-media/' ~ logo) }}" alt="{{ name }} official logo" loading="lazy"></figure>
+          <small>{{ category }}</small>
+          <h3>{{ name }}</h3>
+          <p>{{ copy }}</p>
+          <b>Gaming market profile →</b>
+        </article>
+        {% endfor %}
+      </div>
 
-  <!-- =========================================================== -->
+      <div class="fh-kenya-head">
+        <div><span class="home-kicker">Kenya retail *&* gaming destinations</span><h3>Where entertainment meets high-footfall commerce.</h3></div>
+        <p>Selected Kenyan malls with documented gaming, bowling, simulation, cinema or family-entertainment experiences—relevant to venue equipment supply and software activation opportunities.</p>
+      </div>
 
-  <div class="fh-logo-wall">
+      {% set kenya_venues=[
+        ('two-rivers-mall.png','Two Rivers Mall','Ruaka · Nairobi','Funscapes ThemePark, karting, cinema and family attractions','https://tworiversmall.com/entertainment/'),
+        ('the-hub-karen.png','The Hub Karen','Karen · Nairobi','The Hub Park and family-focused adventure experiences','https://thehubkaren.com/the-hub-park/'),
+        ('sarit-centre.png','Sarit Centre','Westlands · Nairobi','PINS bowling, virtual golf, pool, cinema and family entertainment','https://sarityourcity.com/family-entertainment/'),
+        ('village-market.jpg','Village Market','Gigiri · Nairobi','Ozone trampoline park, recreation and destination entertainment','https://villagemarket-kenya.com/'),
+        ('garden-city-mall.svg','Garden City Mall','Thika Road · Nairobi','Panda Gaming City, 9D VR Digital Movie and cinema experiences','https://www.shopgardencitymall.com/garden-city-mall-stores'),
+        ('westgate-mall.png','Westgate Mall','Westlands · Nairobi','Indoor gaming arcade, bowling, pool and cinema','https://www.westgate.co.ke/entertainment'),
+        ('thika-road-mall.png','Thika Road Mall','Kasarani · Nairobi','Strike Zone Games, bowling and family play experiences','https://trm.co.ke/product-category/entertainment/'),
+        ('waterfront-karen.png','The Waterfront Karen','Karen · Nairobi','Strike Arcade, aqua park, paintball and active entertainment','https://thewaterfrontkaren.com/')
+      ] %}
 
-    {% set partners=[('tencent.svg','Tencent','Global interactive entertainment','A major global gaming group with publishing, development, esports and investments across the industry.'),('sony-interactive.svg','Sony Interactive','PlayStation ecosystem','The company behind PlayStation hardware, network services and PlayStation Studios experiences.'),('xbox.svg','Microsoft Gaming','Xbox *&* Game Pass','An ecosystem spanning Xbox, Game Pass and major global development studios.'),('nintendo.svg','Nintendo','Integrated hardware *&* software','A games company known for integrated systems and enduring global franchises.'),('netease-games.png','NetEase Games','Global developer *&* publisher','A global developer and publisher working across online, mobile, console and multi-platform experiences.'),('electronic-arts.svg','Electronic Arts','Console, PC *&* mobile','A global publisher with leading sports, action and simulation portfolios.'),('take-two.svg','Take-Two Interactive','Rockstar Games · 2K · Zynga','A global interactive entertainment publisher operating through prominent development labels.')] %}
+      <div class="fh-kenya-wall" data-reveal>
+        {% for logo,name,location,experience,website in kenya_venues %}
+        <article class="fh-venue">
+          <div class="fh-venue-top">
+            <span class="fh-venue-logo"><img src="{{ url_for('static',filename='images/partner-media/kenya-malls/' ~ logo) }}" alt="{{ name }} logo" loading="lazy" decoding="async"></span>
+            <span class="fh-venue-index">KE {{ '%02d'|format(loop.index) }}</span>
+          </div>
+          <small>{{ location }}</small>
+          <h4>{{ name }}</h4>
+          <p>{{ experience }}</p>
+          <a href="{{ website }}" target="_blank" rel="noopener noreferrer" aria-label="View {{ name }} official entertainment information">View venue profile ↗</a>
+        </article>
+        {% endfor %}
+      </div>
 
-    {% for logo,name,category,copy in partners %}<article class="fh-partner"><figure><span>{{ '%02d'|format(loop.index) }}</span><img src="{{ url_for('static',filename='images/partner-media/' ~ logo) }}" alt="{{ name }} official logo" loading="lazy"></figure><small>{{ category }}</small><h3>{{ name }}</h3><p>{{ copy }}</p><b>Gaming market profile →</b></article>{% endfor %}
+      <p class="fh-notice"><b>Relationship notice:</b> The global companies and Kenyan destinations above are presented as market and venue ecosystem profiles. DHL Express and DPO · 3G Direct Pay are verified FABS shipping and payment partners. Inclusion of any other company does not state or imply endorsement, distribution authority or a formal partnership with FABS.</p>
+    </div>
+  </section>
 
-  </div>
+  <!-- ============================================================
+       FAQ
+       ============================================================ -->
+  <section class="fh-section">
+    <div class="home-shell fh-faq-layout">
+      <div class="fh-copy-block" data-reveal>
+        <span class="home-kicker">Buyer FAQ</span>
+        <h2>Everything buyers need before they inquire.</h2>
+        <p>Clear guidance on catalogue scale, MOQ, product media, custom manufacturing, shipping and payment.</p>
+        <a class="fh-red-button" href="{{ url_for('support') }}">Visit buyer support →</a>
+      </div>
 
-  <div class="fh-kenya-head"><div><span class="home-kicker">Kenya retail *&* gaming destinations</span><h3>Where entertainment meets high-footfall commerce.</h3></div><p>Selected Kenyan malls with documented gaming, bowling, simulation, cinema or family-entertainment experiences—relevant to venue equipment supply and software activation opportunities.</p></div>
+      <div class="fh-faq-list" data-reveal>
+        <details open><summary><span>01</span><strong>How large is the FABS games catalogue?</strong><i>+</i></summary><p>The marketplace is structured for more than 2.3 million searchable listings across up to 999 catalogue pages, covering arcade, VR, tabletop, racing and venue equipment categories.</p></details>
+        <details><summary><span>02</span><strong>What does MOQ mean on a product listing?</strong><i>+</i></summary><p>MOQ is the minimum order quantity accepted for a listing. Commercial machines may begin at one unit, while custom cards, boards and branded products may require hundreds or thousands of pieces.</p></details>
+        <details><summary><span>03</span><strong>How do I request a supplier price?</strong><i>+</i></summary><p>Open a product and choose Send Inquiry. Enter quantity, destination and required specifications. The system stores the request and returns a traceable FABS inquiry reference.</p></details>
+        <details><summary><span>04</span><strong>Can FABS source customised or OEM games?</strong><i>+</i></summary><p>Yes. Buyers can request custom artwork, cabinet finishes, packaging, components, language versions and OEM production, subject to sample and compliance approval.</p></details>
+        <details><summary><span>05</span><strong>Are the product photos real?</strong><i>+</i></summary><p>Yes. The featured homepage and catalogue media are self-hosted real venue, supplier and manufacturer product photographs, with the source presented on each listing.</p></details>
+        <details><summary><span>06</span><strong>How does shipping work?</strong><i>+</i></summary><p>We ship worldwide via DHL Express. Live shipping rates appear on every product page and at checkout. Duties and taxes are estimated at checkout for international buyers, and every shipment includes a tracking number.</p></details>
+        <details><summary><span>07</span><strong>Which payment methods do you accept?</strong><i>+</i></summary><p>Card payments are processed by DPO · 3G Direct Pay on a PCI-DSS Level 1 hosted page. We accept Visa and Mastercard in USD and KES. FABS Trading never sees or stores your card number or security code.</p></details>
+        <details><summary><span>08</span><strong>Is my card data safe with FABS?</strong><i>+</i></summary><p>Yes. Card details are entered directly on DPO's secure hosted checkout page — they never touch FABS servers. Every payment runs through 3-D Secure bank verification and returns a signed transaction reference we can reconcile against your order.</p></details>
+      </div>
+    </div>
+  </section>
 
-  {% set kenya_venues=[
+  <!-- ============================================================
+       TESTIMONIALS
+       ============================================================ -->
+  <section class="fh-section fh-testimonials">
+    <div class="home-shell">
+      <header class="fh-section-head" data-reveal>
+        <div><span class="home-kicker">Buyer experience</span><h2>A marketplace designed around real sourcing work.</h2></div>
+        <p>Representative buyer profiles demonstrate how professional teams can use the FABS journey.</p>
+      </header>
 
-    ('two-rivers-mall.png','Two Rivers Mall','Ruaka · Nairobi','Funscapes ThemePark, karting, cinema and family attractions','https://tworiversmall.com/entertainment/'),
+      <div class="fh-story-stage" data-reveal>
+        <div>
+          {% set stories=[('Arcade procurement','East Africa','The marketplace puts MOQ, indicative pricing and inquiry actions exactly where our team needs them. DHL shipping on every product and secure card checkout made the whole process feel trustworthy.'),('Tabletop distribution','Global sourcing','Custom board-game categories are easy to scan, and the request form lets us specify materials, packaging and order volume. DHL Express handles international delivery end-to-end.'),('Family entertainment','Venue development','Real product media makes the first review much faster. We can shortlist VR, racing and arcade systems before opening a supplier conversation, and pay securely with DPO.')] %}
+          {% for sector,region,quote in stories %}
+          <article class="fh-story-copy {% if loop.first %}active{% endif %}" data-story="{{ loop.index0 }}">
+            <span>“</span>
+            <blockquote>{{ quote }}</blockquote>
+            <div><strong>{{ sector }}</strong><small>{{ region }} · representative buyer profile</small></div>
+          </article>
+          {% endfor %}
+        </div>
+        <figure class="fh-story-media"><img id="story-image" src="{{ games[2].image_url }}" alt="Real commercial gaming product media"></figure>
+      </div>
 
-    ('the-hub-karen.png','The Hub Karen','Karen · Nairobi','The Hub Park and family-focused adventure experiences','https://thehubkaren.com/the-hub-park/'),
+      <div class="fh-story-dots">
+        {% for item in range(3) %}<button type="button" data-story-control="{{ item }}" class="{% if item==0 %}active{% endif %}" aria-label="Show buyer experience {{ item+1 }}"></button>{% endfor %}
+      </div>
+    </div>
+  </section>
 
-    ('sarit-centre.png','Sarit Centre','Westlands · Nairobi','PINS bowling, virtual golf, pool, cinema and family entertainment','https://sarityourcity.com/family-entertainment/'),
-
-    ('village-market.jpg','Village Market','Gigiri · Nairobi','Ozone trampoline park, recreation and destination entertainment','https://villagemarket-kenya.com/'),
-
-    ('garden-city-mall.svg','Garden City Mall','Thika Road · Nairobi','Panda Gaming City, 9D VR Digital Movie and cinema experiences','https://www.shopgardencitymall.com/garden-city-mall-stores'),
-
-    ('westgate-mall.png','Westgate Mall','Westlands · Nairobi','Indoor gaming arcade, bowling, pool and cinema','https://www.westgate.co.ke/entertainment'),
-
-    ('thika-road-mall.png','Thika Road Mall','Kasarani · Nairobi','Strike Zone Games, bowling and family play experiences','https://trm.co.ke/product-category/entertainment/'),
-
-    ('waterfront-karen.png','The Waterfront Karen','Karen · Nairobi','Strike Arcade, aqua park, paintball and active entertainment','https://thewaterfrontkaren.com/')
-
-  ] %}
-
-  <div class="fh-kenya-wall">
-
-    {% for logo,name,location,experience,website in kenya_venues %}<article class="fh-venue"><div class="fh-venue-top"><span class="fh-venue-logo"><img src="{{ url_for('static',filename='images/partner-media/kenya-malls/' ~ logo) }}" alt="{{ name }} logo" loading="lazy" decoding="async"></span><span class="fh-venue-index">KE {{ '%02d'|format(loop.index) }}</span></div><small>{{ location }}</small><h4>{{ name }}</h4><p>{{ experience }}</p><a href="{{ website }}" target="_blank" rel="noopener noreferrer" aria-label="View {{ name }} official entertainment information">View venue profile ↗</a></article>{% endfor %}
-
-  </div>
-
-  <p class="fh-notice"><b>Relationship notice:</b> The global companies and Kenyan destinations above are presented as market and venue ecosystem profiles. DHL Express and DPO · 3G Direct Pay are verified FABS shipping and payment partners. Inclusion of any other company does not state or imply endorsement, distribution authority or a formal partnership with FABS.</p></div></section>
-
-  <section class="fh-section"><div class="home-shell fh-faq-layout"><div class="fh-copy-block"><span class="home-kicker">Buyer FAQ</span><h2>Everything buyers need before they inquire.</h2><p>Clear guidance on catalogue scale, MOQ, product media, custom manufacturing, shipping and payment.</p><a class="fh-red-button" href="{{ url_for('support') }}">Visit buyer support →</a></div><div class="fh-faq-list">
-
-    <details open><summary><span>01</span><strong>How large is the FABS games catalogue?</strong><i>+</i></summary><p>The marketplace is structured for more than 2.3 million searchable listings across up to 999 catalogue pages, covering arcade, VR, tabletop, racing and venue equipment categories.</p></details>
-
-    <details><summary><span>02</span><strong>What does MOQ mean on a product listing?</strong><i>+</i></summary><p>MOQ is the minimum order quantity accepted for a listing. Commercial machines may begin at one unit, while custom cards, boards and branded products may require hundreds or thousands of pieces.</p></details>
-
-    <details><summary><span>03</span><strong>How do I request a supplier price?</strong><i>+</i></summary><p>Open a product and choose Send Inquiry. Enter quantity, destination and required specifications. The system stores the request and returns a traceable FABS inquiry reference.</p></details>
-
-    <details><summary><span>04</span><strong>Can FABS source customised or OEM games?</strong><i>+</i></summary><p>Yes. Buyers can request custom artwork, cabinet finishes, packaging, components, language versions and OEM production, subject to sample and compliance approval.</p></details>
-
-    <details><summary><span>05</span><strong>Are the product photos real?</strong><i>+</i></summary><p>Yes. The featured homepage and catalogue media are self-hosted real venue, supplier and manufacturer product photographs, with the source presented on each listing.</p></details>
-
-    <details><summary><span>06</span><strong>How does shipping work?</strong><i>+</i></summary><p>We ship worldwide via DHL Express. Live shipping rates appear on every product page and at checkout. Duties and taxes are estimated at checkout for international buyers, and every shipment includes a tracking number.</p></details>
-
-    <details><summary><span>07</span><strong>Which payment methods do you accept?</strong><i>+</i></summary><p>Card payments are processed by DPO · 3G Direct Pay on a PCI-DSS Level 1 hosted page. We accept Visa and Mastercard in USD and KES. FABS Trading never sees or stores your card number or security code.</p></details>
-
-    <details><summary><span>08</span><strong>Is my card data safe with FABS?</strong><i>+</i></summary><p>Yes. Card details are entered directly on DPO's secure hosted checkout page — they never touch FABS servers. Every payment runs through 3-D Secure bank verification and returns a signed transaction reference we can reconcile against your order.</p></details>
-
-  </div></div></section>
-
-  <section class="fh-section fh-testimonials"><div class="home-shell"><header class="fh-section-head"><div><span class="home-kicker">Buyer experience</span><h2>A marketplace designed around real sourcing work.</h2></div><p>Representative buyer profiles demonstrate how professional teams can use the FABS journey.</p></header><div class="fh-story-stage"><div>{% set stories=[('Arcade procurement','East Africa','The marketplace puts MOQ, indicative pricing and inquiry actions exactly where our team needs them. DHL shipping on every product and secure card checkout made the whole process feel trustworthy.'),('Tabletop distribution','Global sourcing','Custom board-game categories are easy to scan, and the request form lets us specify materials, packaging and order volume. DHL Express handles international delivery end-to-end.'),('Family entertainment','Venue development','Real product media makes the first review much faster. We can shortlist VR, racing and arcade systems before opening a supplier conversation, and pay securely with DPO.')] %}{% for sector,region,quote in stories %}<article class="fh-story-copy {% if loop.first %}active{% endif %}" data-story="{{ loop.index0 }}"><span>“</span><blockquote>{{ quote }}</blockquote><div><strong>{{ sector }}</strong><small>{{ region }} · representative buyer profile</small></div></article>{% endfor %}</div><figure class="fh-story-media"><img id="story-image" src="{{ games[2].image_url }}" alt="Real commercial gaming product media"></figure></div><div class="fh-story-dots">{% for item in range(3) %}<button type="button" data-story-control="{{ item }}" class="{% if item==0 %}active{% endif %}" aria-label="Show buyer experience {{ item+1 }}"></button>{% endfor %}</div></div></section>
-
-  <section class="fh-final"><div class="home-shell"><div><span>START SOURCING WITH FABS</span><h2>Millions of gaming opportunities.<br>One professional inquiry.</h2></div><div class="fh-final-links"><a href="{{ url_for('games') }}">Explore the marketplace</a><a href="{{ url_for('inquiry') }}">Post your RFQ</a></div></div></section>
+  <!-- ============================================================
+       FINAL CTA
+       ============================================================ -->
+  <section class="fh-final">
+    <div class="fh-final-plane" aria-hidden="true">{{ dhl_plane('', 210, 95) }}</div>
+    <div class="home-shell">
+      <div>
+        <span>START SOURCING WITH FABS</span>
+        <h2>Millions of gaming opportunities.<br>One professional inquiry.</h2>
+      </div>
+      <div class="fh-final-links">
+        <a href="{{ url_for('games') }}">Explore the marketplace</a>
+        <a href="{{ url_for('inquiry') }}">Post your RFQ</a>
+      </div>
+    </div>
+  </section>
 
 </main>
 
@@ -627,29 +1285,113 @@
 {% block scripts %}
 
 <script>
-
 (()=>{
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
 
-  const products={{ games[:5]|map(attribute='title')|list|tojson }};
+  /* ---------- hero carousel (10 slides) ---------- */
+  const products   = {{ games[:10]|map(attribute='title')|list|tojson }};
+  const moqs       = {{ games[:10]|map(attribute='minimum_order')|list|tojson }};
+  const categories = {{ games[:10]|map(attribute='genre')|list|tojson }};
+  const sources    = {{ games[:10]|map(attribute='photo_source')|list|tojson }};
 
-  const moqs={{ games[:5]|map(attribute='minimum_order')|list|tojson }};
+  const slides   = $$('.fh-slide');
+  const controls = $$('[data-hero-control]');
+  let active = 0, timer;
 
-  const categories={{ games[:5]|map(attribute='genre')|list|tojson }};
+  const show = index => {
+    active = index;
+    slides.forEach((el,i)=>el.classList.toggle('active', i===index));
+    controls.forEach((el,i)=>el.classList.toggle('active', i===index));
+    const p = $('#hero-product'), m = $('#hero-moq'), c = $('#hero-category'), s = $('#hero-source');
+    if(p) p.textContent = products[index];
+    if(m) m.textContent = moqs[index];
+    if(c) c.textContent = categories[index].toUpperCase();
+    if(s) s.textContent = sources[index];
+  };
+  const start = () => {
+    clearInterval(timer);
+    if(slides.length > 1) timer = setInterval(()=>show((active+1)%slides.length), 6000);
+  };
+  controls.forEach((button,index)=>button.addEventListener('click',()=>{ show(index); start(); }));
+  if(slides.length > 1) start();
 
-  const sources={{ games[:5]|map(attribute='photo_source')|list|tojson }};
+  /* ---------- buyer stories ---------- */
+  const stories       = $$('[data-story]');
+  const storyControls = $$('[data-story-control]');
+  const storyImages   = {{ games[2:5]|map(attribute='image_url')|list|tojson }};
+  let story = 0;
+  const showStory = index => {
+    if(!stories.length) return;
+    story = index;
+    stories.forEach((el,i)=>el.classList.toggle('active', i===index));
+    storyControls.forEach((el,i)=>el.classList.toggle('active', i===index));
+    const img = $('#story-image');
+    if(img && storyImages[index]) img.src = storyImages[index];
+  };
+  storyControls.forEach((button,index)=>button.addEventListener('click',()=>showStory(index)));
+  if(stories.length > 1) setInterval(()=>showStory((story+1)%stories.length), 7200);
 
-  const slides=[...document.querySelectorAll('.fh-slide')],controls=[...document.querySelectorAll('[data-hero-control]')];let active=0,timer;
+  /* ---------- scroll reveal ---------- */
+  const revealEls = $$('[data-reveal]');
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){ entry.target.classList.add('is-in'); io.unobserve(entry.target); }
+      });
+    },{ threshold:.12, rootMargin:'0px 0px -6% 0px' });
+    revealEls.forEach(el=>io.observe(el));
+  } else {
+    revealEls.forEach(el=>el.classList.add('is-in'));
+  }
 
-  const show=index=>{active=index;slides.forEach((el,i)=>el.classList.toggle('active',i===index));controls.forEach((el,i)=>el.classList.toggle('active',i===index));document.querySelector('#hero-product').textContent=products[index];document.querySelector('#hero-moq').textContent=moqs[index];document.querySelector('#hero-category').textContent=categories[index].toUpperCase();document.querySelector('#hero-source').textContent=sources[index]};
+  /* ---------- DHL tracking shortcut ---------- */
+  const trackInput = $('#fh-track-input');
+  const trackBtn   = $('#fh-track-btn');
+  if(trackInput && trackBtn){
+    const base = 'https://www.dhl.com/global-en/home/tracking.html';
+    const sync = () => {
+      const value = trackInput.value.replace(/\s+/g,'');
+      trackBtn.href = value ? base + '?tracking-id=' + encodeURIComponent(value) : base;
+    };
+    trackInput.addEventListener('input', sync);
+    trackInput.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); sync(); trackBtn.click(); } });
+    sync();
+  }
 
-  const start=()=>{clearInterval(timer);timer=setInterval(()=>show((active+1)%slides.length),6000)};controls.forEach((button,index)=>button.addEventListener('click',()=>{show(index);start()}));if(slides.length>1)start();
-
-  const stories=[...document.querySelectorAll('[data-story]')],storyControls=[...document.querySelectorAll('[data-story-control]')],storyImages={{ games[2:5]|map(attribute='image_url')|list|tojson }};let story=0;
-
-  const showStory=index=>{story=index;stories.forEach((el,i)=>el.classList.toggle('active',i===index));storyControls.forEach((el,i)=>el.classList.toggle('active',i===index));document.querySelector('#story-image').src=storyImages[index]};storyControls.forEach((button,index)=>button.addEventListener('click',()=>showStory(index)));setInterval(()=>showStory((story+1)%stories.length),7200);
-
+  /* ---------- flash sale countdown ---------- */
+  const cd = $('#fh-countdown');
+  if(cd){
+    // Countdown ends 7 days from the first page load in this session.
+    const KEY = 'fabs_flash_end';
+    let end = Number(sessionStorage.getItem(KEY));
+    if(!end || end < Date.now()){
+      end = Date.now() + (7 * 24 * 60 * 60 * 1000);
+      try { sessionStorage.setItem(KEY, String(end)); } catch(e){}
+    }
+    const pad = n => String(n).padStart(2,'0');
+    const els = {
+      days:  cd.querySelector('[data-cd="days"]'),
+      hours: cd.querySelector('[data-cd="hours"]'),
+      mins:  cd.querySelector('[data-cd="mins"]'),
+      secs:  cd.querySelector('[data-cd="secs"]'),
+    };
+    const tick = () => {
+      const diff = Math.max(0, end - Date.now());
+      const s = Math.floor(diff/1000);
+      const d = Math.floor(s/86400);
+      const h = Math.floor((s%86400)/3600);
+      const m = Math.floor((s%3600)/60);
+      const sec = s%60;
+      if(els.days)  els.days.textContent  = pad(d);
+      if(els.hours) els.hours.textContent = pad(h);
+      if(els.mins)  els.mins.textContent  = pad(m);
+      if(els.secs)  els.secs.textContent  = pad(sec);
+    };
+    tick();
+    setInterval(tick, 1000);
+  }
 })();
-
 </script>
 
-{% endblock %}
+{% endblock %} 
