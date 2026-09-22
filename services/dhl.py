@@ -60,6 +60,24 @@ DHL_DEFAULT_PACKAGE_DESCRIPTION = os.getenv(
     "DHL_DEFAULT_PACKAGE_DESCRIPTION", "Software and accessories"
 )
 
+# ----------------------------------------------------------------------
+# HS code defaults (international customs).
+#
+# DHL requires a 6-12 digit commodity code on every export line item.
+# When the order data does not carry one and no env override is present,
+# fall back to 950450 ("Video game consoles and machines — other than
+# those of subheading 9504.30"), which is the correct HS code for FABS's
+# core gaming products.
+#
+# You can also set per-order codes in `order_data["hs_code"]` or a
+# business default via `DHL_DEFAULT_HS_CODE` in .env.
+# ----------------------------------------------------------------------
+DHL_DEFAULT_HS_CODE = os.getenv("DHL_DEFAULT_HS_CODE", "950450")
+# Fallback manufacturer country if none is supplied on the order.
+DHL_DEFAULT_MANUFACTURER_COUNTRY = os.getenv(
+    "DHL_DEFAULT_MANUFACTURER_COUNTRY", "KE"
+)
+
 
 def _default_product_code(is_international):
     """Return the DHL Express Kenya product code for a route."""
@@ -401,8 +419,14 @@ def _positive_float(value, field_name):
 
 
 def _normalise_hs_code(value, field_name="HS code"):
-    """Return a 6-12 digit customs commodity code."""
-    digits = re.sub(r"\D", "", str(value or ""))
+    """
+    Return a 6-12 digit customs commodity code.
+
+    Prefers the caller-supplied value; falls back to DHL_DEFAULT_HS_CODE
+    (which itself defaults to 950450 — video game consoles/machines).
+    """
+    raw = value if value not in (None, "") else DHL_DEFAULT_HS_CODE
+    digits = re.sub(r"\D", "", str(raw or ""))
     if not 6 <= len(digits) <= 12:
         raise DHLConfigurationError(
             f"{field_name} is required for international goods and must contain "
@@ -419,10 +443,15 @@ def _build_export_line_items(order_data, origin_country, package_weight, declare
         "price": declared_value,
         "net_weight_kg": package_weight,
         "gross_weight_kg": package_weight,
-        "hs_code": order_data.get("hs_code") or os.getenv("DHL_DEFAULT_HS_CODE"),
+        "hs_code": (
+            order_data.get("hs_code")
+            or os.getenv("DHL_DEFAULT_HS_CODE")
+            or DHL_DEFAULT_HS_CODE
+        ),
         "manufacturer_country": (
             order_data.get("manufacturer_country")
             or os.getenv("DHL_DEFAULT_MANUFACTURER_COUNTRY")
+            or DHL_DEFAULT_MANUFACTURER_COUNTRY
         ),
     }]
 
@@ -467,14 +496,24 @@ def _build_export_line_items(order_data, origin_country, package_weight, declare
                 f"Export line item {index} gross weight cannot be below its net weight"
             )
 
+        # HS code: prefer the line item's own value, then the order-level
+        # value, then the env override, then the built-in default.
         hs_code = _normalise_hs_code(
-            raw_item.get("hs_code") or os.getenv("DHL_DEFAULT_HS_CODE"),
+            raw_item.get("hs_code")
+            or order_data.get("hs_code")
+            or os.getenv("DHL_DEFAULT_HS_CODE")
+            or DHL_DEFAULT_HS_CODE,
             f"Export line item {index} HS code",
         )
+        # Manufacturer country: prefer the line item's value, then the
+        # order-level value, then the env override, then the origin country
+        # of the shipment.
         manufacturer_country = normalize_country_code(
             raw_item.get("manufacturer_country")
             or order_data.get("manufacturer_country")
-            or os.getenv("DHL_DEFAULT_MANUFACTURER_COUNTRY"),
+            or os.getenv("DHL_DEFAULT_MANUFACTURER_COUNTRY")
+            or origin_country
+            or DHL_DEFAULT_MANUFACTURER_COUNTRY,
             f"Export line item {index} manufacturer country",
         )
 
@@ -1492,6 +1531,10 @@ class DHLService:
             "default_product_code": _default_product_code(is_international),
             "next_business_day": DHL_NEXT_BUSINESS_DAY,
             "max_description_length": DHL_MAX_DESCRIPTION_LENGTH,
+            # FIX (2026-09): expose the HS code defaults so diagnostics
+            # confirm what would be sent on an international shipment.
+            "default_hs_code": DHL_DEFAULT_HS_CODE,
+            "default_manufacturer_country": DHL_DEFAULT_MANUFACTURER_COUNTRY,
             "products": [],
             "error": None,
         }
